@@ -373,17 +373,17 @@ public async Task Event_Triggers_Handler()
 ## Test Count Summary
 
 | Phase | Project | Test Count |
-|---|---|---|---|---|
-| 1 | `BurgerIAM.Shared.Tests` | 14 |
-| 1 | `BurgerIAM.EventBus.Tests` | 5 |
-| 2 | `IdentityService.Tests` | 6 |
-| 2 | `MenuService.Tests` | 5 |
-| 3 | `OrderService.Tests` | 7 |
-| 3 | `PaymentService.Tests` | 6 |
-| 3 | `Integration.Tests` | 6 |
-| 4 | `KitchenService.Tests` | 9 |
-| 4 | `DeliveryService.Tests` | 9 |
-| 5 | `FeedbackService.Tests` | 7 |
-| 5 | `NotificationService.Tests` | 6 |
-| 5 | `ReceiptService.Tests` | 4 |
+|---|---|---|
+| 1 | BurgerIAM.Shared.Tests | 14 |
+| 1 | BurgerIAM.EventBus.Tests | 5 |
+| 2 | IdentityService.Tests | 6 |
+| 2 | MenuService.Tests | 5 |
+| 3 | OrderService.Tests | 7 |
+| 3 | PaymentService.Tests | 6 |
+| 3 | Integration.Tests | 6 |
+| 4 | KitchenService.Tests | 9 |
+| 4 | DeliveryService.Tests | 9 |
+| 5 | FeedbackService.Tests | 7 |
+| 5 | NotificationService.Tests | 6 |
+| 5 | ReceiptService.Tests | 4 |
 | | **Total** | **84** |
