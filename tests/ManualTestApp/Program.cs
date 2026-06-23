@@ -24,6 +24,13 @@ var identityClient = new ProtoIdentity.IdentityService.IdentityServiceClient(ide
 var menuChannel = GrpcChannel.ForAddress(menuUrl);
 var menuClient = new ProtoMenu.MenuService.MenuServiceClient(menuChannel);
 
+var testId = Guid.NewGuid().ToString("N")[..8];
+var testEmail = $"manual-{testId}@test.com";
+var testPassword = "password123";
+
+Console.WriteLine($"  Test user: {testEmail}");
+Console.WriteLine();
+
 Console.ForegroundColor = ConsoleColor.Yellow;
 Console.WriteLine("─── Identity Service ───");
 Console.ResetColor();
@@ -32,8 +39,8 @@ await RunTest("Register - new user", async () =>
 {
     var response = await identityClient.RegisterAsync(new ProtoIdentity.RegisterRequest
     {
-        Email = "manual@test.com",
-        Password = "password123",
+        Email = testEmail,
+        Password = testPassword,
         Name = "Manual Tester"
     });
     if (string.IsNullOrWhiteSpace(response.UserId))
@@ -45,8 +52,8 @@ await RunTest("Register - duplicate email", async () =>
 {
     var response = await identityClient.RegisterAsync(new ProtoIdentity.RegisterRequest
     {
-        Email = "manual@test.com",
-        Password = "password123",
+        Email = testEmail,
+        Password = testPassword,
         Name = "Manual Tester"
     });
     if (string.IsNullOrWhiteSpace(response.Error))
@@ -59,8 +66,8 @@ await RunTest("Login - valid credentials", async () =>
 {
     var response = await identityClient.LoginAsync(new ProtoIdentity.LoginRequest
     {
-        Email = "manual@test.com",
-        Password = "password123"
+        Email = testEmail,
+        Password = testPassword
     });
     if (string.IsNullOrWhiteSpace(response.Token))
         throw new Exception($"Expected token. Error: {response.Error}");
@@ -73,7 +80,7 @@ await RunTest("Login - invalid password", async () =>
 {
     var response = await identityClient.LoginAsync(new ProtoIdentity.LoginRequest
     {
-        Email = "manual@test.com",
+        Email = testEmail,
         Password = "wrongpassword"
     });
     if (string.IsNullOrWhiteSpace(response.Error))
