@@ -270,7 +270,20 @@ dotnet test tests/NotificationService.Tests --nologo
 dotnet test tests/ReceiptService.Tests --nologo
 ```
 
-**Manual test — all 9 services:**
+**Manual test — requires all nine services running:**
+
+| Service | Port | Start Command |
+|---|---|---|
+| IdentityService | 5041 | `dotnet run --project src/IdentityService` |
+| MenuService | 5052 | `dotnet run --project src/MenuService` |
+| OrderService | 5063 | `dotnet run --project src/OrderService` |
+| PaymentService | 5074 | `dotnet run --project src/PaymentService` |
+| KitchenService | 5085 | `dotnet run --project src/KitchenService` |
+| DeliveryService | 5096 | `dotnet run --project src/DeliveryService` |
+| FeedbackService | 5007 | `dotnet run --project src/FeedbackService` |
+| NotificationService | 5018 | `dotnet run --project src/NotificationService` |
+| ReceiptService | 5029 | `dotnet run --project src/ReceiptService` |
+
 ```powershell
 dotnet run --project tests/ManualTestApp -- http://localhost:5041 http://localhost:5052 http://localhost:5063 http://localhost:5074 http://localhost:5085 http://localhost:5096 http://localhost:5007 http://localhost:5018 http://localhost:5029
 ```
