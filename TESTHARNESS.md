@@ -9,13 +9,16 @@ This document describes the testing infrastructure for the BurgerIAM microservic
 ## Test Projects
 
 | Project | Type | Location | Depends On |
-|---|---|---|---|---|
+|---|---|---|---|---|---|
 | `BurgerIAM.Shared.Tests` | Unit | `tests/BurgerIAM.Shared.Tests/` | `BurgerIAM.Shared` |
 | `BurgerIAM.EventBus.Tests` | Unit | `tests/BurgerIAM.EventBus.Tests/` | `BurgerIAM.EventBus`, `BurgerIAM.TestUtilities` |
 | `IdentityService.Tests` | Unit | `tests/IdentityService.Tests/` | `IdentityService`, `BurgerIAM.TestUtilities` |
 | `MenuService.Tests` | Unit | `tests/MenuService.Tests/` | `MenuService`, `BurgerIAM.TestUtilities` |
 | `OrderService.Tests` | Unit | `tests/OrderService.Tests/` | `OrderService`, `BurgerIAM.TestUtilities` |
 | `PaymentService.Tests` | Unit | `tests/PaymentService.Tests/` | `PaymentService`, `BurgerIAM.TestUtilities` |
+| `KitchenService.Tests` | Unit | `tests/KitchenService.Tests/` | `KitchenService`, `BurgerIAM.TestUtilities` |
+| `DeliveryService.Tests` | Unit | `tests/DeliveryService.Tests/` | `DeliveryService`, `BurgerIAM.TestUtilities` |
+| `FeedbackService.Tests` | Unit | `tests/FeedbackService.Tests/` | `FeedbackService`, `BurgerIAM.TestUtilities` |
 | `Integration.Tests` | Integration | `tests/Integration.Tests/` | `BurgerIAM.EventBus`, `BurgerIAM.TestUtilities` |
 | `ManualTestApp` | Manual | `tests/ManualTestApp/` | gRPC proto clients |
 
@@ -240,12 +243,38 @@ dotnet run --project tests/ManualTestApp -- http://localhost:5041 http://localho
 
 ---
 
-### Phase 5 — Notification, Receipt & Feedback
+### Phase 5 — Feedback Service ✅
+
+**Service Implemented:**
+- `src/FeedbackService/` — gRPC service (port 5007), SQLite, submit & query customer feedback
+
+**Project:** `FeedbackService.Tests`
+
+**Tests:** 7
+
+| File | Tests | What It Verifies |
+|---|---|---|
+| `FeedbackGrpcServiceTests.cs` | 7 | SubmitFeedback (valid + duplicate + invalid rating), GetOrderFeedback (exists + not found), GetAverageRating (empty + with ratings) |
+
+**How to run:**
+```powershell
+dotnet test tests/FeedbackService.Tests --nologo
+```
+
+**Manual test — add to existing all-services command:**
+```powershell
+dotnet run --project tests/ManualTestApp -- http://localhost:5041 http://localhost:5052 http://localhost:5063 http://localhost:5074 http://localhost:5085 http://localhost:5096 http://localhost:5007
+```
+
+---
+
+### Phase 5 — Notification, Receipt & Feedback *(remaining)*
 
 When implemented, add:
+- `src/NotificationService/` — background worker for in-app notifications
+- `src/ReceiptService/` — Web API serving HTML receipts
 - `tests/NotificationService.Tests/` — background worker tests
 - `tests/ReceiptService.Tests/` — Web API tests
-- `tests/FeedbackService.Tests/` — gRPC unit tests
 - Extend integration tests with full lifecycle event chain
 
 ---
@@ -333,7 +362,7 @@ public async Task Event_Triggers_Handler()
 ## Test Count Summary
 
 | Phase | Project | Test Count |
-|---|---|---|---|
+|---|---|---|---|---|
 | 1 | `BurgerIAM.Shared.Tests` | 14 |
 | 1 | `BurgerIAM.EventBus.Tests` | 5 |
 | 2 | `IdentityService.Tests` | 6 |
@@ -343,4 +372,5 @@ public async Task Event_Triggers_Handler()
 | 3 | `Integration.Tests` | 6 |
 | 4 | `KitchenService.Tests` | 9 |
 | 4 | `DeliveryService.Tests` | 9 |
-| | **Total** | **67** |
+| 5 | `FeedbackService.Tests` | 7 |
+| | **Total** | **74** |

@@ -14,6 +14,7 @@
     <Protobuf Include="..\..\src\BurgerIAM.Protos\payment.proto" GrpcServices="Client" />
     <Protobuf Include="..\..\src\BurgerIAM.Protos\kitchen.proto" GrpcServices="Client" />
     <Protobuf Include="..\..\src\BurgerIAM.Protos\delivery.proto" GrpcServices="Client" />
+    <Protobuf Include="..\..\src\BurgerIAM.Protos\feedback.proto" GrpcServices="Client" />
     <Protobuf Include="..\..\src\BurgerIAM.Protos\common.proto" GrpcServices="Client" />
   </ItemGroup>
 

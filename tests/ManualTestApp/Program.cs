@@ -5,6 +5,7 @@ using ProtoOrder = BurgerIAM.Protos.Order;
 using ProtoPayment = BurgerIAM.Protos.Payment;
 using ProtoKitchen = BurgerIAM.Protos.Kitchen;
 using ProtoDelivery = BurgerIAM.Protos.Delivery;
+using ProtoFeedback = BurgerIAM.Protos.Feedback;
 using ProtoCommon = BurgerIAM.Protos.Common;
 
 var identityUrl = args.Length > 0 ? args[0] : "http://localhost:5041";
@@ -13,16 +14,18 @@ var orderUrl = args.Length > 2 ? args[2] : "http://localhost:5063";
 var paymentUrl = args.Length > 3 ? args[3] : "http://localhost:5074";
 var kitchenUrl = args.Length > 4 ? args[4] : "http://localhost:5085";
 var deliveryUrl = args.Length > 5 ? args[5] : "http://localhost:5096";
+var feedbackUrl = args.Length > 6 ? args[6] : "http://localhost:5007";
 
 Console.ForegroundColor = ConsoleColor.Cyan;
-Console.WriteLine("═══════════════════════════════════════════");
+Console.WriteLine("═══════════════════════════════════════════════════════");
 Console.WriteLine("  BurgerIAM - Manual Integration Test App");
-Console.WriteLine($"  Identity: {identityUrl}");
-Console.WriteLine($"  Menu    : {menuUrl}");
-Console.WriteLine($"  Order   : {orderUrl}");
-Console.WriteLine($"  Payment : {paymentUrl}");
-Console.WriteLine($"  Kitchen : {kitchenUrl}");
-Console.WriteLine($"  Delivery: {deliveryUrl}");
+Console.WriteLine($"  Identity : {identityUrl}");
+Console.WriteLine($"  Menu     : {menuUrl}");
+Console.WriteLine($"  Order    : {orderUrl}");
+Console.WriteLine($"  Payment  : {paymentUrl}");
+Console.WriteLine($"  Kitchen  : {kitchenUrl}");
+Console.WriteLine($"  Delivery : {deliveryUrl}");
+Console.WriteLine($"  Feedback : {feedbackUrl}");
 Console.WriteLine("═══════════════════════════════════════════");
 Console.ResetColor();
 Console.WriteLine();
@@ -47,6 +50,9 @@ var kitchenClient = new ProtoKitchen.KitchenService.KitchenServiceClient(kitchen
 
 var deliveryChannel = GrpcChannel.ForAddress(deliveryUrl);
 var deliveryClient = new ProtoDelivery.DeliveryService.DeliveryServiceClient(deliveryChannel);
+
+var feedbackChannel = GrpcChannel.ForAddress(feedbackUrl);
+var feedbackClient = new ProtoFeedback.FeedbackService.FeedbackServiceClient(feedbackChannel);
 
 var testId = Guid.NewGuid().ToString("N")[..8];
 var testEmail = $"manual-{testId}@test.com";
@@ -456,6 +462,57 @@ await RunTest("UpdateDeliveryStatus - mark as delivered", async () =>
     if (response.Status != 4)
         throw new Exception($"Expected status 4 (Delivered), got {response.Status}");
     Console.WriteLine($"  Status: {response.Status}");
+});
+
+Console.ForegroundColor = ConsoleColor.Yellow;
+Console.WriteLine();
+Console.WriteLine("─── Feedback Service ───");
+Console.ResetColor();
+
+await RunTest("SubmitFeedback - valid feedback", async () =>
+{
+    if (orderId is null) throw new Exception("No order ID available");
+    var response = await feedbackClient.SubmitFeedbackAsync(new ProtoFeedback.SubmitFeedbackRequest
+    {
+        OrderId = orderId,
+        CustomerId = userId ?? "",
+        Rating = 5,
+        Comment = "Amazing burger, fast delivery!"
+    });
+    if (string.IsNullOrWhiteSpace(response.FeedbackId))
+        throw new Exception($"Failed to submit feedback: {response.Error}");
+    Console.WriteLine($"  FeedbackId: {response.FeedbackId}");
+});
+
+await RunTest("SubmitFeedback - duplicate order", async () =>
+{
+    if (orderId is null) throw new Exception("No order ID available");
+    var response = await feedbackClient.SubmitFeedbackAsync(new ProtoFeedback.SubmitFeedbackRequest
+    {
+        OrderId = orderId,
+        CustomerId = userId ?? "",
+        Rating = 4,
+        Comment = "Still good"
+    });
+    if (string.IsNullOrWhiteSpace(response.Error))
+        throw new Exception("Expected error for duplicate feedback");
+    Console.WriteLine($"  Expected: {response.Error}");
+});
+
+await RunTest("GetOrderFeedback - existing feedback", async () =>
+{
+    if (orderId is null) throw new Exception("No order ID available");
+    var response = await feedbackClient.GetOrderFeedbackAsync(new ProtoFeedback.GetOrderFeedbackRequest { OrderId = orderId });
+    if (string.IsNullOrWhiteSpace(response.Id))
+        throw new Exception("Expected feedback data");
+    Console.WriteLine($"  Rating : {response.Rating}/5");
+    Console.WriteLine($"  Comment: {response.Comment}");
+});
+
+await RunTest("GetAverageRating - returns average", async () =>
+{
+    var response = await feedbackClient.GetAverageRatingAsync(new ProtoFeedback.GetAverageRatingRequest());
+    Console.WriteLine($"  Average: {response.AverageRating:F1} ({response.TotalReviews} reviews)");
 });
 
 Console.WriteLine();
