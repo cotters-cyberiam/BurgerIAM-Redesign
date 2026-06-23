@@ -538,7 +538,6 @@ await RunTest("GetNotifications - empty initially", async () =>
     Console.WriteLine($"  Notifications: {response.Notifications.Count}");
 });
 
-string? notificationId = null;
 await RunTest("GetUnreadCount - zero initially", async () =>
 {
     if (userId is null) throw new Exception("No user ID available");
