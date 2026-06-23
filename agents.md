@@ -15,6 +15,7 @@
 * When something doesn't work as expected and is fixed, document the issue and resolution in DEBUG.md for future reference
 
 # Development Requirements
+* After every code change: build, test, then commit with a descriptive message
 * Ensure that an appropriate number of tests are written and executed successfully after each code change
 * Do not make any assumptions. For any questions you have always ask me
 * Do not make anything up
