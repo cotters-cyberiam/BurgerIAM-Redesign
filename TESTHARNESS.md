@@ -66,16 +66,18 @@ Each service must be running before you launch the manual tests. Open separate t
 | 2 | **MenuService** | 5052 | `dotnet run --project src/MenuService` |
 | 3 | **OrderService** | 5063 | `dotnet run --project src/OrderService` |
 | 4 | **PaymentService** | 5074 | `dotnet run --project src/PaymentService` |
+| 5 | **KitchenService** | 5085 | `dotnet run --project src/KitchenService` |
+| 6 | **DeliveryService** | 5096 | `dotnet run --project src/DeliveryService` |
 
 **Step 2: Run the manual test app**
 
 Pass the service URLs in this exact order:
 ```
-<IdentityUrl> <MenuUrl> <OrderUrl> <PaymentUrl>
+<IdentityUrl> <MenuUrl> <OrderUrl> <PaymentUrl> <KitchenUrl> <DeliveryUrl>
 ```
 
 ```powershell
-dotnet run --project tests/ManualTestApp -- http://localhost:5041 http://localhost:5052 http://localhost:5063 http://localhost:5074
+dotnet run --project tests/ManualTestApp -- http://localhost:5041 http://localhost:5052 http://localhost:5063 http://localhost:5074 http://localhost:5085 http://localhost:5096
 ```
 
 **Step 3: Interpret the results**
@@ -92,6 +94,9 @@ dotnet run --project tests/ManualTestApp -- http://localhost:5041 http://localho
 
 # Identity + Menu + Order + Payment (Phase 3 — full)
 dotnet run --project tests/ManualTestApp -- http://localhost:5041 http://localhost:5052 http://localhost:5063 http://localhost:5074
+
+# All six services (Phase 4 — full)
+dotnet run --project tests/ManualTestApp -- http://localhost:5041 http://localhost:5052 http://localhost:5063 http://localhost:5074 http://localhost:5085 http://localhost:5096
 ```
 
 ---
@@ -185,13 +190,42 @@ dotnet run --project tests/ManualTestApp -- http://localhost:5041 http://localho
 
 ---
 
-### Phase 4 — Kitchen & Delivery
+### Phase 4 — Kitchen & Delivery ✅
 
-When implemented, add:
-- `tests/KitchenService.Tests/` — gRPC unit tests
-- `tests/DeliveryService.Tests/` — gRPC unit tests
-- Extend `Integration.Tests` with kitchen → delivery event flow tests
-- Extend `ManualTestApp` with kitchen/delivery endpoints
+**Services Implemented:**
+- `src/KitchenService/` — gRPC service (port 5085), SQLite, consumes `PaymentConfirmedEvent`, publishes `OrderInProgressEvent`/`OrderReadyEvent`
+- `src/DeliveryService/` — gRPC service (port 5096), SQLite, consumes `OrderReadyEvent`, publishes `OrderOutForDeliveryEvent`/`OrderDeliveredEvent`
+
+**Projects:** `KitchenService.Tests`, `DeliveryService.Tests`, extended `Integration.Tests`
+
+**Tests:** 19 (10 Kitchen + 9 Delivery + 2 new Integration)
+
+| File | Tests | What It Verifies |
+|---|---|---|
+| `KitchenGrpcServiceTests.cs` | 9 | GetPendingOrders (empty + filters), StartPreparing (success + not found + precondition), MarkAsReady (success + precondition), HandlePaymentConfirmed (creates + no duplicate) |
+| `DeliveryGrpcServiceTests.cs` | 9 | AssignDelivery (no drivers + success + duplicate), UpdateDeliveryStatus (delivered frees driver), GetDeliveryStatus (exists + not found), GetDriverDeliveries, HandleOrderReady (creates + no duplicate) |
+| `EventBusFlowsTests.cs` *(extended)* | 2 new | OrderReady triggers delivery, PaymentConfirmed→OrderReady event chain |
+
+**How to run:**
+```powershell
+dotnet test tests/KitchenService.Tests --nologo
+dotnet test tests/DeliveryService.Tests --nologo
+```
+
+**Manual test — requires all six services running:**
+
+| Service | Port | Start Command |
+|---|---|---|
+| IdentityService | 5041 | `dotnet run --project src/IdentityService` |
+| MenuService | 5052 | `dotnet run --project src/MenuService` |
+| OrderService | 5063 | `dotnet run --project src/OrderService` |
+| PaymentService | 5074 | `dotnet run --project src/PaymentService` |
+| KitchenService | 5085 | `dotnet run --project src/KitchenService` |
+| DeliveryService | 5096 | `dotnet run --project src/DeliveryService` |
+
+```powershell
+dotnet run --project tests/ManualTestApp -- http://localhost:5041 http://localhost:5052 http://localhost:5063 http://localhost:5074 http://localhost:5085 http://localhost:5096
+```
 
 ---
 
@@ -288,12 +322,14 @@ public async Task Event_Triggers_Handler()
 ## Test Count Summary
 
 | Phase | Project | Test Count |
-|---|---|---|
+|---|---|---|---|
 | 1 | `BurgerIAM.Shared.Tests` | 14 |
 | 1 | `BurgerIAM.EventBus.Tests` | 5 |
 | 2 | `IdentityService.Tests` | 6 |
 | 2 | `MenuService.Tests` | 5 |
 | 3 | `OrderService.Tests` | 7 |
 | 3 | `PaymentService.Tests` | 6 |
-| 3 | `Integration.Tests` | 4 |
-| | **Total** | **47** |
+| 3 | `Integration.Tests` | 6 |
+| 4 | `KitchenService.Tests` | 9 |
+| 4 | `DeliveryService.Tests` | 9 |
+| | **Total** | **67** |

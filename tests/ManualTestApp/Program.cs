@@ -3,12 +3,16 @@ using ProtoIdentity = BurgerIAM.Protos.Identity;
 using ProtoMenu = BurgerIAM.Protos.Menu;
 using ProtoOrder = BurgerIAM.Protos.Order;
 using ProtoPayment = BurgerIAM.Protos.Payment;
+using ProtoKitchen = BurgerIAM.Protos.Kitchen;
+using ProtoDelivery = BurgerIAM.Protos.Delivery;
 using ProtoCommon = BurgerIAM.Protos.Common;
 
 var identityUrl = args.Length > 0 ? args[0] : "http://localhost:5041";
 var menuUrl = args.Length > 1 ? args[1] : "http://localhost:5052";
 var orderUrl = args.Length > 2 ? args[2] : "http://localhost:5063";
 var paymentUrl = args.Length > 3 ? args[3] : "http://localhost:5074";
+var kitchenUrl = args.Length > 4 ? args[4] : "http://localhost:5085";
+var deliveryUrl = args.Length > 5 ? args[5] : "http://localhost:5096";
 
 Console.ForegroundColor = ConsoleColor.Cyan;
 Console.WriteLine("═══════════════════════════════════════════");
@@ -17,6 +21,8 @@ Console.WriteLine($"  Identity: {identityUrl}");
 Console.WriteLine($"  Menu    : {menuUrl}");
 Console.WriteLine($"  Order   : {orderUrl}");
 Console.WriteLine($"  Payment : {paymentUrl}");
+Console.WriteLine($"  Kitchen : {kitchenUrl}");
+Console.WriteLine($"  Delivery: {deliveryUrl}");
 Console.WriteLine("═══════════════════════════════════════════");
 Console.ResetColor();
 Console.WriteLine();
@@ -35,6 +41,12 @@ var orderClient = new ProtoOrder.OrderService.OrderServiceClient(orderChannel);
 
 var paymentChannel = GrpcChannel.ForAddress(paymentUrl);
 var paymentClient = new ProtoPayment.PaymentService.PaymentServiceClient(paymentChannel);
+
+var kitchenChannel = GrpcChannel.ForAddress(kitchenUrl);
+var kitchenClient = new ProtoKitchen.KitchenService.KitchenServiceClient(kitchenChannel);
+
+var deliveryChannel = GrpcChannel.ForAddress(deliveryUrl);
+var deliveryClient = new ProtoDelivery.DeliveryService.DeliveryServiceClient(deliveryChannel);
 
 var testId = Guid.NewGuid().ToString("N")[..8];
 var testEmail = $"manual-{testId}@test.com";
@@ -311,6 +323,72 @@ await RunTest("CancelOrder - existing order", async () =>
     });
 
     Console.WriteLine($"  Status: {response.Status}");
+});
+
+Console.ForegroundColor = ConsoleColor.Yellow;
+Console.WriteLine();
+Console.WriteLine("─── Kitchen Service ───");
+Console.ResetColor();
+
+await RunTest("GetPendingOrders - empty or has orders", async () =>
+{
+    var response = await kitchenClient.GetPendingOrdersAsync(new ProtoCommon.Empty());
+    Console.WriteLine($"  Pending orders: {response.Orders.Count}");
+});
+
+await RunTest("GetKitchenOrder - existing order", async () =>
+{
+    if (orderId is null) throw new Exception("No order ID available");
+    try
+    {
+        var response = await kitchenClient.GetKitchenOrderAsync(new ProtoKitchen.GetKitchenOrderRequest { OrderId = orderId });
+        Console.WriteLine($"  Status: {response.Status}");
+    }
+    catch (Grpc.Core.RpcException ex) when (ex.StatusCode == Grpc.Core.StatusCode.NotFound)
+    {
+        Console.WriteLine($"  Kitchen order not yet created (OK): {ex.Status.Detail}");
+    }
+});
+
+Console.ForegroundColor = ConsoleColor.Yellow;
+Console.WriteLine();
+Console.WriteLine("─── Delivery Service ───");
+Console.ResetColor();
+
+string? driverId = null;
+await RunTest("AssignDelivery - assigns driver", async () =>
+{
+    if (orderId is null) throw new Exception("No order ID available");
+    try
+    {
+        var response = await deliveryClient.AssignDeliveryAsync(new ProtoDelivery.AssignDeliveryRequest
+        {
+            OrderId = orderId,
+            DeliveryAddress = "123 Main St"
+        });
+        driverId = response.DriverId;
+        Console.WriteLine($"  DeliveryId: {response.Id}");
+        Console.WriteLine($"  Driver    : {response.DriverName}");
+    }
+    catch (Grpc.Core.RpcException ex) when (ex.StatusCode == Grpc.Core.StatusCode.ResourceExhausted)
+    {
+        Console.WriteLine($"  No drivers available (OK): {ex.Status.Detail}");
+    }
+});
+
+await RunTest("GetDeliveryStatus - check status", async () =>
+{
+    if (orderId is null) throw new Exception("No order ID available");
+    try
+    {
+        var response = await deliveryClient.GetDeliveryStatusAsync(new ProtoDelivery.GetDeliveryRequest { OrderId = orderId });
+        Console.WriteLine($"  Status: {response.Status}");
+        Console.WriteLine($"  Driver: {response.DriverName}");
+    }
+    catch (Grpc.Core.RpcException ex) when (ex.StatusCode == Grpc.Core.StatusCode.NotFound)
+    {
+        Console.WriteLine($"  Delivery not yet created (OK): {ex.Status.Detail}");
+    }
 });
 
 Console.WriteLine();

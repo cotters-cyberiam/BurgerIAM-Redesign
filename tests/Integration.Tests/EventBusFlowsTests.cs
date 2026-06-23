@@ -92,6 +92,68 @@ public class EventBusFlowsTests
     }
 
     [Fact]
+    public async Task OrderReady_TriggersDeliveryAssignment()
+    {
+        var bus = new InMemoryEventBus();
+        var deliveryTriggered = new TaskCompletionSource<OrderReadyEvent>();
+
+        await bus.SubscribeAsync<OrderReadyEvent>(async (@event, ct) =>
+        {
+            deliveryTriggered.TrySetResult(@event);
+            await Task.CompletedTask;
+        });
+
+        var readyEvent = new OrderReadyEvent { OrderId = "order-1" };
+        await bus.PublishAsync(readyEvent);
+        var received = await deliveryTriggered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal("order-1", received.OrderId);
+    }
+
+    [Fact]
+    public async Task PaymentConfirmed_ToOrderReady_EventChain()
+    {
+        var bus = new InMemoryEventBus();
+        var eventsReceived = new List<string>();
+
+        await bus.SubscribeAsync<PaymentConfirmedEvent>(async (@event, ct) =>
+        {
+            lock (eventsReceived) eventsReceived.Add(nameof(PaymentConfirmedEvent));
+            await bus.PublishAsync(new OrderInProgressEvent
+            {
+                OrderId = @event.OrderId,
+                EstimatedReadyTime = DateTime.UtcNow.AddMinutes(10)
+            });
+        });
+
+        await bus.SubscribeAsync<OrderInProgressEvent>(async (@event, ct) =>
+        {
+            lock (eventsReceived) eventsReceived.Add(nameof(OrderInProgressEvent));
+            await bus.PublishAsync(new OrderReadyEvent { OrderId = @event.OrderId });
+        });
+
+        await bus.SubscribeAsync<OrderReadyEvent>(async (@event, ct) =>
+        {
+            lock (eventsReceived) eventsReceived.Add(nameof(OrderReadyEvent));
+            await Task.CompletedTask;
+        });
+
+        await bus.PublishAsync(new PaymentConfirmedEvent
+        {
+            OrderId = "order-1",
+            PaymentId = "pay-1",
+            Amount = 15.99m
+        });
+
+        await Task.Delay(500);
+
+        Assert.Contains(nameof(PaymentConfirmedEvent), eventsReceived);
+        Assert.Contains(nameof(OrderInProgressEvent), eventsReceived);
+        Assert.Contains(nameof(OrderReadyEvent), eventsReceived);
+        Assert.Equal(3, eventsReceived.Count);
+    }
+
+    [Fact]
     public async Task OrderLifecycle_FullEventChain()
     {
         var bus = new InMemoryEventBus();
