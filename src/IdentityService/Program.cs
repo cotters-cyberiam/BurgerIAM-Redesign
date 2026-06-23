@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddGrpc();
+builder.Services.AddGrpcReflection();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -17,6 +18,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.MapGrpcService<IdentityGrpcService>();
+app.MapGrpcReflectionService();
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 
 app.Run();

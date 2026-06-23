@@ -26,6 +26,11 @@ x86/
 *.nuget.props
 *.nuget.targets
 
+# SQLite
+*.db
+*.db-shm
+*.db-wal
+
 # OS
 .DS_Store
 Thumbs.db
