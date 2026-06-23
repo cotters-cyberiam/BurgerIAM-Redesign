@@ -1,5 +1,7 @@
 # BurgerIAM - Development Plan
 
+> **Reminder**: Always commit changes after every code change cycle — build, test, stage, commit.
+
 ## 1. Architecture Overview
 
 Microservice-based fast food ordering system with **.NET 9**, communicating via **gRPC** (sync) and **RabbitMQ** (async/events). Each service owns its **SQLite** database. Frontend is **Blazor WebAssembly** hosted by the API Gateway. Deployment via **Docker** + **Kubernetes** with **Gateway API** ingress.

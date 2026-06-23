@@ -9,7 +9,7 @@ This document describes the testing infrastructure for the BurgerIAM microservic
 ## Test Projects
 
 | Project | Type | Location | Depends On |
-|---|---|---|---|---|---|
+|---|---|---|---|
 | `BurgerIAM.Shared.Tests` | Unit | `tests/BurgerIAM.Shared.Tests/` | `BurgerIAM.Shared` |
 | `BurgerIAM.EventBus.Tests` | Unit | `tests/BurgerIAM.EventBus.Tests/` | `BurgerIAM.EventBus`, `BurgerIAM.TestUtilities` |
 | `IdentityService.Tests` | Unit | `tests/IdentityService.Tests/` | `IdentityService`, `BurgerIAM.TestUtilities` |
