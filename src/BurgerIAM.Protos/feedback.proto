@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package burgeriam.feedback;
+
+option csharp_namespace = "BurgerIAM.Protos.Feedback";
+
+import "common.proto";
+
+service FeedbackService {
+  rpc SubmitFeedback(SubmitFeedbackRequest) returns (SubmitFeedbackResponse);
+  rpc GetOrderFeedback(GetOrderFeedbackRequest) returns (Feedback);
+  rpc GetAverageRating(GetAverageRatingRequest) returns (AverageRatingResponse);
+}
+
+message Feedback {
+  string id = 1;
+  string order_id = 2;
+  string customer_id = 3;
+  int32 rating = 4;
+  string comment = 5;
+  string created_at = 6;
+}
+
+message SubmitFeedbackRequest {
+  string order_id = 1;
+  string customer_id = 2;
+  int32 rating = 3;
+  string comment = 4;
+}
+
+message SubmitFeedbackResponse {
+  string feedback_id = 1;
+  string error = 2;
+}
+
+message GetOrderFeedbackRequest {
+  string order_id = 1;
+}
+
+message GetAverageRatingRequest {
+  // empty for overall, or filter by date range in future
+}
+
+message AverageRatingResponse {
+  double average_rating = 1;
+  int32 total_reviews = 2;
+}

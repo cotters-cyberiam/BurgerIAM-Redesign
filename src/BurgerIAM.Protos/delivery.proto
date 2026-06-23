@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package burgeriam.delivery;
+
+option csharp_namespace = "BurgerIAM.Protos.Delivery";
+
+import "common.proto";
+
+service DeliveryService {
+  rpc AssignDelivery(AssignDeliveryRequest) returns (Delivery);
+  rpc UpdateDeliveryStatus(UpdateDeliveryStatusRequest) returns (Delivery);
+  rpc GetDeliveryStatus(GetDeliveryRequest) returns (Delivery);
+  rpc GetDriverDeliveries(GetDriverDeliveriesRequest) returns (GetDeliveriesResponse);
+}
+
+message Delivery {
+  string id = 1;
+  string order_id = 2;
+  string driver_id = 3;
+  string driver_name = 4;
+  int32 status = 5;
+  string delivery_address = 6;
+  string estimated_delivery_time = 7;
+  string completed_at = 8;
+}
+
+message AssignDeliveryRequest {
+  string order_id = 1;
+  string delivery_address = 2;
+}
+
+message UpdateDeliveryStatusRequest {
+  string delivery_id = 1;
+  int32 status = 2;
+}
+
+message GetDeliveryRequest {
+  string order_id = 1;
+}
+
+message GetDriverDeliveriesRequest {
+  string driver_id = 1;
+}
+
+message GetDeliveriesResponse {
+  repeated Delivery deliveries = 1;
+}

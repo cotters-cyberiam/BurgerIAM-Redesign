@@ -11,6 +11,9 @@
 * Manifests must include everything from deployments, services and ingress using the gateway API. 
 * This must be a complete working solution with everything required to deploy straight into a kubernetes cluster
 
+# Debug Logging
+* When something doesn't work as expected and is fixed, document the issue and resolution in DEBUG.md for future reference
+
 # Development Requirements
 * Ensure that an appropriate number of tests are written and executed successfully after each code change
 * Do not make any assumptions. For any questions you have always ask me

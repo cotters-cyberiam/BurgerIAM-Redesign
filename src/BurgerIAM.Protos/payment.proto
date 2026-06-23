@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package burgeriam.payment;
+
+option csharp_namespace = "BurgerIAM.Protos.Payment";
+
+service PaymentService {
+  rpc ProcessPayment(ProcessPaymentRequest) returns (PaymentResponse);
+  rpc GetPayment(GetPaymentRequest) returns (Payment);
+  rpc RefundPayment(RefundPaymentRequest) returns (PaymentResponse);
+}
+
+message ProcessPaymentRequest {
+  string order_id = 1;
+  string customer_id = 2;
+  double amount = 3;
+  string method = 4;
+}
+
+message Payment {
+  string id = 1;
+  string order_id = 2;
+  double amount = 3;
+  int32 status = 4;
+  string method = 5;
+  string created_at = 6;
+}
+
+message PaymentResponse {
+  string payment_id = 1;
+  string order_id = 2;
+  int32 status = 3;
+  string error = 4;
+}
+
+message GetPaymentRequest {
+  string payment_id = 1;
+}
+
+message RefundPaymentRequest {
+  string payment_id = 1;
+  string reason = 2;
+}

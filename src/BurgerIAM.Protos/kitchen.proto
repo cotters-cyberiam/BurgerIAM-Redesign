@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package burgeriam.kitchen;
+
+option csharp_namespace = "BurgerIAM.Protos.Kitchen";
+
+import "common.proto";
+import "order.proto";
+
+service KitchenService {
+  rpc GetPendingOrders(burgeriam.common.Empty) returns (GetPendingOrdersResponse);
+  rpc StartPreparing(StartPreparingRequest) returns (KitchenOrder);
+  rpc MarkAsReady(MarkAsReadyRequest) returns (KitchenOrder);
+  rpc GetKitchenOrder(GetKitchenOrderRequest) returns (KitchenOrder);
+}
+
+message KitchenOrder {
+  string id = 1;
+  string order_id = 2;
+  repeated burgeriam.order.OrderItem items = 3;
+  int32 status = 4;
+  string assigned_station = 5;
+  string estimated_ready_time = 6;
+  string created_at = 7;
+}
+
+message GetPendingOrdersResponse {
+  repeated KitchenOrder orders = 1;
+}
+
+message StartPreparingRequest {
+  string order_id = 1;
+  string station = 2;
+}
+
+message MarkAsReadyRequest {
+  string order_id = 1;
+}
+
+message GetKitchenOrderRequest {
+  string order_id = 1;
+}

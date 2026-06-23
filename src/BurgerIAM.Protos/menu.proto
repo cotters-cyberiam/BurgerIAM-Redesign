@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package burgeriam.menu;
+
+option csharp_namespace = "BurgerIAM.Protos.Menu";
+
+import "common.proto";
+
+service MenuService {
+  rpc GetMenuItems(burgeriam.common.Empty) returns (GetMenuItemsResponse);
+  rpc GetMenuItem(GetMenuItemRequest) returns (MenuItem);
+  rpc UpdateAvailability(UpdateAvailabilityRequest) returns (MenuItem);
+}
+
+message MenuItem {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  double price = 4;
+  string category = 5;
+  bool is_available = 6;
+  string image_url = 7;
+}
+
+message GetMenuItemsResponse {
+  repeated MenuItem items = 1;
+}
+
+message GetMenuItemRequest {
+  string id = 1;
+}
+
+message UpdateAvailabilityRequest {
+  string id = 1;
+  bool is_available = 2;
+}

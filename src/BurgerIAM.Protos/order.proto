@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package burgeriam.order;
+
+option csharp_namespace = "BurgerIAM.Protos.Order";
+
+import "common.proto";
+import "menu.proto";
+
+service OrderService {
+  rpc CreateOrder(CreateOrderRequest) returns (Order);
+  rpc GetOrder(GetOrderRequest) returns (Order);
+  rpc GetOrderStatus(GetOrderRequest) returns (OrderStatusResponse);
+  rpc CancelOrder(CancelOrderRequest) returns (Order);
+  rpc GetCustomerOrders(GetCustomerOrdersRequest) returns (GetCustomerOrdersResponse);
+}
+
+message OrderItem {
+  string menu_item_id = 1;
+  string item_name = 2;
+  int32 quantity = 3;
+  double unit_price = 4;
+}
+
+message CreateOrderRequest {
+  string customer_id = 1;
+  string customer_email = 2;
+  repeated OrderItem items = 3;
+  string delivery_address = 4;
+}
+
+message Order {
+  string id = 1;
+  string customer_id = 2;
+  string customer_email = 3;
+  repeated OrderItem items = 4;
+  double total_amount = 5;
+  int32 status = 6;
+  string delivery_address = 7;
+  string created_at = 8;
+  string updated_at = 9;
+}
+
+message GetOrderRequest {
+  string id = 1;
+}
+
+message OrderStatusResponse {
+  string order_id = 1;
+  int32 status = 2;
+  string updated_at = 3;
+}
+
+message CancelOrderRequest {
+  string id = 1;
+  string reason = 2;
+}
+
+message GetCustomerOrdersRequest {
+  string customer_id = 1;
+}
+
+message GetCustomerOrdersResponse {
+  repeated Order orders = 1;
+}

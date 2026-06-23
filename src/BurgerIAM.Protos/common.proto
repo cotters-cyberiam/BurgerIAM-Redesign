@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package burgeriam.common;
+
+option csharp_namespace = "BurgerIAM.Protos.Common";
+
+message Empty {}
+
+message ErrorResponse {
+  string code = 1;
+  string message = 2;
+}
