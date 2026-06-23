@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\MenuService\MenuService.csproj" />
     <ProjectReference Include="..\..\src\BurgerIAM.Shared\BurgerIAM.Shared.csproj" />
+    <ProjectReference Include="..\BurgerIAM.TestUtilities\BurgerIAM.TestUtilities.csproj" />
   </ItemGroup>
 
 </Project>

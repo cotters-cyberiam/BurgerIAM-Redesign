@@ -157,19 +157,19 @@ Standard event message classes in `BurgerIAM.Shared.Events`:
 3. Dockerfile for each service
 4. Commit
 
-### Phase 3: Order & Payment Orchestration
-1. Implement **Order Service** (gRPC + SQLite + EventBus publisher)
+### Phase 3: Order & Payment Orchestration ✅
+1. ✅ Implement **Order Service** (gRPC + SQLite + EventBus publisher)
    - Order creation, status tracking
    - Publishes `OrderPlacedEvent`
-   - Unit tests
-2. Implement **Payment Service** (gRPC + SQLite + EventBus pub/sub)
+   - Unit tests (7 tests)
+2. ✅ Implement **Payment Service** (gRPC + SQLite + EventBus pub/sub)
    - Payment processing, publishes `PaymentConfirmed`/`PaymentFailed`
-   - Consumes `OrderPlacedEvent`
-   - Unit tests
-3. Wire RabbitMQ between Order and Payment
-4. Integration test: place order → payment processed
-5. Dockerfiles
-6. Commit
+   - Consumes `OrderPlacedEvent` (via `EventBusHostedService`)
+   - Unit tests (6 tests)
+3. ✅ Wire RabbitMQ between Order and Payment (dev fallback: `InMemoryEventBus`)
+4. ✅ Integration test: place order → payment processed (4 event flow tests)
+5. ✅ Dockerfiles for both services
+6. ✅ Commit
 
 ### Phase 4: Kitchen & Delivery
 1. Implement **Kitchen Service** (gRPC + SQLite + EventBus pub/sub)

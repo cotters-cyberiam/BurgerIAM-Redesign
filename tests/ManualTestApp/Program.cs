@@ -1,16 +1,22 @@
 ﻿using Grpc.Net.Client;
 using ProtoIdentity = BurgerIAM.Protos.Identity;
 using ProtoMenu = BurgerIAM.Protos.Menu;
+using ProtoOrder = BurgerIAM.Protos.Order;
+using ProtoPayment = BurgerIAM.Protos.Payment;
 using ProtoCommon = BurgerIAM.Protos.Common;
 
 var identityUrl = args.Length > 0 ? args[0] : "http://localhost:5041";
 var menuUrl = args.Length > 1 ? args[1] : "http://localhost:5052";
+var orderUrl = args.Length > 2 ? args[2] : "http://localhost:5063";
+var paymentUrl = args.Length > 3 ? args[3] : "http://localhost:5074";
 
 Console.ForegroundColor = ConsoleColor.Cyan;
 Console.WriteLine("═══════════════════════════════════════════");
 Console.WriteLine("  BurgerIAM - Manual Integration Test App");
 Console.WriteLine($"  Identity: {identityUrl}");
 Console.WriteLine($"  Menu    : {menuUrl}");
+Console.WriteLine($"  Order   : {orderUrl}");
+Console.WriteLine($"  Payment : {paymentUrl}");
 Console.WriteLine("═══════════════════════════════════════════");
 Console.ResetColor();
 Console.WriteLine();
@@ -23,6 +29,12 @@ var identityClient = new ProtoIdentity.IdentityService.IdentityServiceClient(ide
 
 var menuChannel = GrpcChannel.ForAddress(menuUrl);
 var menuClient = new ProtoMenu.MenuService.MenuServiceClient(menuChannel);
+
+var orderChannel = GrpcChannel.ForAddress(orderUrl);
+var orderClient = new ProtoOrder.OrderService.OrderServiceClient(orderChannel);
+
+var paymentChannel = GrpcChannel.ForAddress(paymentUrl);
+var paymentClient = new ProtoPayment.PaymentService.PaymentServiceClient(paymentChannel);
 
 var testId = Guid.NewGuid().ToString("N")[..8];
 var testEmail = $"manual-{testId}@test.com";
@@ -62,6 +74,7 @@ await RunTest("Register - duplicate email", async () =>
 });
 
 string? token = null;
+string? userId = null;
 await RunTest("Login - valid credentials", async () =>
 {
     var response = await identityClient.LoginAsync(new ProtoIdentity.LoginRequest
@@ -72,6 +85,7 @@ await RunTest("Login - valid credentials", async () =>
     if (string.IsNullOrWhiteSpace(response.Token))
         throw new Exception($"Expected token. Error: {response.Error}");
     token = response.Token;
+    userId = response.UserId;
     Console.WriteLine($"  Token: {response.Token[..Math.Min(50, response.Token.Length)]}...");
     Console.WriteLine($"  Role : {response.Role}");
 });
@@ -134,6 +148,135 @@ await RunTest("GetMenuItem - not found", async () =>
     {
         Console.WriteLine($"  Expected error: {ex.Status.Detail}");
     }
+});
+
+Console.ForegroundColor = ConsoleColor.Yellow;
+Console.WriteLine();
+Console.WriteLine("─── Order Service ───");
+Console.ResetColor();
+
+string? orderId = null;
+await RunTest("CreateOrder - new order", async () =>
+{
+    if (userId is null) throw new Exception("No user ID available");
+
+    var items = new List<ProtoOrder.OrderItem>
+    {
+        new()
+        {
+            MenuItemId = "item-1",
+            ItemName = "Cheeseburger",
+            Quantity = 2,
+            UnitPrice = 5.99
+        }
+    };
+
+    var response = await orderClient.CreateOrderAsync(new ProtoOrder.CreateOrderRequest
+    {
+        CustomerId = userId,
+        CustomerEmail = testEmail,
+        DeliveryAddress = "123 Main St",
+        Items = { items }
+    });
+
+    if (string.IsNullOrWhiteSpace(response.Id))
+        throw new Exception("Expected order ID");
+    orderId = response.Id;
+    Console.WriteLine($"  OrderId: {response.Id}");
+    Console.WriteLine($"  Status : {response.Status}");
+    Console.WriteLine($"  Total  : {response.TotalAmount:C}");
+});
+
+await RunTest("GetOrder - existing order", async () =>
+{
+    if (orderId is null) throw new Exception("No order ID available");
+
+    var response = await orderClient.GetOrderAsync(new ProtoOrder.GetOrderRequest
+    {
+        Id = orderId
+    });
+
+    if (string.IsNullOrWhiteSpace(response.Id))
+        throw new Exception("Expected order data");
+    Console.WriteLine($"  OrderId: {response.Id}");
+    Console.WriteLine($"  Status : {response.Status}");
+    Console.WriteLine($"  Items  : {response.Items.Count}");
+});
+
+await RunTest("GetOrderStatus - existing order", async () =>
+{
+    if (orderId is null) throw new Exception("No order ID available");
+
+    var response = await orderClient.GetOrderStatusAsync(new ProtoOrder.GetOrderRequest
+    {
+        Id = orderId
+    });
+
+    Console.WriteLine($"  Status: {response.Status}");
+});
+
+await RunTest("GetOrder - not found", async () =>
+{
+    try
+    {
+        await orderClient.GetOrderAsync(new ProtoOrder.GetOrderRequest { Id = "nonexistent" });
+        throw new Exception("Expected RpcException");
+    }
+    catch (Grpc.Core.RpcException ex) when (ex.StatusCode == Grpc.Core.StatusCode.NotFound)
+    {
+        Console.WriteLine($"  Expected error: {ex.Status.Detail}");
+    }
+});
+
+Console.ForegroundColor = ConsoleColor.Yellow;
+Console.WriteLine();
+Console.WriteLine("─── Payment Service ───");
+Console.ResetColor();
+
+string? paymentId = null;
+await RunTest("ProcessPayment - valid payment", async () =>
+{
+    if (orderId is null) throw new Exception("No order ID available");
+
+    var response = await paymentClient.ProcessPaymentAsync(new ProtoPayment.ProcessPaymentRequest
+    {
+        OrderId = orderId,
+        CustomerId = userId ?? "",
+        Amount = 11.98,
+        Method = "CreditCard"
+    });
+
+    if (string.IsNullOrWhiteSpace(response.PaymentId) && !string.IsNullOrWhiteSpace(response.Error))
+        throw new Exception($"Payment failed: {response.Error}");
+    paymentId = response.PaymentId;
+    Console.WriteLine($"  PaymentId: {paymentId}");
+    Console.WriteLine($"  Status   : {response.Status}");
+});
+
+await RunTest("GetPayment - existing payment", async () =>
+{
+    if (paymentId is null) throw new Exception("No payment ID available — ProcessPayment may have failed");
+
+    var response = await paymentClient.GetPaymentAsync(new ProtoPayment.GetPaymentRequest
+    {
+        PaymentId = paymentId
+    });
+
+    Console.WriteLine($"  PaymentId: {response.Id}");
+    Console.WriteLine($"  Status   : {response.Status}");
+});
+
+await RunTest("CancelOrder - existing order", async () =>
+{
+    if (orderId is null) throw new Exception("No order ID available");
+
+    var response = await orderClient.CancelOrderAsync(new ProtoOrder.CancelOrderRequest
+    {
+        Id = orderId,
+        Reason = "Manual test cancellation"
+    });
+
+    Console.WriteLine($"  Status: {response.Status}");
 });
 
 Console.WriteLine();

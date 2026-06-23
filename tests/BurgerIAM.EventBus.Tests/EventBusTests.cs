@@ -1,4 +1,5 @@
 using BurgerIAM.Shared.Events;
+using BurgerIAM.TestUtilities;
 
 namespace BurgerIAM.EventBus.Tests;
 

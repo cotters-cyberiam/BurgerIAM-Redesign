@@ -10,6 +10,8 @@
   <ItemGroup>
     <Protobuf Include="..\..\src\BurgerIAM.Protos\identity.proto" GrpcServices="Client" />
     <Protobuf Include="..\..\src\BurgerIAM.Protos\menu.proto" GrpcServices="Client" />
+    <Protobuf Include="..\..\src\BurgerIAM.Protos\order.proto" GrpcServices="Client" />
+    <Protobuf Include="..\..\src\BurgerIAM.Protos\payment.proto" GrpcServices="Client" />
     <Protobuf Include="..\..\src\BurgerIAM.Protos\common.proto" GrpcServices="Client" />
   </ItemGroup>
 

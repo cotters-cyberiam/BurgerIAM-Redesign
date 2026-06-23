@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using BurgerIAM.EventBus;
 using BurgerIAM.Shared.Events;
 
-namespace BurgerIAM.EventBus.Tests;
+namespace BurgerIAM.TestUtilities;
 
 public sealed class InMemoryEventBus : IEventBus
 {

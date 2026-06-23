@@ -65,3 +65,33 @@ This file documents issues encountered during development and their resolutions.
 **Problem**: `grpcurl -plaintext -d '{"email":"..."}' ...` failed with "invalid character 'e' looking for beginning of object key string" because PowerShell treats single-quoted strings differently when passing to native commands.
 
 **Fix**: Use a JSON variable with escaped double quotes: `$body = "{`"email`":`"..."}"`. Or use the ManualTestApp instead.
+
+---
+
+## 2026-06-23 — ManualTestApp GetPayment used orderId instead of paymentId
+
+**Problem**: The `GetPayment` manual test passed `orderId` (the order's ID) as the `PaymentId` parameter, causing a "not found" error since payments use a different ID.
+
+**Reproduction**: Run all four services then `dotnet run --project tests/ManualTestApp -- http://localhost:5041 http://localhost:5052 http://localhost:5063 http://localhost:5074`. The "GetPayment - existing payment" test fails.
+
+**Fix**: Added a `paymentId` variable to capture the response from `ProcessPayment` and used it in the `GetPayment` call.
+
+---
+
+## 2026-06-23 — PaymentService singleton/scoped DI mismatch
+
+**Problem**: `PaymentGrpcService` was registered as a singleton (`builder.Services.AddSingleton<PaymentGrpcService>()`) but depends on `AppDbContext` which is scoped (DbContext default lifetime). This threw at startup: "Cannot consume scoped service from singleton."
+
+**Reproduction**: `dotnet run --project src/PaymentService` fails with `AggregateException` during service validation.
+
+**Fix**: Removed the explicit singleton registration. `MapGrpcService<PaymentGrpcService>()` registers it with the correct scoped lifetime automatically. The `EventBusHostedService` (which needs to resolve `PaymentGrpcService`) already uses `IServiceScopeFactory` to create a scope, so resolution works correctly.
+
+---
+
+## 2026-06-23 — Protobuf string field rejects null assignment
+
+**Problem**: Setting `Error = null` on a protobuf message field (a `string` type) throws `ArgumentNullException` because protobuf fields don't accept null values.
+
+**Reproduction**: `PaymentService.Tests.PaymentGrpcServiceTests.ProcessPayment_DuplicateOrder_ReturnsExisting` fails with `ArgumentNullException`.
+
+**Fix**: Changed `Error = existing.Status == 2 ? null : "Payment already exists"` to `Error = existing.Status != 2 ? "Payment already exists" : string.Empty`, ensuring an empty string is assigned instead of null.

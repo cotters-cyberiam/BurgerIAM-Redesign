@@ -1,6 +1,6 @@
 using Grpc.Core;
 
-namespace IdentityService.Tests;
+namespace BurgerIAM.TestUtilities;
 
 public sealed class MockServerCallContext : ServerCallContext
 {

@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\BurgerIAM.EventBus\BurgerIAM.EventBus.csproj" />
+    <ProjectReference Include="..\BurgerIAM.TestUtilities\BurgerIAM.TestUtilities.csproj" />
   </ItemGroup>
 
 </Project>
