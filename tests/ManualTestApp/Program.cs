@@ -6,6 +6,7 @@ using ProtoPayment = BurgerIAM.Protos.Payment;
 using ProtoKitchen = BurgerIAM.Protos.Kitchen;
 using ProtoDelivery = BurgerIAM.Protos.Delivery;
 using ProtoFeedback = BurgerIAM.Protos.Feedback;
+using ProtoNotification = BurgerIAM.Protos.Notification;
 using ProtoCommon = BurgerIAM.Protos.Common;
 
 var identityUrl = args.Length > 0 ? args[0] : "http://localhost:5041";
@@ -15,6 +16,8 @@ var paymentUrl = args.Length > 3 ? args[3] : "http://localhost:5074";
 var kitchenUrl = args.Length > 4 ? args[4] : "http://localhost:5085";
 var deliveryUrl = args.Length > 5 ? args[5] : "http://localhost:5096";
 var feedbackUrl = args.Length > 6 ? args[6] : "http://localhost:5007";
+var notificationUrl = args.Length > 7 ? args[7] : "http://localhost:5018";
+var receiptUrl = args.Length > 8 ? args[8] : "http://localhost:5029";
 
 Console.ForegroundColor = ConsoleColor.Cyan;
 Console.WriteLine("═══════════════════════════════════════════════════════");
@@ -26,6 +29,8 @@ Console.WriteLine($"  Payment  : {paymentUrl}");
 Console.WriteLine($"  Kitchen  : {kitchenUrl}");
 Console.WriteLine($"  Delivery : {deliveryUrl}");
 Console.WriteLine($"  Feedback : {feedbackUrl}");
+Console.WriteLine($"  Notif    : {notificationUrl}");
+Console.WriteLine($"  Receipt  : {receiptUrl}");
 Console.WriteLine("═══════════════════════════════════════════");
 Console.ResetColor();
 Console.WriteLine();
@@ -53,6 +58,11 @@ var deliveryClient = new ProtoDelivery.DeliveryService.DeliveryServiceClient(del
 
 var feedbackChannel = GrpcChannel.ForAddress(feedbackUrl);
 var feedbackClient = new ProtoFeedback.FeedbackService.FeedbackServiceClient(feedbackChannel);
+
+var notificationChannel = GrpcChannel.ForAddress(notificationUrl);
+var notificationClient = new ProtoNotification.NotificationService.NotificationServiceClient(notificationChannel);
+
+var httpClient = new HttpClient { BaseAddress = new Uri(receiptUrl) };
 
 var testId = Guid.NewGuid().ToString("N")[..8];
 var testEmail = $"manual-{testId}@test.com";
@@ -513,6 +523,46 @@ await RunTest("GetAverageRating - returns average", async () =>
 {
     var response = await feedbackClient.GetAverageRatingAsync(new ProtoFeedback.GetAverageRatingRequest());
     Console.WriteLine($"  Average: {response.AverageRating:F1} ({response.TotalReviews} reviews)");
+});
+
+Console.ForegroundColor = ConsoleColor.Yellow;
+Console.WriteLine();
+Console.WriteLine("─── Notification Service ───");
+Console.ResetColor();
+
+await RunTest("GetNotifications - empty initially", async () =>
+{
+    if (userId is null) throw new Exception("No user ID available");
+    var response = await notificationClient.GetNotificationsAsync(new ProtoNotification.GetNotificationsRequest { CustomerId = userId });
+    Console.WriteLine($"  Notifications: {response.Notifications.Count}");
+});
+
+string? notificationId = null;
+await RunTest("GetUnreadCount - zero initially", async () =>
+{
+    if (userId is null) throw new Exception("No user ID available");
+    var response = await notificationClient.GetUnreadCountAsync(new ProtoNotification.GetUnreadCountRequest { CustomerId = userId });
+    Console.WriteLine($"  Unread: {response.Count}");
+});
+
+await RunTest("Seed notification via HTTP (receipt Web API)", async () =>
+{
+    if (orderId is null) throw new Exception("No order ID available");
+    var response = await httpClient.PostAsync($"/receipts?orderId={orderId}&customerId={userId}&amount=11.98", null);
+    response.EnsureSuccessStatusCode();
+    var body = await response.Content.ReadAsStringAsync();
+    Console.WriteLine($"  Receipt created: {body[..Math.Min(80, body.Length)]}");
+});
+
+await RunTest("GetReceipt - view HTML receipt", async () =>
+{
+    if (orderId is null) throw new Exception("No order ID available");
+    var response = await httpClient.GetAsync($"/receipts/{orderId}");
+    response.EnsureSuccessStatusCode();
+    var html = await response.Content.ReadAsStringAsync();
+    if (!html.Contains("BurgerIAM") || !html.Contains(orderId))
+        throw new Exception("Receipt HTML missing expected content");
+    Console.WriteLine($"  Receipt HTML: {html.Length} bytes");
 });
 
 Console.WriteLine();

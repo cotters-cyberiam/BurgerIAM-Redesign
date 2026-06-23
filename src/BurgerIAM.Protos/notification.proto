@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package burgeriam.notification;
+
+option csharp_namespace = "BurgerIAM.Protos.Notification";
+
+import "common.proto";
+
+service NotificationService {
+  rpc GetNotifications(GetNotificationsRequest) returns (GetNotificationsResponse);
+  rpc MarkAsRead(MarkAsReadRequest) returns (burgeriam.common.Empty);
+  rpc GetUnreadCount(GetUnreadCountRequest) returns (UnreadCountResponse);
+}
+
+message Notification {
+  string id = 1;
+  string customer_id = 2;
+  string title = 3;
+  string message = 4;
+  bool is_read = 5;
+  string created_at = 6;
+}
+
+message GetNotificationsRequest {
+  string customer_id = 1;
+}
+
+message GetNotificationsResponse {
+  repeated Notification notifications = 1;
+}
+
+message MarkAsReadRequest {
+  string notification_id = 1;
+}
+
+message GetUnreadCountRequest {
+  string customer_id = 1;
+}
+
+message UnreadCountResponse {
+  int32 count = 1;
+}

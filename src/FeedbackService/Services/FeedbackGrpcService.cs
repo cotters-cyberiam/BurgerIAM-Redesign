@@ -1,4 +1,5 @@
 using BurgerIAM.EventBus;
+using BurgerIAM.Shared.Events;
 using FeedbackService.Data;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
@@ -37,6 +38,14 @@ public sealed class FeedbackGrpcService : ProtoFeedback.FeedbackService.Feedback
 
         _db.FeedbackEntries.Add(feedback);
         await _db.SaveChangesAsync(context.CancellationToken);
+
+        await _eventBus.PublishAsync(new FeedbackSubmittedEvent
+        {
+            OrderId = feedback.OrderId,
+            CustomerId = feedback.CustomerId,
+            Rating = feedback.Rating,
+            Comment = feedback.Comment
+        }, context.CancellationToken);
 
         return new ProtoFeedback.SubmitFeedbackResponse { FeedbackId = feedback.Id };
     }

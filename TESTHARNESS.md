@@ -243,39 +243,37 @@ dotnet run --project tests/ManualTestApp -- http://localhost:5041 http://localho
 
 ---
 
-### Phase 5 — Feedback Service ✅
+### Phase 5 — Feedback, Notification & Receipt Services ✅
 
-**Service Implemented:**
-- `src/FeedbackService/` — gRPC service (port 5007), SQLite, submit & query customer feedback
+**Services Implemented:**
 
-**Project:** `FeedbackService.Tests`
+| Service | Type | Port | Database | Description |
+|---|---|---|---|---|
+| `FeedbackService` | gRPC | 5007 | SQLite | Submit & query customer feedback |
+| `NotificationService` | gRPC + EventBus | 5018 | SQLite | In-app notifications, consumes `OrderDeliveredEvent` |
+| `ReceiptService` | Web API + EventBus | 5029 | SQLite | HTML receipt generation, consumes `PaymentConfirmedEvent` |
 
-**Tests:** 7
+**Projects:** `FeedbackService.Tests`, `NotificationService.Tests`, `ReceiptService.Tests`
+
+**Tests:** 17 (7 Feedback + 6 Notification + 4 Receipt)
 
 | File | Tests | What It Verifies |
 |---|---|---|
 | `FeedbackGrpcServiceTests.cs` | 7 | SubmitFeedback (valid + duplicate + invalid rating), GetOrderFeedback (exists + not found), GetAverageRating (empty + with ratings) |
+| `NotificationGrpcServiceTests.cs` | 6 | GetNotifications (empty + filtered), MarkAsRead (existing + not found), GetUnreadCount, HandleOrderDelivered event handler |
+| `ReceiptServiceHandlerTests.cs` | 4 | HandlePaymentConfirmed (creates + no duplicate), GetReceipt (exists + not found) |
 
 **How to run:**
 ```powershell
 dotnet test tests/FeedbackService.Tests --nologo
+dotnet test tests/NotificationService.Tests --nologo
+dotnet test tests/ReceiptService.Tests --nologo
 ```
 
-**Manual test — add to existing all-services command:**
+**Manual test — all 9 services:**
 ```powershell
-dotnet run --project tests/ManualTestApp -- http://localhost:5041 http://localhost:5052 http://localhost:5063 http://localhost:5074 http://localhost:5085 http://localhost:5096 http://localhost:5007
+dotnet run --project tests/ManualTestApp -- http://localhost:5041 http://localhost:5052 http://localhost:5063 http://localhost:5074 http://localhost:5085 http://localhost:5096 http://localhost:5007 http://localhost:5018 http://localhost:5029
 ```
-
----
-
-### Phase 5 — Notification, Receipt & Feedback *(remaining)*
-
-When implemented, add:
-- `src/NotificationService/` — background worker for in-app notifications
-- `src/ReceiptService/` — Web API serving HTML receipts
-- `tests/NotificationService.Tests/` — background worker tests
-- `tests/ReceiptService.Tests/` — Web API tests
-- Extend integration tests with full lifecycle event chain
 
 ---
 
@@ -373,4 +371,6 @@ public async Task Event_Triggers_Handler()
 | 4 | `KitchenService.Tests` | 9 |
 | 4 | `DeliveryService.Tests` | 9 |
 | 5 | `FeedbackService.Tests` | 7 |
-| | **Total** | **74** |
+| 5 | `NotificationService.Tests` | 6 |
+| 5 | `ReceiptService.Tests` | 4 |
+| | **Total** | **84** |
