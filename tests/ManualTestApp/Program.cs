@@ -435,6 +435,7 @@ await RunTest("AssignDelivery - assigns driver", async () =>
     if (string.IsNullOrWhiteSpace(response.Id))
         throw new Exception("Expected delivery, got empty");
     deliveryId = response.Id;
+    driverId = response.DriverId;
     Console.WriteLine($"  DeliveryId: {response.Id}");
     Console.WriteLine($"  Driver    : {response.DriverName} ({response.DriverId})");
     Console.WriteLine($"  Status    : {response.Status}");
