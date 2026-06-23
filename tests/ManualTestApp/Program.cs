@@ -131,10 +131,28 @@ Console.WriteLine();
 Console.WriteLine("─── Menu Service ───");
 Console.ResetColor();
 
-await RunTest("GetMenuItems - empty list", async () =>
+string? firstItemId = null;
+await RunTest("GetMenuItems - returns items", async () =>
 {
     var response = await menuClient.GetMenuItemsAsync(new ProtoCommon.Empty());
+    if (response.Items.Count == 0)
+        throw new Exception("Expected menu items, got 0");
+    firstItemId = response.Items[0].Id;
     Console.WriteLine($"  Items count: {response.Items.Count}");
+    Console.WriteLine($"  First item : {response.Items[0].Name} ({response.Items[0].Id})");
+});
+
+await RunTest("GetMenuItem - existing item", async () =>
+{
+    if (firstItemId is null) throw new Exception("No item ID available");
+
+    var item = await menuClient.GetMenuItemAsync(new ProtoMenu.GetMenuItemRequest { Id = firstItemId });
+
+    if (string.IsNullOrWhiteSpace(item.Name))
+        throw new Exception("Expected item data");
+    Console.WriteLine($"  Name    : {item.Name}");
+    Console.WriteLine($"  Price   : {item.Price}");
+    Console.WriteLine($"  Cat     : {item.Category}");
 });
 
 await RunTest("GetMenuItem - not found", async () =>
@@ -213,6 +231,22 @@ await RunTest("GetOrderStatus - existing order", async () =>
     });
 
     Console.WriteLine($"  Status: {response.Status}");
+});
+
+await RunTest("GetCustomerOrders - returns orders", async () =>
+{
+    if (userId is null) throw new Exception("No user ID available");
+
+    var response = await orderClient.GetCustomerOrdersAsync(new ProtoOrder.GetCustomerOrdersRequest
+    {
+        CustomerId = userId
+    });
+
+    if (response.Orders.Count == 0)
+        throw new Exception("Expected at least one order");
+    var first = response.Orders[0];
+    Console.WriteLine($"  Orders : {response.Orders.Count}");
+    Console.WriteLine($"  First  : {first.Id} (status {first.Status})");
 });
 
 await RunTest("GetOrder - not found", async () =>
