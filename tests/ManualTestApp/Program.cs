@@ -330,24 +330,57 @@ Console.WriteLine();
 Console.WriteLine("─── Kitchen Service ───");
 Console.ResetColor();
 
-await RunTest("GetPendingOrders - empty or has orders", async () =>
+string? kitchenOrderId = null;
+await RunTest("SeedKitchenOrder - creates order", async () =>
+{
+    if (orderId is null) throw new Exception("No order ID available");
+    var response = await kitchenClient.SeedKitchenOrderAsync(new ProtoKitchen.SeedKitchenOrderRequest { OrderId = orderId });
+    kitchenOrderId = response.Id;
+    Console.WriteLine($"  KitchenId: {response.Id}");
+    Console.WriteLine($"  Status   : {response.Status}");
+});
+
+await RunTest("GetPendingOrders - returns pending orders", async () =>
 {
     var response = await kitchenClient.GetPendingOrdersAsync(new ProtoCommon.Empty());
+    if (response.Orders.Count == 0)
+        throw new Exception("Expected pending orders, got 0");
     Console.WriteLine($"  Pending orders: {response.Orders.Count}");
+    Console.WriteLine($"  First order   : {response.Orders[0].OrderId} (status {response.Orders[0].Status})");
 });
 
 await RunTest("GetKitchenOrder - existing order", async () =>
 {
     if (orderId is null) throw new Exception("No order ID available");
-    try
+    var response = await kitchenClient.GetKitchenOrderAsync(new ProtoKitchen.GetKitchenOrderRequest { OrderId = orderId });
+    if (string.IsNullOrWhiteSpace(response.Id))
+        throw new Exception("Expected kitchen order data");
+    Console.WriteLine($"  Id     : {response.Id}");
+    Console.WriteLine($"  Status : {response.Status}");
+});
+
+await RunTest("StartPreparing - starts preparing", async () =>
+{
+    if (orderId is null) throw new Exception("No order ID available");
+    var response = await kitchenClient.StartPreparingAsync(new ProtoKitchen.StartPreparingRequest
     {
-        var response = await kitchenClient.GetKitchenOrderAsync(new ProtoKitchen.GetKitchenOrderRequest { OrderId = orderId });
-        Console.WriteLine($"  Status: {response.Status}");
-    }
-    catch (Grpc.Core.RpcException ex) when (ex.StatusCode == Grpc.Core.StatusCode.NotFound)
-    {
-        Console.WriteLine($"  Kitchen order not yet created (OK): {ex.Status.Detail}");
-    }
+        OrderId = orderId,
+        Station = "Grill"
+    });
+    if (response.Status != 1)
+        throw new Exception($"Expected status 1 (InProgress), got {response.Status}");
+    Console.WriteLine($"  Status : {response.Status}");
+    Console.WriteLine($"  Station: {response.AssignedStation}");
+    Console.WriteLine($"  ETA    : {response.EstimatedReadyTime}");
+});
+
+await RunTest("MarkAsReady - marks order ready", async () =>
+{
+    if (orderId is null) throw new Exception("No order ID available");
+    var response = await kitchenClient.MarkAsReadyAsync(new ProtoKitchen.MarkAsReadyRequest { OrderId = orderId });
+    if (response.Status != 2)
+        throw new Exception($"Expected status 2 (Ready), got {response.Status}");
+    Console.WriteLine($"  Status: {response.Status}");
 });
 
 Console.ForegroundColor = ConsoleColor.Yellow;
@@ -355,40 +388,74 @@ Console.WriteLine();
 Console.WriteLine("─── Delivery Service ───");
 Console.ResetColor();
 
+string? deliveryId = null;
 string? driverId = null;
+await RunTest("SeedDriver - adds driver 1", async () =>
+{
+    var response = await deliveryClient.SeedDriverAsync(new ProtoDelivery.SeedDriverRequest { Name = "Alice" });
+    if (string.IsNullOrWhiteSpace(response.Id))
+        throw new Exception("Expected driver ID");
+    driverId = response.Id;
+    Console.WriteLine($"  DriverId : {response.Id}");
+    Console.WriteLine($"  Name     : {response.Name}");
+    Console.WriteLine($"  Available: {response.IsAvailable}");
+});
+
+await RunTest("SeedDriver - adds driver 2", async () =>
+{
+    var response = await deliveryClient.SeedDriverAsync(new ProtoDelivery.SeedDriverRequest { Name = "Bob" });
+    Console.WriteLine($"  DriverId : {response.Id}");
+    Console.WriteLine($"  Name     : {response.Name}");
+});
+
 await RunTest("AssignDelivery - assigns driver", async () =>
 {
     if (orderId is null) throw new Exception("No order ID available");
-    try
+    var response = await deliveryClient.AssignDeliveryAsync(new ProtoDelivery.AssignDeliveryRequest
     {
-        var response = await deliveryClient.AssignDeliveryAsync(new ProtoDelivery.AssignDeliveryRequest
-        {
-            OrderId = orderId,
-            DeliveryAddress = "123 Main St"
-        });
-        driverId = response.DriverId;
-        Console.WriteLine($"  DeliveryId: {response.Id}");
-        Console.WriteLine($"  Driver    : {response.DriverName}");
-    }
-    catch (Grpc.Core.RpcException ex) when (ex.StatusCode == Grpc.Core.StatusCode.ResourceExhausted)
-    {
-        Console.WriteLine($"  No drivers available (OK): {ex.Status.Detail}");
-    }
+        OrderId = orderId,
+        DeliveryAddress = "123 Main St"
+    });
+    if (string.IsNullOrWhiteSpace(response.Id))
+        throw new Exception("Expected delivery, got empty");
+    deliveryId = response.Id;
+    Console.WriteLine($"  DeliveryId: {response.Id}");
+    Console.WriteLine($"  Driver    : {response.DriverName} ({response.DriverId})");
+    Console.WriteLine($"  Status    : {response.Status}");
 });
 
-await RunTest("GetDeliveryStatus - check status", async () =>
+await RunTest("GetDeliveryStatus - existing delivery", async () =>
 {
     if (orderId is null) throw new Exception("No order ID available");
-    try
+    var response = await deliveryClient.GetDeliveryStatusAsync(new ProtoDelivery.GetDeliveryRequest { OrderId = orderId });
+    if (string.IsNullOrWhiteSpace(response.Id))
+        throw new Exception("Expected delivery data");
+    Console.WriteLine($"  Status    : {response.Status}");
+    Console.WriteLine($"  Driver    : {response.DriverName}");
+    Console.WriteLine($"  Address   : {response.DeliveryAddress}");
+});
+
+await RunTest("GetDriverDeliveries - returns deliveries", async () =>
+{
+    if (driverId is null) throw new Exception("No driver ID available");
+    var response = await deliveryClient.GetDriverDeliveriesAsync(new ProtoDelivery.GetDriverDeliveriesRequest { DriverId = driverId });
+    if (response.Deliveries.Count == 0)
+        throw new Exception("Expected at least one delivery for driver");
+    Console.WriteLine($"  Deliveries: {response.Deliveries.Count}");
+    Console.WriteLine($"  First     : {response.Deliveries[0].OrderId} (status {response.Deliveries[0].Status})");
+});
+
+await RunTest("UpdateDeliveryStatus - mark as delivered", async () =>
+{
+    if (deliveryId is null) throw new Exception("No delivery ID available");
+    var response = await deliveryClient.UpdateDeliveryStatusAsync(new ProtoDelivery.UpdateDeliveryStatusRequest
     {
-        var response = await deliveryClient.GetDeliveryStatusAsync(new ProtoDelivery.GetDeliveryRequest { OrderId = orderId });
-        Console.WriteLine($"  Status: {response.Status}");
-        Console.WriteLine($"  Driver: {response.DriverName}");
-    }
-    catch (Grpc.Core.RpcException ex) when (ex.StatusCode == Grpc.Core.StatusCode.NotFound)
-    {
-        Console.WriteLine($"  Delivery not yet created (OK): {ex.Status.Detail}");
-    }
+        DeliveryId = deliveryId,
+        Status = 4
+    });
+    if (response.Status != 4)
+        throw new Exception($"Expected status 4 (Delivered), got {response.Status}");
+    Console.WriteLine($"  Status: {response.Status}");
 });
 
 Console.WriteLine();

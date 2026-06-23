@@ -11,6 +11,7 @@ service DeliveryService {
   rpc UpdateDeliveryStatus(UpdateDeliveryStatusRequest) returns (Delivery);
   rpc GetDeliveryStatus(GetDeliveryRequest) returns (Delivery);
   rpc GetDriverDeliveries(GetDriverDeliveriesRequest) returns (GetDeliveriesResponse);
+  rpc SeedDriver(SeedDriverRequest) returns (Driver);
 }
 
 message Delivery {
@@ -44,4 +45,14 @@ message GetDriverDeliveriesRequest {
 
 message GetDeliveriesResponse {
   repeated Delivery deliveries = 1;
+}
+
+message Driver {
+  string id = 1;
+  string name = 2;
+  bool is_available = 3;
+}
+
+message SeedDriverRequest {
+  string name = 1;
 }

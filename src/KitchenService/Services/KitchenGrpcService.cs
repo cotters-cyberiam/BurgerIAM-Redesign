@@ -86,6 +86,22 @@ public sealed class KitchenGrpcService : ProtoKitchen.KitchenService.KitchenServ
         return MapToProto(kitchenOrder);
     }
 
+    public override async Task<ProtoKitchen.KitchenOrder> SeedKitchenOrder(ProtoKitchen.SeedKitchenOrderRequest request, ServerCallContext context)
+    {
+        var existing = await _db.KitchenOrders.FirstOrDefaultAsync(k => k.OrderId == request.OrderId, context.CancellationToken);
+        if (existing is not null)
+            return MapToProto(existing);
+
+        var kitchenOrder = new KitchenOrderEntity
+        {
+            OrderId = request.OrderId,
+            Status = 0
+        };
+        _db.KitchenOrders.Add(kitchenOrder);
+        await _db.SaveChangesAsync(context.CancellationToken);
+        return MapToProto(kitchenOrder);
+    }
+
     public async Task HandlePaymentConfirmed(PaymentConfirmedEvent @event, CancellationToken cancellationToken)
     {
         var existing = await _db.KitchenOrders.AnyAsync(k => k.OrderId == @event.OrderId, cancellationToken);

@@ -109,6 +109,23 @@ public sealed class DeliveryGrpcService : ProtoDelivery.DeliveryService.Delivery
         return response;
     }
 
+    public override async Task<ProtoDelivery.Driver> SeedDriver(ProtoDelivery.SeedDriverRequest request, ServerCallContext context)
+    {
+        var driver = new DriverEntity
+        {
+            Name = request.Name,
+            IsAvailable = true
+        };
+        _db.Drivers.Add(driver);
+        await _db.SaveChangesAsync(context.CancellationToken);
+        return new ProtoDelivery.Driver
+        {
+            Id = driver.Id,
+            Name = driver.Name,
+            IsAvailable = driver.IsAvailable
+        };
+    }
+
     public async Task HandleOrderReady(OrderReadyEvent @event, CancellationToken cancellationToken)
     {
         var existing = await _db.Deliveries.AnyAsync(d => d.OrderId == @event.OrderId, cancellationToken);

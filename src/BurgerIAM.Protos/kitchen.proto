@@ -12,6 +12,7 @@ service KitchenService {
   rpc StartPreparing(StartPreparingRequest) returns (KitchenOrder);
   rpc MarkAsReady(MarkAsReadyRequest) returns (KitchenOrder);
   rpc GetKitchenOrder(GetKitchenOrderRequest) returns (KitchenOrder);
+  rpc SeedKitchenOrder(SeedKitchenOrderRequest) returns (KitchenOrder);
 }
 
 message KitchenOrder {
@@ -38,5 +39,9 @@ message MarkAsReadyRequest {
 }
 
 message GetKitchenOrderRequest {
+  string order_id = 1;
+}
+
+message SeedKitchenOrderRequest {
   string order_id = 1;
 }

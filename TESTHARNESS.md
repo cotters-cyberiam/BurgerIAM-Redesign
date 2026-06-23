@@ -198,13 +198,22 @@ dotnet run --project tests/ManualTestApp -- http://localhost:5041 http://localho
 
 **Projects:** `KitchenService.Tests`, `DeliveryService.Tests`, extended `Integration.Tests`
 
-**Tests:** 19 (10 Kitchen + 9 Delivery + 2 new Integration)
+**Tests:** 18 (9 Kitchen + 9 Delivery + 6 Integration total)
 
 | File | Tests | What It Verifies |
 |---|---|---|
 | `KitchenGrpcServiceTests.cs` | 9 | GetPendingOrders (empty + filters), StartPreparing (success + not found + precondition), MarkAsReady (success + precondition), HandlePaymentConfirmed (creates + no duplicate) |
 | `DeliveryGrpcServiceTests.cs` | 9 | AssignDelivery (no drivers + success + duplicate), UpdateDeliveryStatus (delivered frees driver), GetDeliveryStatus (exists + not found), GetDriverDeliveries, HandleOrderReady (creates + no duplicate) |
-| `EventBusFlowsTests.cs` *(extended)* | 2 new | OrderReady triggers delivery, PaymentConfirmed→OrderReady event chain |
+| `EventBusFlowsTests.cs` *(extended)* | 6 | Full lifecycle event chain tests |
+
+**Manual test seed RPCs:**
+
+The gRPC services expose two test-only RPCs used by `ManualTestApp` to seed data so that successful flows can be exercised:
+
+| Service | RPC | Purpose |
+|---|---|---|
+| `KitchenService` | `SeedKitchenOrder(order_id)` | Creates a kitchen order in `Pending` status for a given order ID (idempotent) |
+| `DeliveryService` | `SeedDriver(name)` | Creates an available driver for delivery assignment |
 
 **How to run:**
 ```powershell
@@ -213,6 +222,8 @@ dotnet test tests/DeliveryService.Tests --nologo
 ```
 
 **Manual test — requires all six services running:**
+
+The `ManualTestApp` seeds data via `SeedKitchenOrder` and `SeedDriver` RPCs at the start of the Kitchen and Delivery sections, then runs successful flows (StartPreparing, MarkAsReady, AssignDelivery, UpdateDeliveryStatus, etc.).
 
 | Service | Port | Start Command |
 |---|---|---|
