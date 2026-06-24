@@ -95,3 +95,29 @@ This file documents issues encountered during development and their resolutions.
 **Reproduction**: `PaymentService.Tests.PaymentGrpcServiceTests.ProcessPayment_DuplicateOrder_ReturnsExisting` fails with `ArgumentNullException`.
 
 **Fix**: Changed `Error = existing.Status == 2 ? null : "Payment already exists"` to `Error = existing.Status != 2 ? "Payment already exists" : string.Empty`, ensuring an empty string is assigned instead of null.
+
+---
+
+## 2026-06-24 — Missing Home.razor page causes 404 on root route "/"
+
+**Problem**: Navigating to "/" showed Blazor's `<NotFound>` template ("Page not found, Sorry there's nothing at this address") because no page existed with `@page "/"`. The NavMenu brand link and logout action both redirect to "/".
+
+**Fix**: Created `src/WasmFrontend/Pages/Home.razor` with `@page "/"` and `[AllowAnonymous]`. Also created `DeliveryTracking.razor` with `@page "/delivery/{OrderId}"` and added a "Track Delivery" link to `OrderStatus.razor`.
+
+---
+
+## 2026-06-24 — ApiGateway MSBuild target skips WASM copy after first build
+
+**Problem**: `ApiGateway.csproj` had `Condition="!Exists('wwwroot\index.html')"` on its `PublishAndCopyWasmFrontend` target. After the first build created `wwwroot\index.html`, all subsequent builds skipped re-publishing and copying the WasmFrontend output. Changes to Blazor pages never reached the served SPA.
+
+**Reproduction**: Add a new `.razor` page, rebuild, refresh browser — changes don't appear. The old `.wasm` and `.dll` files in `ApiGateway/wwwroot/_framework/` are never updated.
+
+**Fix**: Removed the `Condition` attribute from the MSBuild target so it always runs `dotnet publish` on WasmFrontend and copies the output on every build. Also added an explicit `Remove-Item` of `ApiGateway/wwwroot/` before rebuild to avoid stale files.
+
+---
+
+## 2026-06-24 — Blazor error overlay always visible (missing CSS)
+
+**Problem**: The `<div id="blazor-error-ui">An unhandled error has occurred...</div>` in `index.html` was always visible because `app.css` was missing the `#blazor-error-ui { display: none; }` style rule. The `.gitignore` pattern `wwwroot/` also prevented `app.css` from being tracked by git.
+
+**Fix**: Added `#blazor-error-ui` CSS (with `display: none`, fixed positioning, and dismiss button styles) to `src/WasmFrontend/wwwroot/css/app.css`. Changed the `.gitignore` pattern from `wwwroot/` to `src/ApiGateway/wwwroot/` so the WasmFrontend's custom static assets are tracked.
