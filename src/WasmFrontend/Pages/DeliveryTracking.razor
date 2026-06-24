@@ -1,0 +1,172 @@
+@page "/delivery/{OrderId}"
+@attribute [Authorize]
+
+<PageTitle>Delivery Tracking - BurgerIAM</PageTitle>
+
+<div class="container mt-4">
+    <h2 class="mb-4">Delivery Tracking</h2>
+
+    @if (isLoading)
+    {
+        <div class="text-center"><div class="spinner-border" role="status"></div></div>
+        return;
+    }
+
+    @if (delivery is null)
+    {
+        <div class="alert alert-warning">
+            Delivery information not available. <a href="/order-status/@OrderId">Check order status</a>
+        </div>
+        return;
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-body text-center py-4">
+                    <h5 class="mb-3">Delivery Status</h5>
+                    <div class="display-1 mb-3">
+                        @(delivery.Status >= 4 ? "&#127881;" : delivery.Status >= 3 ? "&#128666;" : delivery.Status >= 2 ? "&#128230;" : "&#128197;")
+                    </div>
+                    <h4 class="@StatusColor(delivery.Status)">@StatusText(delivery.Status)</h4>
+                    <p class="text-muted">Order: <code>@OrderId[..8]</code></p>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5>Tracking Timeline</h5>
+                    <div class="tracking-timeline">
+                        <div class="d-flex align-items-center mb-3 @(delivery.Status >= 0 ? "text-success" : "text-muted")">
+                            <span class="me-2 fs-5">@(delivery.Status >= 0 ? "✓" : "○")</span>
+                            <div>
+                                <strong>Order Placed</strong>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center mb-3 @(delivery.Status >= 1 ? "text-success" : "text-muted")">
+                            <span class="me-2 fs-5">@(delivery.Status >= 1 ? "✓" : "○")</span>
+                            <div>
+                                <strong>Driver Assigned</strong>
+                                <small class="d-block text-muted">@delivery.DriverName</small>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center mb-3 @(delivery.Status >= 2 ? "text-success" : "text-muted")">
+                            <span class="me-2 fs-5">@(delivery.Status >= 2 ? "✓" : "○")</span>
+                            <div>
+                                <strong>Order Picked Up</strong>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center mb-3 @(delivery.Status >= 3 ? "text-success" : "text-muted")">
+                            <span class="me-2 fs-5">@(delivery.Status >= 3 ? "✓" : "○")</span>
+                            <div>
+                                <strong>In Transit</strong>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center mb-3 @(delivery.Status >= 4 ? "text-success" : "text-muted")">
+                            <span class="me-2 fs-5">@(delivery.Status >= 4 ? "✓" : "○")</span>
+                            <div>
+                                <strong>Delivered</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Driver Details</h5>
+                    <p><strong>Name:</strong> @delivery.DriverName</p>
+                    <p><strong>Status:</strong> <span class="badge @StatusBadge(delivery.Status)">@StatusText(delivery.Status)</span></p>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Delivery Info</h5>
+                    <p><strong>Address:</strong> @delivery.DeliveryAddress</p>
+                    @if (!string.IsNullOrEmpty(delivery.EstimatedDeliveryTime))
+                    {
+                        <p><strong>Estimated:</strong> @delivery.EstimatedDeliveryTime</p>
+                    }
+                    @if (!string.IsNullOrEmpty(delivery.CompletedAt))
+                    {
+                        <p><strong>Delivered at:</strong> @DeliveryDate(delivery.CompletedAt)</p>
+                    }
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <a href="/order-status/@OrderId" class="btn btn-outline-primary">Full Order Status</a>
+                <a href="/receipt/@OrderId" class="btn btn-outline-secondary">View Receipt</a>
+            </div>
+        </div>
+    </div>
+
+    @if (delivery.Status < 4)
+    {
+        <div class="text-center mt-3">
+            <small class="text-muted">Auto-refreshing every 10 seconds...</small>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string OrderId { get; set; } = "";
+
+    [Inject] private Services.ApiService Api { get; set; } = null!;
+
+    private Models.DeliveryResponse? delivery;
+    private bool isLoading = true;
+    private Timer? timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDelivery();
+        isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && delivery is not null && delivery.Status < 4)
+        {
+            timer = new Timer(async _ =>
+            {
+                await LoadDelivery();
+                await InvokeAsync(StateHasChanged);
+            }, null, 10000, 10000);
+        }
+    }
+
+    private async Task LoadDelivery()
+    {
+        delivery = await Api.GetDeliveryAsync(OrderId);
+    }
+
+    public void Dispose()
+    {
+        timer?.Dispose();
+    }
+
+    private static string StatusText(int status) => status switch
+    {
+        0 => "Unassigned", 1 => "Assigned", 2 => "Picked Up",
+        3 => "In Transit", 4 => "Delivered", 5 => "Failed", _ => "Unknown"
+    };
+
+    private static string StatusColor(int status) => status switch
+    {
+        0 => "text-secondary", 1 => "text-info", 2 => "text-primary",
+        3 => "text-warning", 4 => "text-success", 5 => "text-danger", _ => "text-secondary"
+    };
+
+    private static string StatusBadge(int status) => status switch
+    {
+        0 => "bg-secondary", 1 => "bg-info", 2 => "bg-primary",
+        3 => "bg-warning text-dark", 4 => "bg-success", 5 => "bg-danger", _ => "bg-secondary"
+    };
+
+    private static string DeliveryDate(string dateStr) =>
+        DateTime.TryParse(dateStr, out var dt) ? dt.ToString("MMM dd, yyyy HH:mm") : dateStr;
+}

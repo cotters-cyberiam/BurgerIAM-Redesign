@@ -1,0 +1,105 @@
+@page "/"
+@attribute [AllowAnonymous]
+
+<PageTitle>BurgerIAM - Fast Food Ordering</PageTitle>
+
+<div class="hero-section bg-dark text-white text-center py-5 mb-4">
+    <div class="container">
+        <h1 class="display-4 fw-bold">BurgerIAM</h1>
+        <p class="lead">Delicious fast food, delivered fast.</p>
+        <a href="/menu" class="btn btn-danger btn-lg me-2">View Menu</a>
+        @if (!Auth.IsLoggedIn)
+        {
+            <a href="/register" class="btn btn-outline-light btn-lg">Get Started</a>
+        }
+        else
+        {
+            <a href="/my-orders" class="btn btn-outline-light btn-lg">My Orders</a>
+        }
+    </div>
+</div>
+
+<div class="container">
+    @if (averageRating is not null)
+    {
+        <div class="text-center mb-4">
+            <h3>Customer Rating</h3>
+            <p class="display-6 text-warning">
+                @(new string('★', (int)Math.Round(averageRating.AverageRating)) + new string('☆', 5 - (int)Math.Round(averageRating.AverageRating)))
+                <span class="text-muted fs-5">@averageRating.AverageRating:F1 (@averageRating.TotalReviews reviews)</span>
+            </p>
+        </div>
+    }
+
+    <h3 class="mb-3">Popular Items</h3>
+    @if (isLoading)
+    {
+        <div class="text-center"><div class="spinner-border" role="status"></div></div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var item in popularItems)
+            {
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card menu-card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h5 class="card-title mb-1">@item.Name</h5>
+                                    <p class="card-text text-muted small">@item.Description</p>
+                                </div>
+                                <span class="price-tag">$@item.Price:F2</span>
+                            </div>
+                            <a href="/menu" class="btn btn-sm btn-outline-primary mt-2">Order Now</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <div class="row mt-4 mb-5">
+        <div class="col-md-4 mb-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <h5 class="card-title">&#127828; Quality Food</h5>
+                    <p class="card-text text-muted">Fresh ingredients, prepared with care.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <h5 class="card-title">&#128666; Fast Delivery</h5>
+                    <p class="card-text text-muted">Track your order in real-time.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <h5 class="card-title">&#128179; Easy Payment</h5>
+                    <p class="card-text text-muted">Secure checkout with multiple options.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Inject] private Services.ApiService Api { get; set; } = null!;
+    [Inject] private Services.AuthService Auth { get; set; } = null!;
+
+    private List<Models.MenuItemResponse> popularItems = [];
+    private Models.AverageRatingResponse? averageRating;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var menu = await Api.GetMenuAsync();
+        popularItems = menu.Where(i => i.IsAvailable).Take(6).ToList();
+        averageRating = await Api.GetAverageRatingAsync();
+        isLoading = false;
+    }
+}
