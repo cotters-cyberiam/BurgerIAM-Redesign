@@ -2,33 +2,39 @@
 .SYNOPSIS
     Stops all BurgerIAM microservices launched by Start-FullTest.ps1.
 .DESCRIPTION
-    Kills dotnet processes listening on the BurgerIAM service ports.
-    Also closes any terminal windows titled "BurgerIAM - *".
+    Finds and kills dotnet processes running from the BurgerIAM src/ directory
+    and closes any terminal windows titled "BurgerIAM - *".
 #>
 
-$ports = @(5041, 5052, 5063, 5074, 5085, 5096, 5007, 5018, 5029, 5000)
+$servicePaths = @(
+    "IdentityService", "MenuService", "OrderService", "PaymentService",
+    "KitchenService", "DeliveryService", "FeedbackService",
+    "NotificationService", "ReceiptService", "ApiGateway"
+)
 
 Write-Host "Stopping BurgerIAM services..." -ForegroundColor Cyan
 
-# Kill by port — find processes listening on any BurgerIAM port
-$tcpConnections = Get-NetTCPConnection -State Established,Listen,Bound -ErrorAction SilentlyContinue |
-    Where-Object { $_.LocalPort -in $ports }
+# Find dotnet processes running from the BurgerIAM repo
+$processes = Get-CimInstance Win32_Process -Filter "Name = 'dotnet.exe'" -ErrorAction SilentlyContinue
 
-$pids = $tcpConnections | ForEach-Object { $_.OwningProcess } | Select-Object -Unique
-
-foreach ($procId in $pids) {
-    try {
-        $proc = Get-Process -Id $procId -ErrorAction Stop
-        if ($proc.ProcessName -match "dotnet") {
-            $proc.Kill()
-            Write-Host "  Killed dotnet process $procId (listening on BurgerIAM port)" -ForegroundColor Green
+$killed = 0
+foreach ($proc in $processes) {
+    $cmdLine = $proc.CommandLine
+    foreach ($svc in $servicePaths) {
+        if ($cmdLine -match [regex]::Escape($svc)) {
+            try {
+                Stop-Process -Id $proc.ProcessId -Force -ErrorAction Stop
+                Write-Host "  Killed dotnet PID $($proc.ProcessId) ($svc)" -ForegroundColor Green
+                $killed++
+            } catch {
+                Write-Host "  Failed to kill PID $($proc.ProcessId) ($svc): $_" -ForegroundColor Red
+            }
+            break
         }
-    } catch {
-        # Process may have already exited
     }
 }
 
-# Also kill any terminal windows with "BurgerIAM -" in the title
+# Close terminal windows with "BurgerIAM -" in the title
 Get-Process pwsh -ErrorAction SilentlyContinue | ForEach-Object {
     try {
         $title = $_.MainWindowTitle
@@ -39,14 +45,8 @@ Get-Process pwsh -ErrorAction SilentlyContinue | ForEach-Object {
     } catch {}
 }
 
-Start-Sleep -Seconds 1
-
-# Verify no services are still running
-$remaining = Get-NetTCPConnection -ErrorAction SilentlyContinue |
-    Where-Object { $_.LocalPort -in $ports -and $_.State -ne "TimeWait" }
-
-if ($remaining) {
-    Write-Host "Some services may still be running. Check Task Manager." -ForegroundColor Yellow
+if ($killed -eq 0) {
+    Write-Host "No running BurgerIAM services found." -ForegroundColor Yellow
 } else {
-    Write-Host "All services stopped." -ForegroundColor Green
+    Write-Host "Stopped $killed service(s)." -ForegroundColor Green
 }
