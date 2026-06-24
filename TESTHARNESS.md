@@ -308,6 +308,35 @@ dotnet test tests/ApiGateway.Tests --nologo
 dotnet test tests/WasmFrontend.Tests --nologo
 ```
 
+**Manual test — requires all nine backend services + API Gateway:**
+
+The API Gateway serves the Blazor WASM frontend at `http://localhost:5000`. You can interact with the full UI via browser.
+
+| Service | Port | Start Command |
+|---------|------|---------------|
+| IdentityService | 5041 | `dotnet run --project src/IdentityService` |
+| MenuService | 5052 | `dotnet run --project src/MenuService` |
+| OrderService | 5063 | `dotnet run --project src/OrderService` |
+| PaymentService | 5074 | `dotnet run --project src/PaymentService` |
+| KitchenService | 5085 | `dotnet run --project src/KitchenService` |
+| DeliveryService | 5096 | `dotnet run --project src/DeliveryService` |
+| FeedbackService | 5007 | `dotnet run --project src/FeedbackService` |
+| NotificationService | 5018 | `dotnet run --project src/NotificationService` |
+| ReceiptService | 5029 | `dotnet run --project src/ReceiptService` |
+| **ApiGateway** | **5000** | `dotnet run --project src/ApiGateway` |
+
+Open `http://localhost:5000` in a browser to use the Blazor WebAssembly frontend. The UI provides pages for:
+- Home (how-it-works + average rating)
+- Register / Login (JWT persisted in localStorage)
+- Menu browsing by category with add-to-cart
+- Shopping cart with quantity controls
+- Checkout with delivery address
+- Order status tracking (auto-refreshes every 10s)
+- Delivery tracking
+- Receipt viewer (iframe + print)
+- Feedback submission (1–5 star rating)
+- My Orders history with status badges
+
 ---
 
 ### Phase 7 — Docker & Docker Compose
