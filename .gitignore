@@ -36,7 +36,9 @@ x86/
 Thumbs.db
 
 # SPA frontend build output (copied by MSBuild target from WasmFrontend publish)
-wwwroot/
+src/ApiGateway/wwwroot/
+src/WasmFrontend/wwwroot/lib/
+src/WasmFrontend/wwwroot/sample-data/
 
 # IDE
 .idea/
