@@ -1,0 +1,98 @@
+@page "/feedback/{OrderId}"
+@attribute [Authorize]
+
+<PageTitle>Feedback - BurgerIAM</PageTitle>
+
+<div class="container mt-4">
+    <h2 class="mb-4">Leave Feedback</h2>
+
+    @if (!string.IsNullOrEmpty(error))
+    {
+        <div class="alert alert-danger">@error</div>
+    }
+    @if (submitted)
+    {
+        <div class="text-center py-5">
+            <div class="mb-4">&#10003;</div>
+            <h3>Thank You!</h3>
+            <p class="text-muted">Your feedback has been submitted.</p>
+            <a href="/my-orders" class="btn btn-primary">Back to Orders</a>
+        </div>
+        return;
+    }
+
+    @if (existingFeedback is not null)
+    {
+        <div class="alert alert-info">
+            You have already submitted feedback for this order.
+        </div>
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5>Your Rating: @(new string('★', existingFeedback.Rating) + new string('☆', 5 - existingFeedback.Rating))</h5>
+                @if (!string.IsNullOrEmpty(existingFeedback.Comment))
+                {
+                    <p>@existingFeedback.Comment</p>
+                }
+            </div>
+        </div>
+        <a href="/my-orders" class="btn btn-primary">Back to Orders</a>
+        return;
+    }
+
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">How was your order?</h5>
+
+                    <div class="text-center mb-4">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <button @onkeydown="() => { }" @onclick="() => rating = i" class="btn btn-lg @(i <= rating ? "btn-warning" : "btn-outline-secondary") me-1" style="font-size: 2rem;">
+                                @(i <= rating ? "★" : "☆")
+                            </button>
+                        }
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Comment (optional)</label>
+                        <InputTextArea @bind-Value="comment" class="form-control" rows="3" placeholder="Tell us about your experience..." />
+                    </div>
+
+                    <button @onclick="Submit" class="btn btn-primary w-100" disabled="@(rating == 0 || isSubmitting)">
+                        @(isSubmitting ? "Submitting..." : "Submit Feedback")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string OrderId { get; set; } = "";
+
+    [Inject] private Services.ApiService Api { get; set; } = null!;
+    [Inject] private Services.AuthService Auth { get; set; } = null!;
+
+    private int rating;
+    private string comment = "";
+    private string? error;
+    private bool isSubmitting;
+    private bool submitted;
+    private Models.FeedbackDetail? existingFeedback;
+
+    protected override async Task OnInitializedAsync()
+    {
+        existingFeedback = await Api.GetFeedbackAsync(OrderId);
+    }
+
+    private async Task Submit()
+    {
+        if (rating == 0) return;
+
+        isSubmitting = true;
+        error = await Api.SubmitFeedbackAsync(OrderId, Auth.UserId!, rating, comment);
+        submitted = error is null;
+        isSubmitting = false;
+    }
+}

@@ -1,0 +1,66 @@
+@page "/cart"
+@attribute [Authorize]
+
+<PageTitle>Shopping Cart - BurgerIAM</PageTitle>
+
+<div class="container mt-4">
+    <h2 class="mb-4">Your Cart</h2>
+
+    @if (CartService.IsEmpty)
+    {
+        <div class="text-center py-5">
+            <h4 class="text-muted">Your cart is empty</h4>
+            <a href="/menu" class="btn btn-primary mt-3">Browse Menu</a>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Subtotal</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in CartService.Items)
+                    {
+                        <tr>
+                            <td>@item.ItemName</td>
+                            <td>$@item.UnitPrice:F2</td>
+                            <td>
+                                <button @onclick="() => CartService.UpdateQuantity(item.MenuItemId, item.Quantity - 1)" class="btn btn-sm btn-outline-secondary">-</button>
+                                <span class="mx-2">@item.Quantity</span>
+                                <button @onclick="() => CartService.UpdateQuantity(item.MenuItemId, item.Quantity + 1)" class="btn btn-sm btn-outline-secondary">+</button>
+                            </td>
+                            <td>$@(item.UnitPrice * item.Quantity):F2</td>
+                            <td>
+                                <button @onclick="() => CartService.RemoveItem(item.MenuItemId)" class="btn btn-sm btn-danger">Remove</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                        <td><strong>$@CartService.TotalAmount:F2</strong></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="d-flex justify-content-between mt-3">
+            <button @onclick="CartService.Clear" class="btn btn-outline-danger">Clear Cart</button>
+            <a href="/checkout" class="btn btn-primary btn-lg">Proceed to Checkout</a>
+        </div>
+    }
+</div>
+
+@code {
+    [Inject] private Services.CartService CartService { get; set; } = null!;
+}

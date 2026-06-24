@@ -1,0 +1,65 @@
+@page "/login"
+@attribute [AllowAnonymous]
+
+<PageTitle>Login - BurgerIAM</PageTitle>
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <h3 class="text-center mb-4">Sign In</h3>
+
+                @if (!string.IsNullOrEmpty(error))
+                {
+                    <div class="alert alert-danger">@error</div>
+                }
+
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <InputText @bind-Value="email" class="form-control" placeholder="your@email.com" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <InputText @bind-Value="password" type="password" class="form-control" placeholder="Password" />
+                </div>
+                <button @onclick="HandleLogin" class="btn btn-primary w-100" disabled="@isLoading">
+                    @(isLoading ? "Signing in..." : "Sign In")
+                </button>
+
+                <div class="text-center mt-3">
+                    <p class="mb-0">Don't have an account? <a href="/register">Register</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Inject] private Services.AuthService Auth { get; set; } = null!;
+    [Inject] private NavigationManager Nav { get; set; } = null!;
+
+    private string email = "";
+    private string password = "";
+    private string? error;
+    private bool isLoading;
+
+    protected override void OnInitialized()
+    {
+        if (Auth.IsLoggedIn)
+            Nav.NavigateTo("/");
+    }
+
+    private async Task HandleLogin()
+    {
+        isLoading = true;
+        error = null;
+
+        var result = await Auth.Login(email, password);
+        if (result is not null)
+            Nav.NavigateTo("/menu");
+        else
+            error = "Invalid email or password";
+
+        isLoading = false;
+    }
+}

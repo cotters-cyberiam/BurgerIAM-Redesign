@@ -1,0 +1,52 @@
+@page "/receipt/{OrderId}"
+@attribute [Authorize]
+
+<PageTitle>Receipt - BurgerIAM</PageTitle>
+
+<div class="container mt-4">
+    <h2 class="mb-4">Receipt</h2>
+
+    @if (isLoading)
+    {
+        <div class="text-center"><div class="spinner-border" role="status"></div></div>
+    }
+    else if (html is not null)
+    {
+        <div class="card">
+            <div class="card-body p-0">
+                <iframe srcdoc="@html" style="width: 100%; min-height: 600px; border: none;"></iframe>
+            </div>
+        </div>
+        <div class="mt-3 text-center">
+            <button @onclick="() => PrintReceipt()" class="btn btn-primary">Print</button>
+            <a href="/my-orders" class="btn btn-outline-primary ms-2">Back to Orders</a>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            Receipt not found for order @OrderId.
+            <a href="/my-orders">View my orders</a>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string OrderId { get; set; } = "";
+
+    [Inject] private Services.ApiService Api { get; set; } = null!;
+
+    private string? html;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        html = await Api.GetReceiptHtmlAsync(OrderId);
+        isLoading = false;
+    }
+
+    private void PrintReceipt()
+    {
+        // In a real app, this would use JS interop to print the iframe
+    }
+}

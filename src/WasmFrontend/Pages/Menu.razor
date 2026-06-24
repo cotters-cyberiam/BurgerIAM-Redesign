@@ -1,0 +1,69 @@
+@page "/menu"
+@attribute [AllowAnonymous]
+
+<PageTitle>Menu - BurgerIAM</PageTitle>
+
+<div class="container mt-4">
+    <h2 class="mb-4">Our Menu</h2>
+
+    @if (isLoading)
+    {
+        <div class="text-center"><div class="spinner-border" role="status"></div></div>
+    }
+    else
+    {
+        @foreach (var category in groupedItems)
+        {
+            <h4 class="mt-4 mb-3 text-danger">@category.Key</h4>
+            <div class="row">
+                @foreach (var item in category)
+                {
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card menu-card h-100 @(item.IsAvailable ? "" : "opacity-50")">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="card-title mb-1">@item.Name</h5>
+                                        <p class="card-text text-muted small">@item.Description</p>
+                                    </div>
+                                    <span class="price-tag">$@item.Price:F2</span>
+                                </div>
+                                @if (item.IsAvailable)
+                                {
+                                    <button @onclick="() => AddToCart(item)" class="btn btn-sm btn-outline-primary mt-2">
+                                        Add to Cart
+                                    </button>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary mt-2">Unavailable</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Inject] private Services.ApiService Api { get; set; } = null!;
+    [Inject] private Services.CartService Cart { get; set; } = null!;
+
+    private List<Models.MenuItemResponse> items = [];
+    private bool isLoading = true;
+
+    private ILookup<string, Models.MenuItemResponse> groupedItems => items.Where(i => i.IsAvailable || !string.IsNullOrEmpty(i.Category)).ToLookup(i => i.Category);
+
+    protected override async Task OnInitializedAsync()
+    {
+        items = await Api.GetMenuAsync();
+        isLoading = false;
+    }
+
+    private void AddToCart(Models.MenuItemResponse item)
+    {
+        Cart.AddItem(new Models.CartItem(item.Id, item.Name, item.Price, 1));
+    }
+}

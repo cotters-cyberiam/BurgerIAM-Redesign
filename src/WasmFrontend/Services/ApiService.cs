@@ -1,0 +1,151 @@
+using System.Net.Http.Json;
+using WasmFrontend.Models;
+
+namespace WasmFrontend.Services;
+
+public sealed class ApiService
+{
+    private readonly HttpClient _http;
+
+    public ApiService(HttpClient http) => _http = http;
+
+    public async Task<List<MenuItemResponse>> GetMenuAsync()
+    {
+        return await _http.GetFromJsonAsync<List<MenuItemResponse>>("/api/menu") ?? [];
+    }
+
+    public async Task<OrderResponse?> CreateOrderAsync(CreateOrderRequest request)
+    {
+        var response = await _http.PostAsJsonAsync("/api/orders", request);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<OrderResponse>();
+    }
+
+    public async Task<OrderResponse?> GetOrderAsync(string orderId)
+    {
+        try
+        {
+            return await _http.GetFromJsonAsync<OrderResponse>($"/api/orders/{orderId}");
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<OrderStatusResponse?> GetOrderStatusAsync(string orderId)
+    {
+        try
+        {
+            return await _http.GetFromJsonAsync<OrderStatusResponse>($"/api/orders/{orderId}/status");
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<List<OrderResponse>> GetMyOrdersAsync(string customerId)
+    {
+        try
+        {
+            return await _http.GetFromJsonAsync<List<OrderResponse>>($"/api/orders/my/{customerId}") ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    public async Task<PaymentResponse?> ProcessPaymentAsync(string orderId, string customerId, double amount)
+    {
+        var response = await _http.PostAsJsonAsync("/api/payments",
+            new ProcessPaymentRequest(orderId, customerId, amount, "Card"));
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<PaymentResponse>();
+    }
+
+    public async Task<DeliveryResponse?> GetDeliveryAsync(string orderId)
+    {
+        try
+        {
+            return await _http.GetFromJsonAsync<DeliveryResponse>($"/api/delivery/{orderId}");
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<string?> SubmitFeedbackAsync(string orderId, string customerId, int rating, string comment)
+    {
+        var response = await _http.PostAsJsonAsync("/api/feedback",
+            new SubmitFeedbackRequest(orderId, customerId, rating, comment));
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+            return error?.GetValueOrDefault("error", "Submission failed");
+        }
+        return null;
+    }
+
+    public async Task<FeedbackDetail?> GetFeedbackAsync(string orderId)
+    {
+        try
+        {
+            return await _http.GetFromJsonAsync<FeedbackDetail>($"/api/feedback/{orderId}");
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<AverageRatingResponse?> GetAverageRatingAsync()
+    {
+        try
+        {
+            return await _http.GetFromJsonAsync<AverageRatingResponse>("/api/feedback/rating/average");
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<string?> GetReceiptHtmlAsync(string orderId)
+    {
+        try
+        {
+            return await _http.GetStringAsync($"/api/receipts/{orderId}");
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<List<NotificationResponse>> GetNotificationsAsync(string customerId)
+    {
+        try
+        {
+            return await _http.GetFromJsonAsync<List<NotificationResponse>>($"/api/notifications/{customerId}") ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    public async Task<UnreadCountResponse?> GetUnreadCountAsync(string customerId)
+    {
+        try
+        {
+            return await _http.GetFromJsonAsync<UnreadCountResponse>($"/api/notifications/{customerId}/unread-count");
+        }
+        catch
+        {
+            return null;
+        }
+    }
+}

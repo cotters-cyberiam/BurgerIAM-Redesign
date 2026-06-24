@@ -290,12 +290,23 @@ dotnet run --project tests/ManualTestApp -- http://localhost:5041 http://localho
 
 ---
 
-### Phase 6 — API Gateway & Web Frontend
+### Phase 6 — API Gateway & Web Frontend ✅
 
-When implemented, add:
-- `tests/ApiGateway.Tests/` — YARP routing + auth middleware tests
-- `tests/WebFrontend.Tests/` — Blazor component tests (bUnit)
-- End-to-end integration tests spanning all services
+**Projects:** `ApiGateway.Tests`, `WasmFrontend.Tests`
+
+**Tests:** 34 (14 ApiGateway + 20 WasmFrontend)
+
+| File | Tests | What It Verifies |
+|---|---|---|
+| `GatewayEndpointTests.cs` | 14 | All 25+ endpoint routes are registered, JWT config, service URL ports, gateway port |
+| `CartServiceTests.cs` | 15 | Cart add/remove/update/clear, event firing, TotalAmount calculation, empty state |
+| `ApiModelsTests.cs` | 5 | Login/Register/CreateOrder/CartItem constructors, MenuItemResponse props, valid status range |
+
+**How to run:**
+```powershell
+dotnet test tests/ApiGateway.Tests --nologo
+dotnet test tests/WasmFrontend.Tests --nologo
+```
 
 ---
 
@@ -386,4 +397,6 @@ public async Task Event_Triggers_Handler()
 | 5 | FeedbackService.Tests | 7 |
 | 5 | NotificationService.Tests | 6 |
 | 5 | ReceiptService.Tests | 4 |
-| | **Total** | **84** |
+| 6 | ApiGateway.Tests | 14 |
+| 6 | WasmFrontend.Tests | 20 |
+| | **Total** | **118** |

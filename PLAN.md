@@ -31,18 +31,35 @@ Feedback Submitted → Notification
 ## 2. Microservices Breakdown
 
 ### 2.1 API Gateway
-- **Role**: Single entry point, reverse proxy, authentication gateway
-- **Tech**: ASP.NET Core + YARP (Yet Another Reverse Proxy) + JWT auth
-- **Database**: None (routes requests)
+- **Role**: Single entry point, authentication gateway, REST-to-gRPC proxy
+- **Tech**: ASP.NET Core Minimal API + gRPC client stubs + JWT auth
+- **Database**: None (routes requests to backend gRPC services)
 - **Endpoints**:
   - `POST /api/auth/login` → Identity Service (gRPC)
+  - `POST /api/auth/register` → Identity Service (gRPC)
   - `GET /api/menu` → Menu Service (gRPC)
-  - `POST /api/orders` → Order Service (gRPC)
-  - `GET /api/orders/{id}` → Order Service (gRPC)
-  - `POST /api/payments` → Payment Service (gRPC)
-  - `GET /api/orders/{id}/status` → Order Service (gRPC)
-  - `POST /api/feedback` → Feedback Service (gRPC)
-  - `GET /api/receipts/{orderId}` → Receipt Service (HTTP/plain)
+  - `GET /api/menu/{id}` → Menu Service (gRPC)
+  - `GET /api/menu/{id}/availability?isAvailable=` → Menu Service (gRPC)
+  - `POST /api/orders` → Order Service (gRPC) [Auth]
+  - `GET /api/orders/{id}` → Order Service (gRPC) [Auth]
+  - `GET /api/orders/{id}/status` → Order Service (gRPC) [Auth]
+  - `POST /api/orders/{id}/cancel` → Order Service (gRPC) [Auth]
+  - `GET /api/orders/my/{customerId}` → Order Service (gRPC) [Auth]
+  - `POST /api/payments` → Payment Service (gRPC) [Auth]
+  - `GET /api/payments/{id}` → Payment Service (gRPC) [Auth]
+  - `POST /api/payments/{id}/refund` → Payment Service (gRPC) [Auth]
+  - `GET /api/kitchen/pending` → Kitchen Service (gRPC) [Auth]
+  - `POST /api/kitchen/{orderId}/prepare` → Kitchen Service (gRPC) [Auth]
+  - `POST /api/kitchen/{orderId}/ready` → Kitchen Service (gRPC) [Auth]
+  - `GET /api/delivery/{orderId}` → Delivery Service (gRPC) [Auth]
+  - `GET /api/delivery/driver/{driverId}` → Delivery Service (gRPC) [Auth]
+  - `POST /api/feedback` → Feedback Service (gRPC) [Auth]
+  - `GET /api/feedback/{orderId}` → Feedback Service (gRPC) [Auth]
+  - `GET /api/feedback/rating/average` → Feedback Service (gRPC)
+  - `GET /api/receipts/{orderId}` → Receipt Service (HTTP/plain) [Auth]
+  - `GET /api/notifications/{customerId}` → Notification Service (gRPC) [Auth]
+  - `POST /api/notifications/{id}/read` → Notification Service (gRPC) [Auth]
+  - `GET /api/notifications/{customerId}/unread-count` → Notification Service (gRPC) [Auth]
 - **Frontend (Web)**: Serves Blazor WASM static files; Blazor calls Gateway REST endpoints
 - **Mobile**: All REST endpoints designed to be consumed by .NET MAUI Android app as well (same API surface, no special mobile-only endpoints needed)
 
@@ -199,21 +216,28 @@ Standard event message classes in `BurgerIAM.Shared.Events`:
 4. Dockerfiles
 5. Commit
 
-### Phase 6: API Gateway & Web Frontend
-1. Implement **API Gateway** (ASP.NET Core + YARP reverse proxy)
-   - Route mapping, JWT auth middleware
-   - Rate limiting, request logging
-2. Implement **Blazor WebAssembly Frontend**
-   - Login/Register page
-   - Menu browsing
-   - Place order flow (cart → checkout → payment)
-   - Order status tracking (real-time polling or SignalR)
-   - Delivery tracking
-   - Receipt view
-   - Feedback submission
-3. Integration tests (end-to-end order flow)
-4. Dockerfile
-5. Commit
+### Phase 6: API Gateway & Web Frontend ✅
+1. ✅ Implement **API Gateway** (ASP.NET Core Minimal API + gRPC client stubs)
+   - 25+ REST endpoints proxying to backend gRPC services
+   - JWT auth middleware (validates tokens for protected endpoints)
+   - CORS support for Blazor WASM
+   - gRPC client stubs for all 9 backend services
+   - Unit tests (14 endpoint registration/config tests)
+2. ✅ Implement **Blazor WebAssembly Frontend** (10 pages)
+   - Home page with how-it-works and average rating
+   - Login/Register pages with localStorage JWT persistence
+   - Menu browsing by category with add-to-cart
+   - Shopping cart with quantity controls and event-based updates
+   - Checkout with delivery address and order summary
+   - Order status tracking with auto-refreshing timeline (10s polling)
+   - Delivery tracking display
+   - Receipt viewer (iframe with print support)
+   - Feedback submission (1-5 star rating + comment)
+   - My Orders history with status badges
+   - Custom AuthenticationStateProvider for Blazor auth
+3. ✅ Unit tests: 34 (14 ApiGateway + 20 WasmFrontend)
+4. ✅ Dockerfile for API Gateway (multi-stage build, port 5000)
+5. ✅ Commit
 
 ### Phase 7: Docker & Docker Compose
 1. Create `.dockerignore` for each service

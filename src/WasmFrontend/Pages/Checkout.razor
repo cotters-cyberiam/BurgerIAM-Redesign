@@ -1,0 +1,142 @@
+@page "/checkout"
+@attribute [Authorize]
+
+<PageTitle>Checkout - BurgerIAM</PageTitle>
+
+<div class="container mt-4">
+    <h2 class="mb-4">Checkout</h2>
+
+    @if (Cart.IsEmpty)
+    {
+        <div class="text-center py-5">
+            <h4 class="text-muted">Your cart is empty</h4>
+            <a href="/menu" class="btn btn-primary mt-3">Browse Menu</a>
+        </div>
+        return;
+    }
+
+    @if (!string.IsNullOrEmpty(error))
+    {
+        <div class="alert alert-danger">@error</div>
+    }
+
+    @if (orderCreated)
+    {
+        <div class="text-center py-5">
+            <div class="mb-4">&#10003;</div>
+            <h3>Order Placed Successfully!</h3>
+            <p class="text-muted">Order ID: <strong>@orderId</strong></p>
+            <p>Your total: <strong>$@Cart.TotalAmount:F2</strong></p>
+            <a href="/order-status/@orderId" class="btn btn-primary">Track Order</a>
+            <a href="/menu" class="btn btn-outline-primary ms-2">Order More</a>
+        </div>
+        return;
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Delivery Address</h5>
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        <InputText @bind-Value="deliveryAddress" class="form-control" placeholder="123 Main St, City" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Payment</h5>
+                    <div class="mb-3">
+                        <label class="form-label">Card Number</label>
+                        <InputText @bind-Value="cardNumber" class="form-control" placeholder="4111 1111 1111 1111" />
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <label class="form-label">Expiry</label>
+                            <InputText @bind-Value="expiry" class="form-control" placeholder="MM/YY" />
+                        </div>
+                        <div class="col">
+                            <label class="form-label">CVV</label>
+                            <InputText @bind-Value="cvv" class="form-control" placeholder="123" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Order Summary</h5>
+                    @foreach (var item in Cart.Items)
+                    {
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>@item.ItemName x@item.Quantity</span>
+                            <span>$@(item.UnitPrice * item.Quantity):F2</span>
+                        </div>
+                    }
+                    <hr />
+                    <div class="d-flex justify-content-between">
+                        <strong>Total</strong>
+                        <strong>$@Cart.TotalAmount:F2</strong>
+                    </div>
+                    <button @onclick="PlaceOrder" class="btn btn-primary w-100 mt-3" disabled="@isProcessing">
+                        @(isProcessing ? "Processing..." : "Place Order")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Inject] private Services.CartService Cart { get; set; } = null!;
+    [Inject] private Services.AuthService Auth { get; set; } = null!;
+    [Inject] private Services.ApiService Api { get; set; } = null!;
+    [Inject] private NavigationManager Nav { get; set; } = null!;
+
+    private string deliveryAddress = "";
+    private string cardNumber = "";
+    private string expiry = "";
+    private string cvv = "";
+    private string? error;
+    private bool isProcessing;
+    private bool orderCreated;
+    private string? orderId;
+
+    protected override void OnInitialized()
+    {
+        if (!Auth.IsLoggedIn)
+            Nav.NavigateTo("/login");
+    }
+
+    private async Task PlaceOrder()
+    {
+        if (string.IsNullOrWhiteSpace(deliveryAddress))
+        {
+            error = "Please enter a delivery address";
+            return;
+        }
+
+        isProcessing = true;
+        error = null;
+
+        var items = Cart.Items.Select(i => new Models.OrderItemRequest(i.MenuItemId, i.ItemName, i.Quantity, i.UnitPrice)).ToList();
+        var request = new Models.CreateOrderRequest(Auth.UserId!, Auth.UserEmail!, items, deliveryAddress);
+
+        var order = await Api.CreateOrderAsync(request);
+        if (order is null)
+        {
+            error = "Failed to place order. Please try again.";
+            isProcessing = false;
+            return;
+        }
+
+        orderId = order.Id;
+        Cart.Clear();
+        orderCreated = true;
+        isProcessing = false;
+    }
+}

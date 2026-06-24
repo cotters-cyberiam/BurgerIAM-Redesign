@@ -1,0 +1,145 @@
+.hero {
+    background: linear-gradient(135deg, #e63946, #c1121f);
+    color: white;
+    padding: 80px 20px;
+    text-align: center;
+}
+
+.hero h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+
+.hero p {
+    font-size: 1.2rem;
+    margin-bottom: 24px;
+    opacity: 0.9;
+}
+
+.step-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #e63946;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 auto 16px;
+}
+
+.menu-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid #eee;
+}
+
+.menu-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.price-tag {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #e63946;
+    white-space: nowrap;
+}
+
+.order-timeline {
+    position: relative;
+    padding-left: 40px;
+}
+
+.timeline-step {
+    position: relative;
+    padding: 0 0 24px 40px;
+}
+
+.timeline-step::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 24px;
+    bottom: 0;
+    width: 2px;
+    background: #ddd;
+}
+
+.timeline-step:last-child::before {
+    display: none;
+}
+
+.timeline-icon {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: white;
+}
+
+.timeline-step.completed .timeline-icon {
+    background: #28a745;
+}
+
+.timeline-step.active .timeline-icon {
+    background: #e63946;
+    box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.3);
+}
+
+.timeline-step.completed .timeline-content {
+    opacity: 0.7;
+}
+
+.timeline-step.active .timeline-content strong {
+    color: #e63946;
+}
+
+.timeline-content {
+    margin-top: -2px;
+}
+
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.4rem;
+    color: #e63946 !important;
+}
+
+.btn-primary {
+    background-color: #e63946;
+    border-color: #e63946;
+}
+
+.btn-primary:hover {
+    background-color: #c1121f;
+    border-color: #c1121f;
+}
+
+.btn-outline-primary {
+    color: #e63946;
+    border-color: #e63946;
+}
+
+.btn-outline-primary:hover {
+    background-color: #e63946;
+    border-color: #e63946;
+    color: white;
+}
+
+a {
+    color: #e63946;
+}
+
+a:hover {
+    color: #c1121f;
+}

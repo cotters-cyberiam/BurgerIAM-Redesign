@@ -1,0 +1,158 @@
+@page "/order-status/{OrderId}"
+@attribute [Authorize]
+
+<PageTitle>Order Status - BurgerIAM</PageTitle>
+
+<div class="container mt-4">
+    <h2 class="mb-4">Order Status</h2>
+
+    @if (isLoading)
+    {
+        <div class="text-center"><div class="spinner-border" role="status"></div></div>
+        return;
+    }
+
+    @if (order is null)
+    {
+        <div class="alert alert-warning">Order not found. <a href="/my-orders">View my orders</a></div>
+        return;
+    }
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="mb-1">Order #@order.Id[..8]</h5>
+                    <small class="text-muted">@OrderDate(order.CreatedAt)</small>
+                </div>
+                <span class="badge @StatusBadge(order.Status)" style="font-size: 1rem;">@StatusText(order.Status)</span>
+            </div>
+
+            <div class="order-timeline">
+                @foreach (var step in steps)
+                {
+                    <div class="timeline-step @(step.Completed ? "completed" : step.Active ? "active" : "")">
+                        <div class="timeline-icon">@(step.Completed ? "✓" : step.Number)</div>
+                        <div class="timeline-content">
+                            <strong>@step.Title</strong>
+                            <small class="text-muted d-block">@step.Description</small>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <a href="/receipt/@OrderId" class="btn btn-outline-primary w-100">View Receipt</a>
+        </div>
+        <div class="col-md-6 mb-3">
+            <a href="/feedback/@OrderId" class="btn btn-outline-primary w-100">Leave Feedback</a>
+        </div>
+    </div>
+
+    @if (delivery is not null)
+    {
+        <div class="card">
+            <div class="card-body">
+                <h5>Delivery Status</h5>
+                <p>Driver: @delivery.DriverName</p>
+                <p>Status: @DeliveryStatusText(delivery.Status)</p>
+                @if (!string.IsNullOrEmpty(delivery.EstimatedDeliveryTime))
+                {
+                    <p>Estimated Delivery: @delivery.EstimatedDeliveryTime</p>
+                }
+            </div>
+        </div>
+    }
+
+    @if (order.Status < 6)
+    {
+        <div class="text-center mt-3">
+            <small class="text-muted">Auto-refreshing every 10 seconds...</small>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string OrderId { get; set; } = "";
+
+    [Inject] private Services.ApiService Api { get; set; } = null!;
+
+    private Models.OrderResponse? order;
+    private Models.DeliveryResponse? delivery;
+    private bool isLoading = true;
+    private Timer? timer;
+
+    private record TimelineStep(int Number, string Title, string Description, bool Completed, bool Active);
+
+    private List<TimelineStep> steps => GenerateSteps();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrder();
+        isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && order is not null && order.Status < 6)
+        {
+            timer = new Timer(async _ =>
+            {
+                await LoadOrder();
+                await InvokeAsync(StateHasChanged);
+            }, null, 10000, 10000);
+        }
+    }
+
+    private async Task LoadOrder()
+    {
+        order = await Api.GetOrderAsync(OrderId);
+        if (order is not null && order.Status >= 4)
+            delivery = await Api.GetDeliveryAsync(OrderId);
+    }
+
+    public void Dispose()
+    {
+        timer?.Dispose();
+    }
+
+    private List<TimelineStep> GenerateSteps()
+    {
+        var status = order?.Status ?? 0;
+        return
+        [
+            new TimelineStep(1, "Order Placed", "Your order has been received", status >= 0, status == 0),
+            new TimelineStep(2, "Payment Confirmed", "Payment has been processed", status >= 2, status == 2),
+            new TimelineStep(3, "Preparing", "Your food is being prepared", status >= 3, status == 3),
+            new TimelineStep(4, "Ready", "Your order is ready", status >= 4, status == 4),
+            new TimelineStep(5, "Out for Delivery", "On the way to you", status >= 5, status == 5),
+            new TimelineStep(6, "Delivered", "Enjoy your meal!", status >= 6, status == 6)
+        ];
+    }
+
+    private static string OrderDate(string dateStr) =>
+        DateTime.TryParse(dateStr, out var dt) ? dt.ToString("MMM dd, yyyy HH:mm") : dateStr;
+
+    private static string StatusText(int status) => status switch
+    {
+        0 => "Pending", 1 => "Confirmed", 2 => "Paid", 3 => "Preparing",
+        4 => "Ready", 5 => "Out for Delivery", 6 => "Delivered",
+        7 => "Cancelled", 8 => "Refunded", _ => "Unknown"
+    };
+
+    private static string StatusBadge(int status) => status switch
+    {
+        0 => "bg-secondary", 1 => "bg-info", 2 => "bg-primary",
+        3 => "bg-warning text-dark", 4 => "bg-success", 5 => "bg-info",
+        6 => "bg-success", 7 => "bg-danger", _ => "bg-secondary"
+    };
+
+    private static string DeliveryStatusText(int status) => status switch
+    {
+        0 => "Unassigned", 1 => "Assigned", 2 => "Picked Up",
+        3 => "In Transit", 4 => "Delivered", 5 => "Failed", _ => "Unknown"
+    };
+}

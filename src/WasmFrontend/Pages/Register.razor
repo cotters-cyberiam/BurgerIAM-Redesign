@@ -1,0 +1,78 @@
+@page "/register"
+@attribute [AllowAnonymous]
+
+<PageTitle>Register - BurgerIAM</PageTitle>
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <h3 class="text-center mb-4">Create Account</h3>
+
+                @if (!string.IsNullOrEmpty(error))
+                {
+                    <div class="alert alert-danger">@error</div>
+                }
+                @if (success)
+                {
+                    <div class="alert alert-success">Account created! <a href="/login">Sign in</a></div>
+                }
+
+                <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <InputText @bind-Value="name" class="form-control" placeholder="Your name" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <InputText @bind-Value="email" class="form-control" placeholder="your@email.com" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <InputText @bind-Value="password" type="password" class="form-control" placeholder="Password" />
+                </div>
+                <button @onclick="HandleRegister" class="btn btn-primary w-100" disabled="@isLoading">
+                    @(isLoading ? "Creating..." : "Create Account")
+                </button>
+
+                <div class="text-center mt-3">
+                    <p class="mb-0">Already have an account? <a href="/login">Sign in</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Inject] private Services.AuthService Auth { get; set; } = null!;
+    [Inject] private NavigationManager Nav { get; set; } = null!;
+
+    private string name = "";
+    private string email = "";
+    private string password = "";
+    private string? error;
+    private bool isLoading;
+    private bool success;
+
+    protected override void OnInitialized()
+    {
+        if (Auth.IsLoggedIn)
+            Nav.NavigateTo("/");
+    }
+
+    private async Task HandleRegister()
+    {
+        isLoading = true;
+        error = null;
+
+        if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            error = "All fields are required";
+            isLoading = false;
+            return;
+        }
+
+        error = await Auth.Register(email, password, name);
+        success = error is null;
+        isLoading = false;
+    }
+}

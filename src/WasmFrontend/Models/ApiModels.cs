@@ -1,0 +1,23 @@
+namespace WasmFrontend.Models;
+
+public record LoginRequest(string Email, string Password);
+public record RegisterRequest(string Email, string Password, string Name);
+public record AuthResponse(string Token, string UserId, string Email, string Name, string Role);
+public record MenuItemResponse(string Id, string Name, string Description, double Price, string Category, bool IsAvailable, string ImageUrl);
+public record OrderItemRequest(string MenuItemId, string ItemName, int Quantity, double UnitPrice);
+public record CreateOrderRequest(string CustomerId, string CustomerEmail, List<OrderItemRequest> Items, string DeliveryAddress);
+public record OrderItemResponse(string MenuItemId, string ItemName, int Quantity, double UnitPrice);
+public record OrderResponse(string Id, string CustomerId, string CustomerEmail, List<OrderItemResponse> Items, double TotalAmount, int Status, string DeliveryAddress, string CreatedAt, string UpdatedAt);
+public record OrderStatusResponse(string OrderId, int Status, string UpdatedAt);
+public record ProcessPaymentRequest(string OrderId, string CustomerId, double Amount, string Method);
+public record PaymentResponse(string PaymentId, string OrderId, int Status, string Error);
+public record PaymentDetail(string Id, string OrderId, double Amount, int Status, string Method, string CreatedAt);
+public record KitchenOrderResponse(string Id, string OrderId, int Status, string AssignedStation, string EstimatedReadyTime);
+public record DeliveryResponse(string Id, string OrderId, string DriverId, string DriverName, int Status, string DeliveryAddress, string EstimatedDeliveryTime, string CompletedAt);
+public record SubmitFeedbackRequest(string OrderId, string CustomerId, int Rating, string Comment);
+public record FeedbackResponse(string FeedbackId, string Error);
+public record FeedbackDetail(string Id, string OrderId, string CustomerId, int Rating, string Comment, string CreatedAt);
+public record AverageRatingResponse(double AverageRating, int TotalReviews);
+public record NotificationResponse(string Id, string CustomerId, string Title, string Message, bool IsRead, string CreatedAt);
+public record UnreadCountResponse(int Count);
+public record CartItem(string MenuItemId, string ItemName, double UnitPrice, int Quantity);
