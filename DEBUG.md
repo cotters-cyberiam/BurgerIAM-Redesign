@@ -121,3 +121,21 @@ This file documents issues encountered during development and their resolutions.
 **Problem**: The `<div id="blazor-error-ui">An unhandled error has occurred...</div>` in `index.html` was always visible because `app.css` was missing the `#blazor-error-ui { display: none; }` style rule. The `.gitignore` pattern `wwwroot/` also prevented `app.css` from being tracked by git.
 
 **Fix**: Added `#blazor-error-ui` CSS (with `display: none`, fixed positioning, and dismiss button styles) to `src/WasmFrontend/wwwroot/css/app.css`. Changed the `.gitignore` pattern from `wwwroot/` to `src/ApiGateway/wwwroot/` so the WasmFrontend's custom static assets are tracked.
+
+---
+
+## 2026-06-24 — Unhandled exception on "Place Order" button click crashes Blazor app
+
+**Problem**: Clicking "Place Order" in Checkout.razor showed "An unhandled error has occurred. Reload" because the error path had no exception handling at any layer:
+
+1. `ApiService.CreateOrderAsync()` (line 17-22) had no `try/catch` — unlike every other method in that class
+2. `Checkout.razor.PlaceOrder()` (line 115-141) had no `try/catch` around `Api.CreateOrderAsync()`
+3. ApiGateway `POST /api/orders` (line 169-173) had no `try/catch` — the only endpoint without error handling
+4. `App.razor` had no `<ErrorBoundary>` — so any unhandled exception triggered Blazor's default fatal error overlay
+
+**Reproduction**: Log in, add items to cart, go to /checkout, fill in address, click "Place Order" while the OrderService is not running.
+
+**Fix**:
+- Wrapped `ApiService.CreateOrderAsync()`, `ProcessPaymentAsync()`, `SubmitFeedbackAsync()`, and `GetMenuAsync()` in `try/catch` returning `null`/empty on failure (matching the pattern of all other methods).
+- Wrapped `Checkout.razor.PlaceOrder()` body in `try/catch` with user-friendly error display.
+- Added `try/catch` to ApiGateway `POST /api/orders` endpoint returning `BadRequest` on failure (matching all other endpoints).

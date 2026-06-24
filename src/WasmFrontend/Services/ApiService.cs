@@ -11,14 +11,28 @@ public sealed class ApiService
 
     public async Task<List<MenuItemResponse>> GetMenuAsync()
     {
-        return await _http.GetFromJsonAsync<List<MenuItemResponse>>("/api/menu") ?? [];
+        try
+        {
+            return await _http.GetFromJsonAsync<List<MenuItemResponse>>("/api/menu") ?? [];
+        }
+        catch
+        {
+            return [];
+        }
     }
 
     public async Task<OrderResponse?> CreateOrderAsync(CreateOrderRequest request)
     {
-        var response = await _http.PostAsJsonAsync("/api/orders", request);
-        if (!response.IsSuccessStatusCode) return null;
-        return await response.Content.ReadFromJsonAsync<OrderResponse>();
+        try
+        {
+            var response = await _http.PostAsJsonAsync("/api/orders", request);
+            if (!response.IsSuccessStatusCode) return null;
+            return await response.Content.ReadFromJsonAsync<OrderResponse>();
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public async Task<OrderResponse?> GetOrderAsync(string orderId)
@@ -59,10 +73,17 @@ public sealed class ApiService
 
     public async Task<PaymentResponse?> ProcessPaymentAsync(string orderId, string customerId, double amount)
     {
-        var response = await _http.PostAsJsonAsync("/api/payments",
-            new ProcessPaymentRequest(orderId, customerId, amount, "Card"));
-        if (!response.IsSuccessStatusCode) return null;
-        return await response.Content.ReadFromJsonAsync<PaymentResponse>();
+        try
+        {
+            var response = await _http.PostAsJsonAsync("/api/payments",
+                new ProcessPaymentRequest(orderId, customerId, amount, "Card"));
+            if (!response.IsSuccessStatusCode) return null;
+            return await response.Content.ReadFromJsonAsync<PaymentResponse>();
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public async Task<DeliveryResponse?> GetDeliveryAsync(string orderId)
@@ -79,14 +100,21 @@ public sealed class ApiService
 
     public async Task<string?> SubmitFeedbackAsync(string orderId, string customerId, int rating, string comment)
     {
-        var response = await _http.PostAsJsonAsync("/api/feedback",
-            new SubmitFeedbackRequest(orderId, customerId, rating, comment));
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            var error = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
-            return error?.GetValueOrDefault("error", "Submission failed");
+            var response = await _http.PostAsJsonAsync("/api/feedback",
+                new SubmitFeedbackRequest(orderId, customerId, rating, comment));
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                return error?.GetValueOrDefault("error", "Submission failed");
+            }
+            return null;
         }
-        return null;
+        catch
+        {
+            return "Submission failed";
+        }
     }
 
     public async Task<FeedbackDetail?> GetFeedbackAsync(string orderId)

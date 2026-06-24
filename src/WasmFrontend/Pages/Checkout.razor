@@ -123,20 +123,28 @@
         isProcessing = true;
         error = null;
 
-        var items = Cart.Items.Select(i => new Models.OrderItemRequest(i.MenuItemId, i.ItemName, i.Quantity, i.UnitPrice)).ToList();
-        var request = new Models.CreateOrderRequest(Auth.UserId!, Auth.UserEmail!, items, deliveryAddress);
-
-        var order = await Api.CreateOrderAsync(request);
-        if (order is null)
+        try
         {
-            error = "Failed to place order. Please try again.";
-            isProcessing = false;
-            return;
+            var items = Cart.Items.Select(i => new Models.OrderItemRequest(i.MenuItemId, i.ItemName, i.Quantity, i.UnitPrice)).ToList();
+            var request = new Models.CreateOrderRequest(Auth.UserId!, Auth.UserEmail!, items, deliveryAddress);
+
+            var order = await Api.CreateOrderAsync(request);
+            if (order is null)
+            {
+                error = "Failed to place order. Please try again.";
+                isProcessing = false;
+                return;
+            }
+
+            orderId = order.Id;
+            Cart.Clear();
+            orderCreated = true;
+        }
+        catch
+        {
+            error = "An unexpected error occurred. Please try again.";
         }
 
-        orderId = order.Id;
-        Cart.Clear();
-        orderCreated = true;
         isProcessing = false;
     }
 }

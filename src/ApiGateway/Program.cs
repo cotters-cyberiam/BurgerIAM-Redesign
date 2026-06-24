@@ -168,8 +168,15 @@ app.MapGet("/api/menu/{id}", async (string id, ProtoMenu.MenuService.MenuService
 
 app.MapPost("/api/orders", async (ProtoOrder.CreateOrderRequest request, ProtoOrder.OrderService.OrderServiceClient client) =>
 {
-    var response = await client.CreateOrderAsync(request);
-    return Results.Created($"/api/orders/{response.Id}", response);
+    try
+    {
+        var response = await client.CreateOrderAsync(request);
+        return Results.Created($"/api/orders/{response.Id}", response);
+    }
+    catch (Exception)
+    {
+        return Results.BadRequest(new { error = "Failed to create order" });
+    }
 }).RequireAuthorization();
 
 app.MapGet("/api/orders/{id}", async (string id, ProtoOrder.OrderService.OrderServiceClient client) =>
