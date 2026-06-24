@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.IdentityModel.Tokens;
 using ProtoIdentity = BurgerIAM.Protos.Identity;
 using ProtoMenu = BurgerIAM.Protos.Menu;
@@ -12,6 +13,8 @@ using ProtoDelivery = BurgerIAM.Protos.Delivery;
 using ProtoFeedback = BurgerIAM.Protos.Feedback;
 using ProtoNotification = BurgerIAM.Protos.Notification;
 using ProtoCommon = BurgerIAM.Protos.Common;
+
+AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -101,6 +104,17 @@ if (Directory.Exists(wasmFrontendPath))
 {
     builder.Services.AddSpaStaticFiles(config => config.RootPath = "wwwroot");
 }
+
+builder.Services.Configure<StaticFileOptions>(options =>
+{
+    var provider = new FileExtensionContentTypeProvider();
+    provider.Mappings[".wasm"] = "application/wasm";
+    provider.Mappings[".br"] = "application/brotli";
+    provider.Mappings[".dat"] = "application/octet-stream";
+    provider.Mappings[".blat"] = "application/octet-stream";
+    provider.Mappings[".pdb"] = "application/octet-stream";
+    options.ContentTypeProvider = provider;
+});
 
 var app = builder.Build();
 

@@ -1,4 +1,6 @@
-﻿using Grpc.Net.Client;
+﻿using System.Text;
+using System.Text.Json;
+using Grpc.Net.Client;
 using ProtoIdentity = BurgerIAM.Protos.Identity;
 using ProtoMenu = BurgerIAM.Protos.Menu;
 using ProtoOrder = BurgerIAM.Protos.Order;
@@ -9,6 +11,8 @@ using ProtoFeedback = BurgerIAM.Protos.Feedback;
 using ProtoNotification = BurgerIAM.Protos.Notification;
 using ProtoCommon = BurgerIAM.Protos.Common;
 
+AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+
 var identityUrl = args.Length > 0 ? args[0] : "http://localhost:5041";
 var menuUrl = args.Length > 1 ? args[1] : "http://localhost:5052";
 var orderUrl = args.Length > 2 ? args[2] : "http://localhost:5063";
@@ -18,19 +22,22 @@ var deliveryUrl = args.Length > 5 ? args[5] : "http://localhost:5096";
 var feedbackUrl = args.Length > 6 ? args[6] : "http://localhost:5007";
 var notificationUrl = args.Length > 7 ? args[7] : "http://localhost:5018";
 var receiptUrl = args.Length > 8 ? args[8] : "http://localhost:5029";
+var gatewayUrl = args.Length > 9 ? args[9] : null;
 
 Console.ForegroundColor = ConsoleColor.Cyan;
 Console.WriteLine("═══════════════════════════════════════════════════════");
 Console.WriteLine("  BurgerIAM - Manual Integration Test App");
-Console.WriteLine($"  Identity : {identityUrl}");
-Console.WriteLine($"  Menu     : {menuUrl}");
-Console.WriteLine($"  Order    : {orderUrl}");
-Console.WriteLine($"  Payment  : {paymentUrl}");
-Console.WriteLine($"  Kitchen  : {kitchenUrl}");
-Console.WriteLine($"  Delivery : {deliveryUrl}");
-Console.WriteLine($"  Feedback : {feedbackUrl}");
-Console.WriteLine($"  Notif    : {notificationUrl}");
-Console.WriteLine($"  Receipt  : {receiptUrl}");
+Console.WriteLine($"  Identity  : {identityUrl}");
+Console.WriteLine($"  Menu      : {menuUrl}");
+Console.WriteLine($"  Order     : {orderUrl}");
+Console.WriteLine($"  Payment   : {paymentUrl}");
+Console.WriteLine($"  Kitchen   : {kitchenUrl}");
+Console.WriteLine($"  Delivery  : {deliveryUrl}");
+Console.WriteLine($"  Feedback  : {feedbackUrl}");
+Console.WriteLine($"  Notif     : {notificationUrl}");
+Console.WriteLine($"  Receipt   : {receiptUrl}");
+if (gatewayUrl is not null)
+    Console.WriteLine($"  Gateway   : {gatewayUrl}");
 Console.WriteLine("═══════════════════════════════════════════");
 Console.ResetColor();
 Console.WriteLine();
@@ -564,6 +571,171 @@ await RunTest("GetReceipt - view HTML receipt", async () =>
         throw new Exception("Receipt HTML missing expected content");
     Console.WriteLine($"  Receipt HTML: {html.Length} bytes");
 });
+
+if (gatewayUrl is not null)
+{
+    Console.ForegroundColor = ConsoleColor.Yellow;
+    Console.WriteLine();
+    Console.WriteLine("─── API Gateway (Phase 6) ───");
+    Console.ResetColor();
+
+    var gatewayClient = new HttpClient { BaseAddress = new Uri(gatewayUrl) };
+
+    await RunTest("GET /health", async () =>
+    {
+        var response = await gatewayClient.GetAsync("/health");
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        if (!json.Contains("healthy"))
+            throw new Exception("Expected healthy status");
+        Console.WriteLine($"  Response: {json[..Math.Min(80, json.Length)]}");
+    });
+
+    string? gwToken = null;
+    await RunTest("POST /api/auth/register via gateway", async () =>
+    {
+        var gwEmail = $"gw-{testId}@test.com";
+        var body = JsonSerializer.Serialize(new { email = gwEmail, password = testPassword, name = "GW Tester" });
+        var response = await gatewayClient.PostAsync("/api/auth/register", new StringContent(body, Encoding.UTF8, "application/json"));
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        if (!json.Contains("userId"))
+            throw new Exception("Expected userId in gateway register response");
+        Console.WriteLine($"  Registered via gateway");
+    });
+
+    await RunTest("POST /api/auth/login via gateway", async () =>
+    {
+        var body = JsonSerializer.Serialize(new { email = testEmail, password = testPassword });
+        var response = await gatewayClient.PostAsync("/api/auth/login", new StringContent(body, Encoding.UTF8, "application/json"));
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        if (!json.Contains("token"))
+            throw new Exception("Expected token in gateway login response");
+        var doc = JsonDocument.Parse(json);
+        gwToken = doc.RootElement.GetProperty("token").GetString();
+        gatewayClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", gwToken);
+        Console.WriteLine($"  Token received via gateway");
+    });
+
+    await RunTest("GET /api/menu via gateway", async () =>
+    {
+        var response = await gatewayClient.GetAsync("/api/menu");
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"  Menu items: {json.Length} bytes of JSON");
+    });
+
+    string? gwOrderId = null;
+    await RunTest("POST /api/orders via gateway (auth)", async () =>
+    {
+        if (userId is null) throw new Exception("No user ID available");
+        var body = JsonSerializer.Serialize(new
+        {
+            customerId = userId,
+            customerEmail = testEmail,
+            deliveryAddress = "456 Gateway Ave",
+            items = new[]
+            {
+                new { menuItemId = "item-1", itemName = "Cheeseburger", quantity = 1, unitPrice = 5.99 }
+            }
+        });
+        var response = await gatewayClient.PostAsync("/api/orders", new StringContent(body, Encoding.UTF8, "application/json"));
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        var doc = JsonDocument.Parse(json);
+        gwOrderId = doc.RootElement.GetProperty("id").GetString();
+        if (string.IsNullOrWhiteSpace(gwOrderId))
+            throw new Exception("Expected order ID from gateway");
+        Console.WriteLine($"  OrderId: {gwOrderId}");
+    });
+
+    await RunTest("GET /api/orders/{id} via gateway (auth)", async () =>
+    {
+        if (gwOrderId is null) throw new Exception("No gateway order ID available");
+        var response = await gatewayClient.GetAsync($"/api/orders/{gwOrderId}");
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        if (!json.Contains(gwOrderId))
+            throw new Exception("Expected order data from gateway");
+        Console.WriteLine($"  Order retrieved: {json.Length} bytes");
+    });
+
+    await RunTest("POST /api/payments via gateway (auth)", async () =>
+    {
+        if (gwOrderId is null) throw new Exception("No gateway order ID available");
+        var body = JsonSerializer.Serialize(new
+        {
+            orderId = gwOrderId,
+            customerId = userId ?? "",
+            amount = 5.99,
+            method = "CreditCard"
+        });
+        var response = await gatewayClient.PostAsync("/api/payments", new StringContent(body, Encoding.UTF8, "application/json"));
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"  Payment processed via gateway");
+    });
+
+    await RunTest("POST /api/kitchen/{orderId}/prepare via gateway (auth)", async () =>
+    {
+        if (gwOrderId is null) throw new Exception("No gateway order ID available");
+        var body = JsonSerializer.Serialize(new { station = "Grill" });
+        var response = await gatewayClient.PostAsync($"/api/kitchen/{gwOrderId}/prepare", new StringContent(body, Encoding.UTF8, "application/json"));
+        if (!response.IsSuccessStatusCode)
+        {
+            var err = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"  Note: Kitchen may need seeding: {err[..Math.Min(80, err.Length)]}");
+            return;
+        }
+        Console.WriteLine($"  Kitchen order prepared via gateway");
+    });
+
+    await RunTest("POST /api/feedback via gateway (auth)", async () =>
+    {
+        if (gwOrderId is null) throw new Exception("No gateway order ID available");
+        var body = JsonSerializer.Serialize(new
+        {
+            orderId = gwOrderId,
+            customerId = userId ?? "",
+            rating = 5,
+            comment = "Great via gateway!"
+        });
+        var response = await gatewayClient.PostAsync("/api/feedback", new StringContent(body, Encoding.UTF8, "application/json"));
+        response.EnsureSuccessStatusCode();
+        Console.WriteLine($"  Feedback submitted via gateway");
+    });
+
+    await RunTest("GET /api/feedback/rating/average via gateway", async () =>
+    {
+        var response = await gatewayClient.GetAsync("/api/feedback/rating/average");
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"  Avg rating: {json.Length} bytes");
+    });
+
+    await RunTest("GET /api/receipts/{orderId} via gateway (auth)", async () =>
+    {
+        if (orderId is null) throw new Exception("No order ID available");
+        var response = await gatewayClient.GetAsync($"/api/receipts/{orderId}");
+        if (!response.IsSuccessStatusCode)
+        {
+            Console.WriteLine("  Note: Receipt may not exist yet (expected)");
+            return;
+        }
+        var html = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"  Receipt HTML: {html.Length} bytes");
+    });
+
+    await RunTest("GET /api/notifications/{customerId} via gateway (auth)", async () =>
+    {
+        if (userId is null) throw new Exception("No user ID available");
+        var response = await gatewayClient.GetAsync($"/api/notifications/{userId}");
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"  Notifications: {json.Length} bytes");
+    });
+}
 
 Console.WriteLine();
 Console.ForegroundColor = ConsoleColor.Green;

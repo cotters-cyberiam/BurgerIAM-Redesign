@@ -35,6 +35,9 @@ x86/
 .DS_Store
 Thumbs.db
 
+# SPA frontend build output (copied by MSBuild target from WasmFrontend publish)
+wwwroot/
+
 # IDE
 .idea/
 *.swp

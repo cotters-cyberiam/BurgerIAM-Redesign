@@ -308,9 +308,15 @@ dotnet test tests/ApiGateway.Tests --nologo
 dotnet test tests/WasmFrontend.Tests --nologo
 ```
 
+**Automated tests:**
+```powershell
+dotnet test tests/ApiGateway.Tests --nologo
+dotnet test tests/WasmFrontend.Tests --nologo
+```
+
 **Manual test — requires all nine backend services + API Gateway:**
 
-The API Gateway serves the Blazor WASM frontend at `http://localhost:5000`. You can interact with the full UI via browser.
+The API Gateway serves the Blazor WASM frontend at `http://localhost:5000`. The first `dotnet run` (or `dotnet build`) of the ApiGateway automatically publishes the WasmFrontend and copies its output to the gateway's `wwwroot/` directory — this adds ~1–2 minutes to the initial build.
 
 | Service | Port | Start Command |
 |---------|------|---------------|
@@ -324,6 +330,30 @@ The API Gateway serves the Blazor WASM frontend at `http://localhost:5000`. You 
 | NotificationService | 5018 | `dotnet run --project src/NotificationService` |
 | ReceiptService | 5029 | `dotnet run --project src/ReceiptService` |
 | **ApiGateway** | **5000** | `dotnet run --project src/ApiGateway` |
+
+**Step 2: Run the manual test app with the gateway URL as the 10th argument**
+
+```powershell
+dotnet run --project tests/ManualTestApp -- http://localhost:5041 http://localhost:5052 http://localhost:5063 http://localhost:5074 http://localhost:5085 http://localhost:5096 http://localhost:5007 http://localhost:5018 http://localhost:5029 http://localhost:5000
+```
+
+When the gateway URL (10th arg) is provided, the test app adds a **Phase 6 — API Gateway** section that runs REST endpoint tests through the gateway, including:
+| Test | Auth | Endpoint |
+|------|------|----------|
+| Health check | No | `GET /health` |
+| Register via gateway | No | `POST /api/auth/register` |
+| Login via gateway | No | `POST /api/auth/login` |
+| Get menu via gateway | No | `GET /api/menu` |
+| Create order via gateway | JWT | `POST /api/orders` |
+| Get order via gateway | JWT | `GET /api/orders/{id}` |
+| Process payment via gateway | JWT | `POST /api/payments` |
+| Kitchen prepare via gateway | JWT | `POST /api/kitchen/{id}/prepare` |
+| Submit feedback via gateway | JWT | `POST /api/feedback` |
+| Average rating via gateway | No | `GET /api/feedback/rating/average` |
+| Get receipt via gateway | JWT | `GET /api/receipts/{id}` |
+| Get notifications via gateway | JWT | `GET /api/notifications/{customerId}` |
+
+**Test credentials used:** Same random user created by the gRPC backend tests (shared `userId`/`token`).
 
 Open `http://localhost:5000` in a browser to use the Blazor WebAssembly frontend. The UI provides pages for:
 - Home (how-it-works + average rating)

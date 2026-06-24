@@ -32,4 +32,12 @@
     <ProjectReference Include="..\BurgerIAM.EventBus\BurgerIAM.EventBus.csproj" />
   </ItemGroup>
 
+  <Target Name="PublishAndCopyWasmFrontend" AfterTargets="Build" Condition="!Exists('$(MSBuildProjectDirectory)\wwwroot\index.html')">
+    <Exec Command="dotnet publish &quot;$(MSBuildThisFileDirectory)..\WasmFrontend\WasmFrontend.csproj&quot; --configuration $(Configuration) --nologo" />
+    <ItemGroup>
+      <WasmFiles Include="$(MSBuildThisFileDirectory)..\WasmFrontend\bin\$(Configuration)\net9.0\publish\wwwroot\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(WasmFiles)" DestinationFolder="$(MSBuildProjectDirectory)\wwwroot\%(RecursiveDir)" SkipUnchangedFiles="true" />
+  </Target>
+
 </Project>
