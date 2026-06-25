@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using Grpc.Net.Client;
@@ -185,12 +186,18 @@ app.MapPost("/api/orders", async (ProtoOrder.CreateOrderRequest request,
         };
         await paymentClient.ProcessPaymentAsync(paymentRequest);
 
+        var confirmReq = new HttpRequestMessage(HttpMethod.Post, $"{GetServiceUrl("Order")}/api/internal/orders/{order.Id}/confirm-payment")
+        {
+            Version = HttpVersion.Version20,
+            VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher
+        };
         var orderHttp = httpFactory.CreateClient();
-        await orderHttp.PostAsync($"{GetServiceUrl("Order")}/api/internal/orders/{order.Id}/confirm-payment", null);
+        await orderHttp.SendAsync(confirmReq);
 
         await kitchenClient.SeedKitchenOrderAsync(new ProtoKitchen.SeedKitchenOrderRequest { OrderId = order.Id });
 
-        await orderHttp.PostAsync($"{GetServiceUrl("Receipt")}/receipts?orderId={order.Id}&customerId={order.CustomerId}&amount={order.TotalAmount}", null);
+        var receiptHttp = httpFactory.CreateClient();
+        await receiptHttp.PostAsync($"{GetServiceUrl("Receipt")}/receipts?orderId={order.Id}&customerId={order.CustomerId}&amount={order.TotalAmount}", null);
 
         return Results.Created($"/api/orders/{order.Id}", order);
     }
