@@ -4,6 +4,94 @@ This file documents issues encountered during development and their resolutions.
 
 ---
 
+## 2026-06-24 — Order stuck at "Order Placed" (status 0) after payment
+
+**Problem**: After placing an order, the order status remained at 0 (Pending) and never advanced to 2 (Paid). The gateway's POST to `/api/internal/orders/{id}/confirm-payment` silently failed.
+
+**Root cause**: All gRPC services had `"Protocols": "Http2"` in Kestrel config (HTTP/2 only). The gateway used `HttpClient` (defaults to HTTP/1.1) to call the REST confirm-payment endpoint. The request was rejected because the server only spoke HTTP/2. The exception was caught by the generic `catch` block, returning "Failed to create order".
+
+**Fix**: Changed the REST call to use `HttpRequestMessage` with `Version = HttpVersion.Version20` and `VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher`. Kept Kestrel at `Http2` for gRPC compatibility.
+
+---
+
+## 2026-06-24 — Changing OrderService to Http1AndHttp2 broke gRPC calls
+
+**Problem**: After changing OrderService Kestrel to `Http1AndHttp2`, gRPC calls from the gateway failed with `HTTP_1_1_REQUIRED (0xd)` — the server told the HTTP/2 client to use HTTP/1.1 instead.
+
+**Root cause**: Kestrel in `Http1AndHttp2` mode can reject HTTP/2 requests for endpoints that don't look like gRPC. The gRPC client negotiates HTTP/2 via h2c upgrade, but after the upgrade, the server may reject actual gRPC requests.
+
+**Fix**: Reverted to `"Protocols": "Http2"` and instead configured the gateway's HttpClient to send HTTP/2 requests when calling the OrderService REST endpoint.
+
+---
+
+## 2026-06-24 — POST /api/orders blocks for ~40s before returning to frontend
+
+**Problem**: Clicking "Place Order" took ~40 seconds (4 stages × 10s delays) before the user saw the success page. By then all order stages were already complete, so the tracking page showed "Delivered" immediately.
+
+**Fix**: Moved the stage progression (StartPreparing → MarkAsReady → AssignDelivery → UpdateDeliveryStatus) into a `BackgroundService` (`OrderProgressService`) using `System.Threading.Channels`. The POST handler now only does the fast path (create order, process payment, confirm payment, seed kitchen, generate receipt) and enqueues the order for background processing.
+
+---
+
+## 2026-06-24 — OrderProgressService not found by minimal API binder
+
+**Problem**: ApiGateway failed at startup with "Failure to infer one or more parameters — progress (UNKNOWN)". The `OrderProgressService` was registered only as `AddHostedService<T>()` which registers it as `IHostedService`, not as the concrete type.
+
+**Fix**: Registered as both singleton and hosted service:
+```csharp
+builder.Services.AddSingleton<OrderProgressService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<OrderProgressService>());
+```
+
+---
+
+## 2026-06-24 — Order status page doesn't auto-refresh
+
+**Problem**: The order tracking page only showed the initial status and never updated. Users had to manually refresh the browser to see stage progression.
+
+**Root cause**: `System.Threading.Timer` callback (`async void`) inside `OnAfterRenderAsync` had threading issues in Blazor WASM — the timer's async callback ran on a thread pool thread, and `InvokeAsync(StateHasChanged)` didn't reliably trigger re-renders.
+
+**Fix**: Replaced `Timer` with a fire-and-forget async loop in `OnInitializedAsync` using `Task.Delay`:
+```csharp
+if (order is not null && order.Status < 6)
+    _ = RefreshAsync();
+
+private async Task RefreshAsync()
+{
+    while (order is not null && order.Status < 6)
+    {
+        await Task.Delay(10000);
+        await LoadOrder();
+        await InvokeAsync(StateHasChanged);
+    }
+}
+```
+
+---
+
+## 2026-06-24 — DeliveryTracking.razor "Element left unclosed" error
+
+**Problem**: Clicking "Track Delivery" showed "A frame of type 'Element' was left unclosed. Do not use try/catch inside rendering logic, because partial output cannot be undone."
+
+**Root cause**: `return;` statements inside `@if` blocks in Razor markup. When `return;` exits the rendering method, any open HTML elements from parent branches remain unclosed, corrupting the render tree.
+
+**Fix**: Same pattern as Checkout.razor — replaced `@if/return` with `@if/else if/else` branching so all HTML elements are properly balanced.
+
+---
+
+## 2026-06-24 — Order total shows £0.00 on checkout confirmation and receipt
+
+**Problem**: After placing an order, both the checkout success page and the receipt showed `£0.00` instead of the actual cart total. Items and prices appeared correctly in the cart before ordering.
+
+**Root cause**: The gateway's `POST /api/orders` handler accepted `ProtoOrder.CreateOrderRequest` as the JSON body parameter. This protobuf-generated type has a getter-only `Items` property (`private readonly RepeatedField<OrderItem> items_`). System.Text.Json cannot populate a getter-only collection property — it creates the instance but the `Items` field remains empty. The OrderService then calculated `totalAmount = 0` from the empty items list.
+
+**Fix**: Created plain C# record DTOs (`CreateOrderItemDto`, `CreateOrderDto`) for the REST endpoint binding, then manually mapped to the protobuf types before calling gRPC:
+```csharp
+var orderReq = new ProtoOrder.CreateOrderRequest { ... };
+orderReq.Items.AddRange(dto.Items.Select(i => new ProtoOrder.OrderItem { ... }));
+```
+
+---
+
 ## 2026-06-23 — .NET 10 SDK creates .slnx format incompatible with VS 2022
 
 **Problem**: `dotnet new sln` with .NET 10 SDK generates `BurgerIAM.slnx` (XML format), which Visual Studio 2022 cannot open. VS 2022 requires the legacy `.sln` format.
