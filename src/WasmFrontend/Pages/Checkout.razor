@@ -143,9 +143,9 @@ else
             Cart.Clear();
             orderCreated = true;
         }
-        catch
+        catch (Exception ex)
         {
-            error = "An unexpected error occurred. Please try again.";
+            error = ex.Message;
         }
 
         isProcessing = false;

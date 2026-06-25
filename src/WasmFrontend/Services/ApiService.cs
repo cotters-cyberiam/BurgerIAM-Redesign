@@ -23,16 +23,13 @@ public sealed class ApiService
 
     public async Task<OrderResponse?> CreateOrderAsync(CreateOrderRequest request)
     {
-        try
+        var response = await _http.PostAsJsonAsync("/api/orders", request);
+        if (!response.IsSuccessStatusCode)
         {
-            var response = await _http.PostAsJsonAsync("/api/orders", request);
-            if (!response.IsSuccessStatusCode) return null;
-            return await response.Content.ReadFromJsonAsync<OrderResponse>();
+            var body = await response.Content.ReadAsStringAsync();
+            throw new InvalidOperationException(body);
         }
-        catch
-        {
-            return null;
-        }
+        return await response.Content.ReadFromJsonAsync<OrderResponse>();
     }
 
     public async Task<OrderResponse?> GetOrderAsync(string orderId)
