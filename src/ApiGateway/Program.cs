@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using ApiGateway.Services;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.StaticFiles;
@@ -100,6 +101,8 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddHostedService<OrderProgressService>();
+
 var wasmFrontendPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
 if (Directory.Exists(wasmFrontendPath))
 {
@@ -171,8 +174,8 @@ app.MapPost("/api/orders", async (ProtoOrder.CreateOrderRequest request,
     ProtoOrder.OrderService.OrderServiceClient orderClient,
     ProtoPayment.PaymentService.PaymentServiceClient paymentClient,
     ProtoKitchen.KitchenService.KitchenServiceClient kitchenClient,
-    ProtoDelivery.DeliveryService.DeliveryServiceClient deliveryClient,
-    IHttpClientFactory httpFactory) =>
+    IHttpClientFactory httpFactory,
+    OrderProgressService progress) =>
 {
     try
     {
@@ -192,35 +195,15 @@ app.MapPost("/api/orders", async (ProtoOrder.CreateOrderRequest request,
             Version = HttpVersion.Version20,
             VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher
         };
-        var orderHttp = httpFactory.CreateClient();
+        using var orderHttp = httpFactory.CreateClient();
         await orderHttp.SendAsync(confirmReq);
 
         await kitchenClient.SeedKitchenOrderAsync(new ProtoKitchen.SeedKitchenOrderRequest { OrderId = order.Id });
 
-        HttpRequestMessage StatusReq(int s) => new HttpRequestMessage(HttpMethod.Post, $"{GetServiceUrl("Order")}/api/internal/orders/{order.Id}/status?status={s}")
-        {
-            Version = HttpVersion.Version20,
-            VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher
-        };
-
-        await Task.Delay(TimeSpan.FromSeconds(10));
-        await kitchenClient.StartPreparingAsync(new ProtoKitchen.StartPreparingRequest { OrderId = order.Id, Station = "Grill" });
-        await orderHttp.SendAsync(StatusReq(3));
-
-        await Task.Delay(TimeSpan.FromSeconds(10));
-        await kitchenClient.MarkAsReadyAsync(new ProtoKitchen.MarkAsReadyRequest { OrderId = order.Id });
-        await orderHttp.SendAsync(StatusReq(4));
-
-        await Task.Delay(TimeSpan.FromSeconds(10));
-        var delivery = await deliveryClient.AssignDeliveryAsync(new ProtoDelivery.AssignDeliveryRequest { OrderId = order.Id, DeliveryAddress = order.DeliveryAddress });
-        await orderHttp.SendAsync(StatusReq(5));
-
-        await Task.Delay(TimeSpan.FromSeconds(10));
-        await deliveryClient.UpdateDeliveryStatusAsync(new ProtoDelivery.UpdateDeliveryStatusRequest { DeliveryId = delivery.Id, Status = 4 });
-        await orderHttp.SendAsync(StatusReq(6));
-
         var receiptHttp = httpFactory.CreateClient();
         await receiptHttp.PostAsync($"{GetServiceUrl("Receipt")}/receipts?orderId={order.Id}&customerId={order.CustomerId}&amount={order.TotalAmount}", null);
+
+        await progress.EnqueueOrderAsync(order.Id);
 
         return Results.Created($"/api/orders/{order.Id}", order);
     }
