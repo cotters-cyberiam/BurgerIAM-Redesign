@@ -3,11 +3,9 @@
 
 <PageTitle>Checkout - BurgerIAM</PageTitle>
 
-<div class="container mt-4">
-    <h2 class="mb-4">Checkout</h2>
-
-    @if (orderCreated)
-    {
+@if (orderCreated)
+{
+    <div class="container mt-4">
         <div class="text-center py-5">
             <div class="mb-4">&#10003;</div>
             <h3>Order Placed Successfully!</h3>
@@ -16,80 +14,85 @@
             <a href="/order-status/@orderId" class="btn btn-primary">Track Order</a>
             <a href="/menu" class="btn btn-outline-primary ms-2">Order More</a>
         </div>
-        return;
-    }
-
-    @if (Cart.IsEmpty)
-    {
+    </div>
+}
+else if (Cart.IsEmpty)
+{
+    <div class="container mt-4">
         <div class="text-center py-5">
             <h4 class="text-muted">Your cart is empty</h4>
             <a href="/menu" class="btn btn-primary mt-3">Browse Menu</a>
         </div>
-        return;
-    }
+    </div>
+}
+else
+{
+    <div class="container mt-4">
+        <h2 class="mb-4">Checkout</h2>
 
-    @if (!string.IsNullOrEmpty(error))
-    {
-        <div class="alert alert-danger">@error</div>
-    }
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="alert alert-danger">@error</div>
+        }
 
-    <div class="row">
-        <div class="col-md-8">
-            <div class="card mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">Delivery Address</h5>
-                    <div class="mb-3">
-                        <label class="form-label">Address</label>
-                        <InputText @bind-Value="deliveryAddress" class="form-control" placeholder="123 Main St, City" />
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Delivery Address</h5>
+                        <div class="mb-3">
+                            <label class="form-label">Address</label>
+                            <InputText @bind-Value="deliveryAddress" class="form-control" placeholder="123 Main St, City" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Payment</h5>
+                        <div class="mb-3">
+                            <label class="form-label">Card Number</label>
+                            <InputText @bind-Value="cardNumber" class="form-control" placeholder="4111 1111 1111 1111" />
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <label class="form-label">Expiry</label>
+                                <InputText @bind-Value="expiry" class="form-control" placeholder="MM/YY" />
+                            </div>
+                            <div class="col">
+                                <label class="form-label">CVV</label>
+                                <InputText @bind-Value="cvv" class="form-control" placeholder="123" />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Payment</h5>
-                    <div class="mb-3">
-                        <label class="form-label">Card Number</label>
-                        <InputText @bind-Value="cardNumber" class="form-control" placeholder="4111 1111 1111 1111" />
-                    </div>
-                    <div class="row">
-                        <div class="col">
-                            <label class="form-label">Expiry</label>
-                            <InputText @bind-Value="expiry" class="form-control" placeholder="MM/YY" />
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Order Summary</h5>
+                        @foreach (var item in Cart.Items)
+                        {
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>@item.ItemName x@item.Quantity</span>
+                                <span>&pound;@((item.UnitPrice * item.Quantity).ToString("F2"))</span>
+                            </div>
+                        }
+                        <hr />
+                        <div class="d-flex justify-content-between">
+                            <strong>Total</strong>
+                            <strong>&pound;@Cart.TotalAmount.ToString("F2")</strong>
                         </div>
-                        <div class="col">
-                            <label class="form-label">CVV</label>
-                            <InputText @bind-Value="cvv" class="form-control" placeholder="123" />
-                        </div>
+                        <button @onclick="PlaceOrder" class="btn btn-primary w-100 mt-3" disabled="@isProcessing">
+                            @(isProcessing ? "Processing..." : "Place Order")
+                        </button>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Order Summary</h5>
-                    @foreach (var item in Cart.Items)
-                    {
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>@item.ItemName x@item.Quantity</span>
-                            <span>&pound;@((item.UnitPrice * item.Quantity).ToString("F2"))</span>
-                        </div>
-                    }
-                    <hr />
-                    <div class="d-flex justify-content-between">
-                        <strong>Total</strong>
-                        <strong>&pound;@Cart.TotalAmount.ToString("F2")</strong>
-                    </div>
-                    <button @onclick="PlaceOrder" class="btn btn-primary w-100 mt-3" disabled="@isProcessing">
-                        @(isProcessing ? "Processing..." : "Place Order")
-                    </button>
                 </div>
             </div>
         </div>
     </div>
-</div>
+}
 
 @code {
     [Inject] private Services.CartService Cart { get; set; } = null!;
