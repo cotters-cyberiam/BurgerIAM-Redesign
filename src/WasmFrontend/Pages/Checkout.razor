@@ -130,6 +130,7 @@ else
         try
         {
             var items = Cart.Items.Select(i => new Models.OrderItemRequest(i.MenuItemId, i.ItemName, i.Quantity, i.UnitPrice)).ToList();
+            var capturedTotal = items.Sum(i => i.Quantity * i.UnitPrice);
             var request = new Models.CreateOrderRequest(Auth.UserId!, Auth.UserEmail!, items, deliveryAddress);
 
             var order = await Api.CreateOrderAsync(request);
@@ -141,7 +142,7 @@ else
             }
 
             orderId = order.Id;
-            savedTotal = Cart.TotalAmount;
+            savedTotal = capturedTotal > 0 ? capturedTotal : order.TotalAmount > 0 ? order.TotalAmount : Cart.TotalAmount;
             Cart.Clear();
             orderCreated = true;
         }
