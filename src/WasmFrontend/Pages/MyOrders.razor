@@ -38,7 +38,7 @@
                             <td><code>@order.Id[..8]</code></td>
                             <td>@OrderDate(order.CreatedAt)</td>
                             <td>@order.Items.Count</td>
-                            <td>$@order.TotalAmount:F2</td>
+                            <td>&pound;@order.TotalAmount.ToString("F2")</td>
                             <td><span class="badge @StatusBadge(order.Status)">@StatusText(order.Status)</span></td>
                             <td>
                                 <a href="/order-status/@order.Id" class="btn btn-sm btn-outline-primary">Track</a>

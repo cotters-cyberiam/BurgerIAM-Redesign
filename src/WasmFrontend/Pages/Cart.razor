@@ -31,13 +31,13 @@
                     {
                         <tr>
                             <td>@item.ItemName</td>
-                            <td>$@item.UnitPrice:F2</td>
+                            <td>&pound;@item.UnitPrice.ToString("F2")</td>
                             <td>
                                 <button @onclick="() => CartService.UpdateQuantity(item.MenuItemId, item.Quantity - 1)" class="btn btn-sm btn-outline-secondary">-</button>
                                 <span class="mx-2">@item.Quantity</span>
                                 <button @onclick="() => CartService.UpdateQuantity(item.MenuItemId, item.Quantity + 1)" class="btn btn-sm btn-outline-secondary">+</button>
                             </td>
-                            <td>$@(item.UnitPrice * item.Quantity):F2</td>
+                            <td>&pound;@((item.UnitPrice * item.Quantity).ToString("F2"))</td>
                             <td>
                                 <button @onclick="() => CartService.RemoveItem(item.MenuItemId)" class="btn btn-sm btn-danger">Remove</button>
                             </td>
@@ -47,7 +47,7 @@
                 <tfoot>
                     <tr>
                         <td colspan="3" class="text-end"><strong>Total:</strong></td>
-                        <td><strong>$@CartService.TotalAmount:F2</strong></td>
+                        <td><strong>&pound;@CartService.TotalAmount.ToString("F2")</strong></td>
                         <td></td>
                     </tr>
                 </tfoot>
