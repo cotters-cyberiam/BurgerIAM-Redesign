@@ -21,6 +21,8 @@ else
     builder.Services.AddSingleton<IEventBus>(_ => new RabbitMQEventBus(eventBusConnection, exchangeName));
 }
 
+builder.Services.AddHostedService<EventBusHostedService>();
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())

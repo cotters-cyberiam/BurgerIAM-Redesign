@@ -22,7 +22,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$repoRoot = $PSScriptRoot ? $PSScriptRoot : (Get-Location).Path
+$repoRoot = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 
 $services = @(
     @{ Name = "IdentityService";     Port = 5041 }
