@@ -4,6 +4,41 @@ This file documents issues encountered during development and their resolutions.
 
 ---
 
+## 2026-06-25 — Checkout total still shows £0.00 after DTO fix
+
+**Problem**: The checkout success page displayed `£0.00` even though:
+- The order was created successfully (valid GUID shown)
+- Items had correct prices in the cart summary
+- The original DTO fix (2026-06-24) already ensured items were sent to the API
+
+**Root cause**: Two issues compounded:
+1. The success page read `Cart.TotalAmount` in the Razor template, which was evaluated *after* `Cart.Clear()` was called in `PlaceOrder()`, so it always returned 0.
+2. `order.TotalAmount` from the API response was unreliable due to protobuf JSON serialization details.
+
+**Fix**:
+- Captured the total from the items list **before** the API call: `capturedTotal = items.Sum(i => i.Quantity * i.UnitPrice)`.
+- Used three-way fallback: `capturedTotal > 0 ? capturedTotal : order.TotalAmount > 0 ? order.TotalAmount : Cart.TotalAmount`.
+- Saved the value before `Cart.Clear()`.
+
+**Files**: `src/WasmFrontend/Pages/Checkout.razor`
+
+---
+
+## 2026-06-25 — Delivery tracking page shows HTML entity codes instead of emoji
+
+**Problem**: The delivery tracking page displayed literal text `&#127881;` instead of the party popper emoji.
+
+**Root cause**: Blazor HTML-encodes `@(...)` expression output. The HTML entity `&#127881;` was treated as literal text — the `&` was encoded to `&amp;`, producing `&amp;#127881;` which the browser rendered as `&#127881;`.
+
+**Fix**: Replaced `@("&#127881;")` with `@((MarkupString)"🎉")`. Using `MarkupString` bypasses Blazor's HTML encoding and renders the emoji character directly. Also replaced the other HTML entities with actual emoji characters for consistency.
+
+**Files**: `src/WasmFrontend/Pages/DeliveryTracking.razor`
+# Debug Log
+
+This file documents issues encountered during development and their resolutions. Refer here when troubleshooting similar problems.
+
+---
+
 ## 2026-06-24 — Order stuck at "Order Placed" (status 0) after payment
 
 **Problem**: After placing an order, the order status remained at 0 (Pending) and never advanced to 2 (Paid). The gateway's POST to `/api/internal/orders/{id}/confirm-payment` silently failed.
