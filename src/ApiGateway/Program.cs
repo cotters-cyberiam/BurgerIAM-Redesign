@@ -171,7 +171,7 @@ app.MapGet("/api/menu/{id}", async (string id, ProtoMenu.MenuService.MenuService
     }
 });
 
-app.MapPost("/api/orders", async (ProtoOrder.CreateOrderRequest request,
+app.MapPost("/api/orders", async (CreateOrderDto dto,
     ProtoOrder.OrderService.OrderServiceClient orderClient,
     ProtoPayment.PaymentService.PaymentServiceClient paymentClient,
     ProtoKitchen.KitchenService.KitchenServiceClient kitchenClient,
@@ -180,7 +180,20 @@ app.MapPost("/api/orders", async (ProtoOrder.CreateOrderRequest request,
 {
     try
     {
-        var order = await orderClient.CreateOrderAsync(request);
+        var orderReq = new ProtoOrder.CreateOrderRequest
+        {
+            CustomerId = dto.CustomerId,
+            CustomerEmail = dto.CustomerEmail,
+            DeliveryAddress = dto.DeliveryAddress
+        };
+        orderReq.Items.AddRange(dto.Items.Select(i => new ProtoOrder.OrderItem
+        {
+            MenuItemId = i.MenuItemId,
+            ItemName = i.ItemName,
+            Quantity = i.Quantity,
+            UnitPrice = i.UnitPrice
+        }));
+        var order = await orderClient.CreateOrderAsync(orderReq);
 
         var paymentRequest = new ProtoPayment.ProcessPaymentRequest
         {
@@ -423,3 +436,6 @@ if (Directory.Exists(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot")))
 }
 
 app.Run();
+
+public record CreateOrderItemDto(string MenuItemId, string ItemName, int Quantity, double UnitPrice);
+public record CreateOrderDto(string CustomerId, string CustomerEmail, List<CreateOrderItemDto> Items, string DeliveryAddress);
