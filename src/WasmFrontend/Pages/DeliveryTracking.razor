@@ -25,7 +25,7 @@
                 <div class="card-body text-center py-4">
                     <h5 class="mb-3">Delivery Status</h5>
                     <div class="display-1 mb-3">
-                        @(delivery.Status >= 4 ? "&#127881;" : delivery.Status >= 3 ? "&#128666;" : delivery.Status >= 2 ? "&#128230;" : "&#128197;")
+                        @(delivery.Status >= 4 ? "🎉" : delivery.Status >= 3 ? "🚚" : delivery.Status >= 2 ? "📦" : "📅")
                     </div>
                     <h4 class="@StatusColor(delivery.Status)">@StatusText(delivery.Status)</h4>
                     <p class="text-muted">Order: <code>@OrderId[..8]</code></p>
