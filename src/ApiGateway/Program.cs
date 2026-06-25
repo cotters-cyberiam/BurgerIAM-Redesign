@@ -101,7 +101,8 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddHostedService<OrderProgressService>();
+builder.Services.AddSingleton<OrderProgressService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<OrderProgressService>());
 
 var wasmFrontendPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
 if (Directory.Exists(wasmFrontendPath))
@@ -195,7 +196,7 @@ app.MapPost("/api/orders", async (ProtoOrder.CreateOrderRequest request,
             Version = HttpVersion.Version20,
             VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher
         };
-        using var orderHttp = httpFactory.CreateClient();
+        var orderHttp = httpFactory.CreateClient();
         await orderHttp.SendAsync(confirmReq);
 
         await kitchenClient.SeedKitchenOrderAsync(new ProtoKitchen.SeedKitchenOrderRequest { OrderId = order.Id });
