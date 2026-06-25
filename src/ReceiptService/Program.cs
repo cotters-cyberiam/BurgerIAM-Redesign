@@ -110,7 +110,7 @@ static string BuildReceiptHtml(ReceiptEntity receipt)
     sb.AppendLine($"<div class=\"row\"><span class=\"label\">Order ID</span><span class=\"value\">{receipt.OrderId}</span></div>");
     sb.AppendLine($"<div class=\"row\"><span class=\"label\">Date</span><span class=\"value\">{date}</span></div>");
     sb.AppendLine("</div>");
-    sb.AppendLine($"<div class=\"total\">Total: ${receipt.TotalAmount:F2}</div>");
+    sb.AppendLine($"<div class=\"total\">Total: &pound;{receipt.TotalAmount:F2}</div>");
     sb.AppendLine("<div class=\"footer\">");
     sb.AppendLine("<p>Thank you for your order!</p>");
     sb.AppendLine("<p>BurgerIAM - Fast Food Ordering System</p>");

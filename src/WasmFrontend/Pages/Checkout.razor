@@ -10,7 +10,7 @@
             <div class="mb-4">&#10003;</div>
             <h3>Order Placed Successfully!</h3>
             <p class="text-muted">Order ID: <strong>@orderId</strong></p>
-            <p>Your total: <strong>&pound;@Cart.TotalAmount.ToString("F2")</strong></p>
+            <p>Your total: <strong>&pound;@savedTotal.ToString("F2")</strong></p>
             <a href="/order-status/@orderId" class="btn btn-primary">Track Order</a>
             <a href="/menu" class="btn btn-outline-primary ms-2">Order More</a>
         </div>
@@ -108,6 +108,7 @@ else
     private bool isProcessing;
     private bool orderCreated;
     private string? orderId;
+    private double savedTotal;
 
     protected override void OnInitialized()
     {
@@ -140,6 +141,7 @@ else
             }
 
             orderId = order.Id;
+            savedTotal = Cart.TotalAmount;
             Cart.Clear();
             orderCreated = true;
         }
