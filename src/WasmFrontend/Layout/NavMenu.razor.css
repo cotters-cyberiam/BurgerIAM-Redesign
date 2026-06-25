@@ -8,6 +8,14 @@
     font-weight: 700;
     color: #e63946 !important;
     text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sidebar-logo {
+    height: 32px;
+    width: auto;
 }
 
 .sidebar-nav {
