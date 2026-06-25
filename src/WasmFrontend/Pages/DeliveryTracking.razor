@@ -9,16 +9,15 @@
     @if (isLoading)
     {
         <div class="text-center"><div class="spinner-border" role="status"></div></div>
-        return;
     }
-
-    @if (delivery is null)
+    else if (delivery is null)
     {
         <div class="alert alert-warning">
             Delivery information not available. <a href="/order-status/@OrderId">Check order status</a>
         </div>
-        return;
     }
+    else
+    {
 
     <div class="row">
         <div class="col-md-8">
@@ -110,6 +109,7 @@
             <small class="text-muted">Auto-refreshing every 10 seconds...</small>
         </div>
     }
+    }
 </div>
 
 @code {
@@ -119,34 +119,28 @@
 
     private Models.DeliveryResponse? delivery;
     private bool isLoading = true;
-    private Timer? timer;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadDelivery();
         isLoading = false;
+        if (delivery is not null && delivery.Status < 4)
+            _ = RefreshAsync();
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private async Task RefreshAsync()
     {
-        if (firstRender && delivery is not null && delivery.Status < 4)
+        while (delivery is not null && delivery.Status < 4)
         {
-            timer = new Timer(async _ =>
-            {
-                await LoadDelivery();
-                await InvokeAsync(StateHasChanged);
-            }, null, 10000, 10000);
+            await Task.Delay(10000);
+            delivery = await Api.GetDeliveryAsync(OrderId);
+            await InvokeAsync(StateHasChanged);
         }
     }
 
     private async Task LoadDelivery()
     {
         delivery = await Api.GetDeliveryAsync(OrderId);
-    }
-
-    public void Dispose()
-    {
-        timer?.Dispose();
     }
 
     private static string StatusText(int status) => status switch

@@ -91,7 +91,6 @@ else
     private Models.OrderResponse? order;
     private Models.DeliveryResponse? delivery;
     private bool isLoading = true;
-    private Timer? timer;
 
     private record TimelineStep(int Number, string Title, string Description, bool Completed, bool Active);
 
@@ -101,24 +100,19 @@ else
     {
         await LoadOrder();
         isLoading = false;
+        if (order is not null && order.Status < 6)
+            _ = RefreshAsync();
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private async Task RefreshAsync()
     {
-        if (firstRender && order is not null && order.Status < 6)
+        while (order is not null && order.Status < 6)
         {
-            timer = new Timer(async _ =>
-            {
-                try
-                {
-                    await LoadOrder();
-                    await InvokeAsync(StateHasChanged);
-                }
-                catch
-                {
-                    // Silently handle background refresh errors
-                }
-            }, null, 10000, 10000);
+            await Task.Delay(10000);
+            order = await Api.GetOrderAsync(OrderId);
+            if (order is not null && order.Status >= 4)
+                delivery = await Api.GetDeliveryAsync(OrderId);
+            await InvokeAsync(StateHasChanged);
         }
     }
 
@@ -127,11 +121,6 @@ else
         order = await Api.GetOrderAsync(OrderId);
         if (order is not null && order.Status >= 4)
             delivery = await Api.GetDeliveryAsync(OrderId);
-    }
-
-    public void Dispose()
-    {
-        timer?.Dispose();
     }
 
     private List<TimelineStep> GenerateSteps()
