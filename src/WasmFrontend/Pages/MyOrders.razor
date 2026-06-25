@@ -35,7 +35,7 @@
                     @foreach (var order in orders)
                     {
                         <tr>
-                            <td><code>@order.Id[..8]</code></td>
+                            <td><code>@Truncate(order.Id, 8)</code></td>
                             <td>@OrderDate(order.CreatedAt)</td>
                             <td>@order.Items.Count</td>
                             <td>&pound;@order.TotalAmount.ToString("F2")</td>
@@ -63,6 +63,9 @@
         orders = await Api.GetMyOrdersAsync(Auth.UserId!);
         isLoading = false;
     }
+
+    private static string Truncate(string value, int maxLength) =>
+        value?.Length > maxLength ? value[..maxLength] : value ?? "";
 
     private static string OrderDate(string dateStr) =>
         DateTime.TryParse(dateStr, out var dt) ? dt.ToString("MMM dd, yyyy HH:mm") : dateStr;

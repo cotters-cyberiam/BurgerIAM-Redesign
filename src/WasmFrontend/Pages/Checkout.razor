@@ -6,6 +6,19 @@
 <div class="container mt-4">
     <h2 class="mb-4">Checkout</h2>
 
+    @if (orderCreated)
+    {
+        <div class="text-center py-5">
+            <div class="mb-4">&#10003;</div>
+            <h3>Order Placed Successfully!</h3>
+            <p class="text-muted">Order ID: <strong>@orderId</strong></p>
+            <p>Your total: <strong>&pound;@Cart.TotalAmount.ToString("F2")</strong></p>
+            <a href="/order-status/@orderId" class="btn btn-primary">Track Order</a>
+            <a href="/menu" class="btn btn-outline-primary ms-2">Order More</a>
+        </div>
+        return;
+    }
+
     @if (Cart.IsEmpty)
     {
         <div class="text-center py-5">
@@ -18,19 +31,6 @@
     @if (!string.IsNullOrEmpty(error))
     {
         <div class="alert alert-danger">@error</div>
-    }
-
-    @if (orderCreated)
-    {
-        <div class="text-center py-5">
-            <div class="mb-4">&#10003;</div>
-            <h3>Order Placed Successfully!</h3>
-            <p class="text-muted">Order ID: <strong>@orderId</strong></p>
-            <p>Your total: <strong>&pound;@Cart.TotalAmount.ToString("F2")</strong></p>
-            <a href="/order-status/@orderId" class="btn btn-primary">Track Order</a>
-            <a href="/menu" class="btn btn-outline-primary ms-2">Order More</a>
-        </div>
-        return;
     }
 
     <div class="row">

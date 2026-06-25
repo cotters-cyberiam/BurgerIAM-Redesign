@@ -22,7 +22,7 @@
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div>
-                    <h5 class="mb-1">Order #@order.Id[..8]</h5>
+                    <h5 class="mb-1">Order #@Truncate(order.Id, 8)</h5>
                     <small class="text-muted">@OrderDate(order.CreatedAt)</small>
                 </div>
                 <span class="badge @StatusBadge(order.Status)" style="font-size: 1rem;">@StatusText(order.Status)</span>
@@ -104,8 +104,15 @@
         {
             timer = new Timer(async _ =>
             {
-                await LoadOrder();
-                await InvokeAsync(StateHasChanged);
+                try
+                {
+                    await LoadOrder();
+                    await InvokeAsync(StateHasChanged);
+                }
+                catch
+                {
+                    // Silently handle background refresh errors
+                }
             }, null, 10000, 10000);
         }
     }
@@ -152,6 +159,9 @@
         3 => "bg-warning text-dark", 4 => "bg-success", 5 => "bg-info",
         6 => "bg-success", 7 => "bg-danger", _ => "bg-secondary"
     };
+
+    private static string Truncate(string value, int maxLength) =>
+        value?.Length > maxLength ? value[..maxLength] : value ?? "";
 
     private static string DeliveryStatusText(int status) => status switch
     {
