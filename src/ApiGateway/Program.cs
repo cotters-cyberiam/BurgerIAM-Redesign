@@ -203,14 +203,21 @@ app.MapPost("/api/orders", async (ProtoOrder.CreateOrderRequest request,
             VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher
         };
 
+        await Task.Delay(TimeSpan.FromSeconds(10));
         await kitchenClient.StartPreparingAsync(new ProtoKitchen.StartPreparingRequest { OrderId = order.Id, Station = "Grill" });
         await orderHttp.SendAsync(StatusReq(3));
 
+        await Task.Delay(TimeSpan.FromSeconds(10));
         await kitchenClient.MarkAsReadyAsync(new ProtoKitchen.MarkAsReadyRequest { OrderId = order.Id });
         await orderHttp.SendAsync(StatusReq(4));
 
-        await deliveryClient.AssignDeliveryAsync(new ProtoDelivery.AssignDeliveryRequest { OrderId = order.Id, DeliveryAddress = order.DeliveryAddress });
+        await Task.Delay(TimeSpan.FromSeconds(10));
+        var delivery = await deliveryClient.AssignDeliveryAsync(new ProtoDelivery.AssignDeliveryRequest { OrderId = order.Id, DeliveryAddress = order.DeliveryAddress });
         await orderHttp.SendAsync(StatusReq(5));
+
+        await Task.Delay(TimeSpan.FromSeconds(10));
+        await deliveryClient.UpdateDeliveryStatusAsync(new ProtoDelivery.UpdateDeliveryStatusRequest { DeliveryId = delivery.Id, Status = 4 });
+        await orderHttp.SendAsync(StatusReq(6));
 
         var receiptHttp = httpFactory.CreateClient();
         await receiptHttp.PostAsync($"{GetServiceUrl("Receipt")}/receipts?orderId={order.Id}&customerId={order.CustomerId}&amount={order.TotalAmount}", null);
