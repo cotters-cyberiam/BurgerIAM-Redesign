@@ -30,6 +30,11 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
+    if (!db.Drivers.Any())
+    {
+        db.Drivers.Add(new DriverEntity { Name = "Default Driver", IsAvailable = true });
+        db.SaveChanges();
+    }
 }
 
 app.MapGrpcService<DeliveryGrpcService>();
