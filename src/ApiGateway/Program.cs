@@ -166,16 +166,37 @@ app.MapGet("/api/menu/{id}", async (string id, ProtoMenu.MenuService.MenuService
     }
 });
 
-app.MapPost("/api/orders", async (ProtoOrder.CreateOrderRequest request, ProtoOrder.OrderService.OrderServiceClient client) =>
+app.MapPost("/api/orders", async (ProtoOrder.CreateOrderRequest request,
+    ProtoOrder.OrderService.OrderServiceClient orderClient,
+    ProtoPayment.PaymentService.PaymentServiceClient paymentClient,
+    ProtoKitchen.KitchenService.KitchenServiceClient kitchenClient,
+    IHttpClientFactory httpFactory) =>
 {
     try
     {
-        var response = await client.CreateOrderAsync(request);
-        return Results.Created($"/api/orders/{response.Id}", response);
+        var order = await orderClient.CreateOrderAsync(request);
+
+        var paymentRequest = new ProtoPayment.ProcessPaymentRequest
+        {
+            OrderId = order.Id,
+            CustomerId = order.CustomerId,
+            Amount = order.TotalAmount,
+            Method = "CreditCard"
+        };
+        await paymentClient.ProcessPaymentAsync(paymentRequest);
+
+        var orderHttp = httpFactory.CreateClient();
+        await orderHttp.PostAsync($"{GetServiceUrl("Order")}/api/internal/orders/{order.Id}/confirm-payment", null);
+
+        await kitchenClient.SeedKitchenOrderAsync(new ProtoKitchen.SeedKitchenOrderRequest { OrderId = order.Id });
+
+        await orderHttp.PostAsync($"{GetServiceUrl("Receipt")}/receipts?orderId={order.Id}&customerId={order.CustomerId}&amount={order.TotalAmount}", null);
+
+        return Results.Created($"/api/orders/{order.Id}", order);
     }
-    catch (Exception)
+    catch (Exception ex)
     {
-        return Results.BadRequest(new { error = "Failed to create order" });
+        return Results.BadRequest(new { error = $"Failed to create order: {ex.Message}" });
     }
 }).RequireAuthorization();
 
