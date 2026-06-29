@@ -1,91 +1,116 @@
 @page "/checkout"
 @attribute [Authorize]
+@implements IDisposable
 
 <PageTitle>Checkout - BurgerIAM</PageTitle>
 
 @if (orderCreated)
 {
     <div class="container mt-4">
-        <div class="text-center py-5">
-            <div class="mb-4">&#10003;</div>
-            <h3>Order Placed Successfully!</h3>
-            <p class="text-muted">Order ID: <strong>@orderId</strong></p>
-            <p>Your total: <strong>&pound;@savedTotal.ToString("F2")</strong></p>
-            <a href="/order-status/@orderId" class="btn btn-primary">Track Order</a>
-            <a href="/menu" class="btn btn-outline-primary ms-2">Order More</a>
+        <div class="text-center py-5 animate-on-scroll">
+            <div class="display-1 mb-3">🎉</div>
+            <h3 class="fw-bold">Order Placed Successfully!</h3>
+            <p class="text-muted">Order ID: <code class="fw-bold">@TruncateId(orderId)</code></p>
+            <p class="fs-5">Your total: <strong class="fs-4" style="color: var(--primary);">&pound;@savedTotal.ToString("F2")</strong></p>
+            <div class="mt-4">
+                <a href="/order-status/@orderId" class="btn btn-primary btn-lg me-2">Track Order</a>
+                <a href="/menu" class="btn btn-outline-primary btn-lg">Order More</a>
+            </div>
         </div>
     </div>
 }
 else if (Cart.IsEmpty)
 {
     <div class="container mt-4">
-        <div class="text-center py-5">
+        <div class="text-center py-5 animate-on-scroll">
+            <div class="display-1 mb-3">🛒</div>
             <h4 class="text-muted">Your cart is empty</h4>
-            <a href="/menu" class="btn btn-primary mt-3">Browse Menu</a>
+            <a href="/menu" class="btn btn-primary btn-lg mt-3">Browse Menu</a>
         </div>
     </div>
 }
 else
 {
     <div class="container mt-4">
-        <h2 class="mb-4">Checkout</h2>
+        <h2 class="mb-4 fw-bold animate-on-scroll">Checkout</h2>
 
         @if (!string.IsNullOrEmpty(error))
         {
-            <div class="alert alert-danger">@error</div>
+            <div class="alert alert-danger animate-slide-up">@error</div>
         }
 
         <div class="row">
-            <div class="col-md-8">
-                <div class="card mb-3">
+            <div class="col-md-7">
+                <div class="card border-0 shadow-sm mb-3 animate-on-scroll">
                     <div class="card-body">
-                        <h5 class="card-title">Delivery Address</h5>
-                        <div class="mb-3">
-                            <label class="form-label">Address</label>
-                            <InputText @bind-Value="deliveryAddress" class="form-control" placeholder="123 Main St, City" />
+                        <h5 class="card-title fw-bold mb-3">📍 Delivery Address</h5>
+                        <div class="form-floating mb-2">
+                            <InputText @bind-Value="deliveryAddress" class="form-control" placeholder="123 Main St, City" id="address" />
+                            <label for="address" class="form-label">Address</label>
                         </div>
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card border-0 shadow-sm animate-on-scroll">
                     <div class="card-body">
-                        <h5 class="card-title">Payment</h5>
-                        <div class="mb-3">
-                            <label class="form-label">Card Number</label>
-                            <InputText @bind-Value="cardNumber" class="form-control" placeholder="4111 1111 1111 1111" />
+                        <h5 class="card-title fw-bold mb-3">💳 Payment</h5>
+                        <div class="form-floating mb-3">
+                            <InputText @bind-Value="cardNumber" class="form-control" placeholder="4111 1111 1111 1111" id="card" />
+                            <label for="card" class="form-label">Card Number</label>
                         </div>
                         <div class="row">
                             <div class="col">
-                                <label class="form-label">Expiry</label>
-                                <InputText @bind-Value="expiry" class="form-control" placeholder="MM/YY" />
+                                <div class="form-floating mb-2">
+                                    <InputText @bind-Value="expiry" class="form-control" placeholder="MM/YY" id="expiry" />
+                                    <label for="expiry" class="form-label">Expiry</label>
+                                </div>
                             </div>
                             <div class="col">
-                                <label class="form-label">CVV</label>
-                                <InputText @bind-Value="cvv" class="form-control" placeholder="123" />
+                                <div class="form-floating mb-2">
+                                    <InputText @bind-Value="cvv" class="form-control" placeholder="123" id="cvv" />
+                                    <label for="cvv" class="form-label">CVV</label>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-4">
-                <div class="card">
+            <div class="col-md-5">
+                <div class="card border-0 shadow-sm animate-on-scroll sticky-top" style="top: 80px;">
                     <div class="card-body">
-                        <h5 class="card-title">Order Summary</h5>
+                        <h5 class="card-title fw-bold mb-3">📋 Order Summary</h5>
                         @foreach (var item in Cart.Items)
                         {
                             <div class="d-flex justify-content-between mb-2">
-                                <span>@item.ItemName x@item.Quantity</span>
-                                <span>&pound;@((item.UnitPrice * item.Quantity).ToString("F2"))</span>
+                                <span>@item.ItemName <span class="text-muted">x@item.Quantity</span></span>
+                                <span class="fw-medium">&pound;@((item.UnitPrice * item.Quantity).ToString("F2"))</span>
                             </div>
                         }
                         <hr />
-                        <div class="d-flex justify-content-between">
-                            <strong>Total</strong>
-                            <strong>&pound;@Cart.TotalAmount.ToString("F2")</strong>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Subtotal</span>
+                            <span>&pound;@Cart.TotalAmount.ToString("F2")</span>
                         </div>
-                        <button @onclick="PlaceOrder" class="btn btn-primary w-100 mt-3" disabled="@isProcessing">
-                            @(isProcessing ? "Processing..." : "Place Order")
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Delivery</span>
+                            <span class="text-success">Free</span>
+                        </div>
+                        <hr />
+                        <div class="d-flex justify-content-between mb-3">
+                            <strong class="fs-5">Total</strong>
+                            <strong class="fs-5" style="color: var(--primary);">&pound;@Cart.TotalAmount.ToString("F2")</strong>
+                        </div>
+                        <button @onclick="PlaceOrder" class="btn btn-primary w-100 btn-lg" disabled="@isProcessing">
+                            @if (isProcessing)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                <span>Processing...</span>
+                            }
+                            else
+                            {
+                                <span>Place Order</span>
+                            }
                         </button>
                     </div>
                 </div>
@@ -99,6 +124,7 @@ else
     [Inject] private Services.AuthService Auth { get; set; } = null!;
     [Inject] private Services.ApiService Api { get; set; } = null!;
     [Inject] private NavigationManager Nav { get; set; } = null!;
+    [Inject] private IJSRuntime JS { get; set; } = null!;
 
     private string deliveryAddress = "";
     private string cardNumber = "";
@@ -114,6 +140,14 @@ else
     {
         if (!Auth.IsLoggedIn)
             Nav.NavigateTo("/login");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("window.BurgerIAM.observeNewElements");
+        }
     }
 
     private async Task PlaceOrder()
@@ -144,6 +178,7 @@ else
             orderId = order.Id;
             savedTotal = capturedTotal > 0 ? capturedTotal : order.TotalAmount > 0 ? order.TotalAmount : Cart.TotalAmount;
             Cart.Clear();
+            await JS.InvokeVoidAsync("window.BurgerIAM.animateCartBadge", 0);
             orderCreated = true;
         }
         catch (Exception ex)
@@ -152,5 +187,13 @@ else
         }
 
         isProcessing = false;
+    }
+
+    private static string TruncateId(string? id) =>
+        !string.IsNullOrEmpty(id) && id.Length > 8 ? id[..8] : id ?? "";
+
+    public void Dispose()
+    {
+        try { _ = JS.InvokeVoidAsync("window.BurgerIAM.closeMobileNav"); } catch { }
     }
 }

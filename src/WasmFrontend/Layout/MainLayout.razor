@@ -1,19 +1,152 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
+<div class="page d-flex">
+    <div class="mobile-nav" id="mobileNav">
+        <div class="mobile-nav-header">
+            <a class="sidebar-brand" href="/" @onclick="CloseNav">
+                <img src="images/logo.png" alt="BurgerIAM" class="sidebar-logo" />
+                BurgerIAM
+            </a>
+            <button class="mobile-nav-close" @onclick="ToggleNav">&times;</button>
+        </div>
+        <div class="mobile-nav-body">
+            <NavLink class="nav-link" href="/menu" @onclick="CloseNav">
+                <span class="nav-icon">🍔</span> Menu
+            </NavLink>
+            @if (Auth.IsLoggedIn)
+            {
+                <NavLink class="nav-link" href="/my-orders" @onclick="CloseNav">
+                    <span class="nav-icon">📋</span> My Orders
+                </NavLink>
+                <NavLink class="nav-link" href="/cart" @onclick="CloseNav">
+                    <span class="nav-icon">🛒</span> Cart
+                    @if (Cart.TotalItems > 0)
+                    {
+                        <span class="badge bg-primary ms-auto">@Cart.TotalItems</span>
+                    }
+                </NavLink>
+            }
+        </div>
+        <div class="mobile-nav-footer">
+            @if (Auth.IsLoggedIn)
+            {
+                <small class="text-muted d-block mb-2">Signed in as <strong>@Auth.UserName</strong></small>
+                <button class="btn btn-outline-danger btn-sm w-100" @onclick="Logout">Logout</button>
+            }
+            else
+            {
+                <a href="/login" class="btn btn-primary w-100 mb-2" @onclick="CloseNav">Sign In</a>
+                <a href="/register" class="btn btn-outline-primary w-100" @onclick="CloseNav">Register</a>
+            }
+        </div>
     </div>
-    <div class="content-area">
-        <main>
-            <div class="container-fluid">
+
+    <div class="nav-overlay" id="mobileNavOverlay" @onclick="CloseNav"></div>
+
+    <div class="content-area flex-grow-1 d-flex flex-column" style="margin-left: 0;">
+        <nav class="navbar navbar-light bg-white shadow-sm py-2 sticky-top">
+            <div class="container-fluid px-4">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="navbar-toggler-custom" @onclick="ToggleNav">
+                        <span></span><span></span><span></span>
+                    </button>
+                    <a class="navbar-brand fw-bold" href="/" style="color: var(--primary);">
+                        <img src="images/logo.png" alt="" height="32" class="me-2 d-none d-sm-inline" />
+                        BurgerIAM
+                    </a>
+                </div>
+                <div class="desktop-nav-links d-flex align-items-center gap-3">
+                    <a class="nav-link text-dark fw-medium" href="/menu">Menu</a>
+                    @if (Auth.IsLoggedIn)
+                    {
+                        <a class="nav-link text-dark fw-medium" href="/my-orders">My Orders</a>
+                        <a class="nav-link text-dark fw-medium position-relative" href="/cart">
+                            Cart
+                            @if (Cart.TotalItems > 0)
+                            {
+                                <span id="cartBadge" class="badge bg-primary cart-bounce ms-1">@Cart.TotalItems</span>
+                            }
+                            else
+                            {
+                                <span id="cartBadge" class="badge bg-primary ms-1" style="display:none;">0</span>
+                            }
+                        </a>
+                        <div class="dropdown ms-2">
+                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                @Auth.UserName
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="/my-orders">My Orders</a></li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li><a class="dropdown-item" href="" @onclick="Logout">Logout</a></li>
+                            </ul>
+                        </div>
+                    }
+                    else
+                    {
+                        <a class="btn btn-outline-primary btn-sm" href="/login">Sign In</a>
+                        <a class="btn btn-primary btn-sm" href="/register">Register</a>
+                    }
+                </div>
+            </div>
+        </nav>
+
+        <main class="flex-grow-1">
+            <div class="page-wrapper">
                 @Body
             </div>
         </main>
-        <footer class="footer bg-dark text-white text-center py-3">
+
+        <footer class="footer bg-dark text-white text-center py-4 mt-auto">
             <div class="container">
-                <small>&copy; 2026 BurgerIAM - Fast Food Ordering System</small>
+                <small>&copy; 2026 BurgerIAM - Fast Food Ordering System. All rights reserved.</small>
             </div>
         </footer>
     </div>
+
+    @if (Auth.IsLoggedIn && Cart.TotalItems > 0)
+    {
+        <button class="fab" @onclick="GoToCart" title="View Cart">
+            <span>🛒</span>
+            <span class="badge bg-light text-dark">@Cart.TotalItems</span>
+        </button>
+    }
 </div>
+
+@code {
+    [Inject] private Services.AuthService Auth { get; set; } = null!;
+    [Inject] private Services.CartService Cart { get; set; } = null!;
+    [Inject] private NavigationManager Nav { get; set; } = null!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await Task.CompletedTask;
+        Cart.CartChanged += () => InvokeAsync(StateHasChanged);
+    }
+
+    private void GoToCart()
+    {
+        Nav.NavigateTo("/cart");
+    }
+
+    private void ToggleNav()
+    {
+        var js = "window.BurgerIAM.toggleMobileNav()";
+        _ = InvokeAsync(() => { try { _ = JS.InvokeVoidAsync(js); } catch { } });
+    }
+
+    private void CloseNav()
+    {
+        var js = "window.BurgerIAM.closeMobileNav()";
+        _ = InvokeAsync(() => { try { _ = JS.InvokeVoidAsync(js); } catch { } });
+    }
+
+    private async Task Logout()
+    {
+        CloseNav();
+        await Auth.LogoutAsync();
+        Nav.NavigateTo("/");
+    }
+
+    [Inject] private IJSRuntime JS { get; set; } = null!;
+}

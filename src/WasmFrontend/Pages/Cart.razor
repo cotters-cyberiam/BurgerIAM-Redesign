@@ -1,66 +1,133 @@
 @page "/cart"
 @attribute [Authorize]
+@implements IDisposable
 
 <PageTitle>Shopping Cart - BurgerIAM</PageTitle>
 
 <div class="container mt-4">
-    <h2 class="mb-4">Your Cart</h2>
+    <h2 class="mb-4 fw-bold animate-on-scroll">Your Cart</h2>
 
     @if (CartService.IsEmpty)
     {
-        <div class="text-center py-5">
+        <div class="text-center py-5 animate-on-scroll">
+            <div class="display-1 mb-3">🛒</div>
             <h4 class="text-muted">Your cart is empty</h4>
-            <a href="/menu" class="btn btn-primary mt-3">Browse Menu</a>
+            <p class="text-muted">Looks like you haven't added anything yet.</p>
+            <a href="/menu" class="btn btn-primary btn-lg mt-3">Browse Menu</a>
         </div>
     }
     else
     {
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Item</th>
-                        <th>Price</th>
-                        <th>Quantity</th>
-                        <th>Subtotal</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in CartService.Items)
-                    {
-                        <tr>
-                            <td>@item.ItemName</td>
-                            <td>&pound;@item.UnitPrice.ToString("F2")</td>
-                            <td>
-                                <button @onclick="() => CartService.UpdateQuantity(item.MenuItemId, item.Quantity - 1)" class="btn btn-sm btn-outline-secondary">-</button>
-                                <span class="mx-2">@item.Quantity</span>
-                                <button @onclick="() => CartService.UpdateQuantity(item.MenuItemId, item.Quantity + 1)" class="btn btn-sm btn-outline-secondary">+</button>
-                            </td>
-                            <td>&pound;@((item.UnitPrice * item.Quantity).ToString("F2"))</td>
-                            <td>
-                                <button @onclick="() => CartService.RemoveItem(item.MenuItemId)" class="btn btn-sm btn-danger">Remove</button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="3" class="text-end"><strong>Total:</strong></td>
-                        <td><strong>&pound;@CartService.TotalAmount.ToString("F2")</strong></td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm animate-on-scroll">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table mb-0 align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Price</th>
+                                        <th>Quantity</th>
+                                        <th>Subtotal</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in CartService.Items)
+                                    {
+                                        <tr class="cart-item-row">
+                                            <td class="fw-medium">@item.ItemName</td>
+                                            <td>&pound;@item.UnitPrice.ToString("F2")</td>
+                                            <td>
+                                                <div class="input-group input-group-sm" style="max-width: 120px;">
+                                                    <button @onclick="() => UpdateQty(item.MenuItemId, item.Quantity - 1)"
+                                                            class="btn btn-outline-secondary">-</button>
+                                                    <span class="input-group-text bg-white fw-bold">@item.Quantity</span>
+                                                    <button @onclick="() => UpdateQty(item.MenuItemId, item.Quantity + 1)"
+                                                            class="btn btn-outline-secondary">+</button>
+                                                </div>
+                                            </td>
+                                            <td class="fw-bold" style="color: var(--primary);">
+                                                &pound;@((item.UnitPrice * item.Quantity).ToString("F2"))
+                                            </td>
+                                            <td>
+                                                <button @onclick="() => RemoveItem(item.MenuItemId)"
+                                                        class="btn btn-sm btn-outline-danger">
+                                                    ✕
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        <div class="d-flex justify-content-between mt-3">
-            <button @onclick="CartService.Clear" class="btn btn-outline-danger">Clear Cart</button>
-            <a href="/checkout" class="btn btn-primary btn-lg">Proceed to Checkout</a>
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm animate-on-scroll">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold mb-3">Order Summary</h5>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Items (@CartService.TotalItems)</span>
+                            <span>&pound;@CartService.TotalAmount.ToString("F2")</span>
+                        </div>
+                        <hr />
+                        <div class="d-flex justify-content-between mb-3">
+                            <strong>Total</strong>
+                            <strong class="fs-5" style="color: var(--primary);">&pound;@CartService.TotalAmount.ToString("F2")</strong>
+                        </div>
+                        <a href="/checkout" class="btn btn-primary w-100 btn-lg">
+                            Proceed to Checkout
+                        </a>
+                        <button @onclick="ClearCart" class="btn btn-outline-danger w-100 mt-2">
+                            Clear Cart
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     }
 </div>
 
 @code {
     [Inject] private Services.CartService CartService { get; set; } = null!;
+    [Inject] private IJSRuntime JS { get; set; } = null!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("window.BurgerIAM.observeNewElements");
+        }
+    }
+
+    private async void UpdateQty(string menuItemId, int qty)
+    {
+        CartService.UpdateQuantity(menuItemId, qty);
+        await JS.InvokeVoidAsync("window.BurgerIAM.animateCartBadge", CartService.TotalItems);
+        StateHasChanged();
+    }
+
+    private async void RemoveItem(string menuItemId)
+    {
+        CartService.RemoveItem(menuItemId);
+        await JS.InvokeVoidAsync("window.BurgerIAM.animateCartBadge", CartService.TotalItems);
+        await JS.InvokeVoidAsync("window.BurgerIAM.showFloatingMsg", "Item removed from cart", "info");
+        StateHasChanged();
+    }
+
+    private async void ClearCart()
+    {
+        CartService.Clear();
+        await JS.InvokeVoidAsync("window.BurgerIAM.animateCartBadge", 0);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        try { _ = JS.InvokeVoidAsync("window.BurgerIAM.closeMobileNav"); } catch { }
+    }
 }

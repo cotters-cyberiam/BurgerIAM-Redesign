@@ -3,22 +3,34 @@
         <Found Context="routeData">
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
                 <NotAuthorized>
-                    <div class="text-center py-5">
-                        <h3>Please sign in</h3>
-                        <p class="text-muted">You need to be logged in to access this page.</p>
-                        <a href="/login" class="btn btn-primary">Sign In</a>
+                    <div class="container">
+                        <div class="text-center py-5 animate-on-scroll">
+                            <div class="display-1 mb-3">🔒</div>
+                            <h3 class="fw-bold">Please Sign In</h3>
+                            <p class="text-muted">You need to be logged in to access this page.</p>
+                            <a href="/login" class="btn btn-primary btn-lg">Sign In</a>
+                        </div>
                     </div>
                 </NotAuthorized>
+                <Authorizing>
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="text-muted mt-2">Checking authorization...</p>
+                    </div>
+                </Authorizing>
             </AuthorizeRouteView>
             <FocusOnNavigate RouteData="@routeData" Selector="h1" />
         </Found>
         <NotFound>
             <PageTitle>Not found</PageTitle>
             <LayoutView Layout="@typeof(MainLayout)">
-                <div class="text-center py-5">
-                    <h3>Page not found</h3>
-                    <p class="text-muted">Sorry, there's nothing at this address.</p>
-                    <a href="/" class="btn btn-primary">Go Home</a>
+                <div class="container">
+                    <div class="text-center py-5 animate-on-scroll">
+                        <div class="display-1 mb-3">🔍</div>
+                        <h3 class="fw-bold">Page Not Found</h3>
+                        <p class="text-muted">Sorry, there's nothing at this address.</p>
+                        <a href="/" class="btn btn-primary btn-lg">Go Home</a>
+                    </div>
                 </div>
             </LayoutView>
         </NotFound>

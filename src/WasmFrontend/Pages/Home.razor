@@ -1,55 +1,69 @@
 @page "/"
 @attribute [AllowAnonymous]
+@implements IAsyncDisposable
 
 <PageTitle>BurgerIAM - Fast Food Ordering</PageTitle>
 
-<div class="hero-section text-white text-center mb-4 position-relative overflow-hidden" style="min-height: 420px;">
+<div class="hero-section text-white text-center mb-5 position-relative overflow-hidden" style="min-height: 420px;">
     <img src="images/banner.png" alt="BurgerIAM" class="hero-bg-img" />
     <div class="hero-overlay"></div>
     <div class="container position-relative py-5" style="z-index: 2;">
-        <h1 class="display-4 fw-bold">BurgerIAM</h1>
-        <p class="lead">Delicious fast food, delivered fast.</p>
-        <a href="/menu" class="btn btn-danger btn-lg me-2">View Menu</a>
-        @if (!Auth.IsLoggedIn)
-        {
-            <a href="/register" class="btn btn-outline-light btn-lg">Get Started</a>
-        }
-        else
-        {
-            <a href="/my-orders" class="btn btn-outline-light btn-lg">My Orders</a>
-        }
+        <div class="animate-on-scroll">
+            <h1 class="display-4 fw-bold">BurgerIAM</h1>
+            <p class="lead">Delicious fast food, delivered fast.</p>
+            <a href="/menu" class="btn btn-danger btn-lg me-2">View Menu</a>
+            @if (!Auth.IsLoggedIn)
+            {
+                <a href="/register" class="btn btn-outline-light btn-lg">Get Started</a>
+            }
+            else
+            {
+                <a href="/my-orders" class="btn btn-outline-light btn-lg">My Orders</a>
+            }
+        </div>
     </div>
 </div>
 
 <div class="container">
-    @if (averageRating is not null)
-    {
-        <div class="text-center mb-4">
-            <h3>Customer Rating</h3>
-            <p class="display-6 text-warning">
-                @(new string('★', (int)Math.Round(averageRating.AverageRating)) + new string('☆', 5 - (int)Math.Round(averageRating.AverageRating)))
-                <span class="text-muted fs-5">@averageRating.AverageRating:F1 (@averageRating.TotalReviews reviews)</span>
-            </p>
-        </div>
-    }
-
-    <h3 class="mb-3">Popular Items</h3>
     @if (isLoading)
     {
-        <div class="text-center"><div class="spinner-border" role="status"></div></div>
+        <div class="text-center mb-4">
+            <div class="skeleton skeleton-title mx-auto" style="width: 200px;"></div>
+            <div class="skeleton skeleton-text mx-auto" style="width: 300px;"></div>
+        </div>
+        <div class="row">
+            @for (int i = 0; i < 3; i++)
+            {
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card"><div class="skeleton skeleton-card"></div></div>
+                </div>
+            }
+        </div>
     }
     else
     {
+        @if (averageRating is not null && averageRating.TotalReviews > 0)
+        {
+            <div class="text-center mb-5 animate-on-scroll">
+                <h3 class="fw-bold">Customer Rating</h3>
+                <p class="display-6" style="color: #f1c40f;">
+                    @(new string('\u2605', (int)Math.Round(averageRating.AverageRating)) + new string('\u2606', 5 - (int)Math.Round(averageRating.AverageRating)))
+                    <span class="text-muted fs-5 ms-2">@averageRating.AverageRating:F1 (@averageRating.TotalReviews reviews)</span>
+                </p>
+            </div>
+        }
+
+        <h3 class="mb-4 fw-bold animate-on-scroll">Popular Items</h3>
         <div class="row">
             @foreach (var item in popularItems)
             {
-                <div class="col-md-6 col-lg-4 mb-3">
-                    <div class="card menu-card h-100">
+                <div class="col-md-6 col-lg-4 mb-4 animate-on-scroll">
+                    <div class="card menu-card h-100 border-0">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h5 class="card-title mb-1">@item.Name</h5>
-                                    <p class="card-text text-muted small">@item.Description</p>
+                                <div class="flex-grow-1 me-2">
+                                    <h5 class="card-title mb-1 fw-bold">@item.Name</h5>
+                                    <p class="card-text text-muted small mb-2">@Truncate(item.Description, 60)</p>
                                 </div>
                                 <span class="price-tag">&pound;@item.Price.ToString("F2")</span>
                             </div>
@@ -59,34 +73,37 @@
                 </div>
             }
         </div>
-    }
 
-    <div class="row mt-4 mb-5">
-        <div class="col-md-4 mb-3">
-            <div class="card text-center h-100">
-                <div class="card-body">
-                    <h5 class="card-title">&#127828; Quality Food</h5>
-                    <p class="card-text text-muted">Fresh ingredients, prepared with care.</p>
+        <div class="row mt-5 mb-5">
+            <div class="col-md-4 mb-3 animate-on-scroll animate-left">
+                <div class="card text-center h-100 border-0 shadow-sm">
+                    <div class="card-body py-4">
+                        <div class="display-4 mb-2">🍔</div>
+                        <h5 class="fw-bold">Quality Food</h5>
+                        <p class="card-text text-muted">Fresh ingredients, prepared with care.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3 animate-on-scroll">
+                <div class="card text-center h-100 border-0 shadow-sm">
+                    <div class="card-body py-4">
+                        <div class="display-4 mb-2">🚚</div>
+                        <h5 class="fw-bold">Fast Delivery</h5>
+                        <p class="card-text text-muted">Track your order in real-time.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3 animate-on-scroll animate-right">
+                <div class="card text-center h-100 border-0 shadow-sm">
+                    <div class="card-body py-4">
+                        <div class="display-4 mb-2">💳</div>
+                        <h5 class="fw-bold">Easy Payment</h5>
+                        <p class="card-text text-muted">Secure checkout with multiple options.</p>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4 mb-3">
-            <div class="card text-center h-100">
-                <div class="card-body">
-                    <h5 class="card-title">&#128666; Fast Delivery</h5>
-                    <p class="card-text text-muted">Track your order in real-time.</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 mb-3">
-            <div class="card text-center h-100">
-                <div class="card-body">
-                    <h5 class="card-title">&#128179; Easy Payment</h5>
-                    <p class="card-text text-muted">Secure checkout with multiple options.</p>
-                </div>
-            </div>
-        </div>
-    </div>
+    }
 </div>
 
 @code {
@@ -99,9 +116,30 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var menu = await Api.GetMenuAsync();
+        var menuTask = Api.GetMenuAsync();
+        var ratingTask = Api.GetAverageRatingAsync();
+        await Task.WhenAll(menuTask, ratingTask);
+        var menu = menuTask.Result;
         popularItems = menu.Where(i => i.IsAvailable).Take(6).ToList();
-        averageRating = await Api.GetAverageRatingAsync();
+        averageRating = ratingTask.Result;
         isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("window.BurgerIAM.observeNewElements");
+        }
+    }
+
+    private static string Truncate(string? value, int max) =>
+        !string.IsNullOrEmpty(value) && value.Length > max ? value[..max] + "..." : value ?? "";
+
+    [Inject] private IJSRuntime JS { get; set; } = null!;
+
+    public async ValueTask DisposeAsync()
+    {
+        try { await JS.InvokeVoidAsync("window.BurgerIAM.closeMobileNav"); } catch { }
     }
 }

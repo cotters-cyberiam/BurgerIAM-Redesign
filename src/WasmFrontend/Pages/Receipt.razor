@@ -4,29 +4,36 @@
 <PageTitle>Receipt - BurgerIAM</PageTitle>
 
 <div class="container mt-4">
-    <h2 class="mb-4">Receipt</h2>
+    <h2 class="mb-4 fw-bold animate-on-scroll">Receipt</h2>
 
     @if (isLoading)
     {
-        <div class="text-center"><div class="spinner-border" role="status"></div></div>
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="skeleton skeleton-title mx-auto" style="width: 200px;"></div>
+                <div class="skeleton skeleton-image mt-3"></div>
+            </div>
+        </div>
     }
     else if (html is not null)
     {
-        <div class="card">
+        <div class="card border-0 shadow-sm animate-on-scroll">
             <div class="card-body p-0">
-                <iframe srcdoc="@html" style="width: 100%; min-height: 600px; border: none;"></iframe>
+                <iframe srcdoc="@html" style="width: 100%; min-height: 600px; border: none; border-radius: var(--radius-md);"></iframe>
             </div>
         </div>
-        <div class="mt-3 text-center">
-            <button @onclick="() => PrintReceipt()" class="btn btn-primary">Print</button>
-            <a href="/my-orders" class="btn btn-outline-primary ms-2">Back to Orders</a>
+        <div class="mt-3 text-center animate-on-scroll">
+            <button @onclick="PrintReceipt" class="btn btn-primary btn-lg me-2">🖨️ Print</button>
+            <a href="/my-orders" class="btn btn-outline-primary btn-lg">Back to Orders</a>
         </div>
     }
     else
     {
-        <div class="alert alert-warning">
-            Receipt not found for order @OrderId.
-            <a href="/my-orders">View my orders</a>
+        <div class="text-center py-5 animate-on-scroll">
+            <div class="display-1 mb-3">🧾</div>
+            <h4 class="text-muted">Receipt not found</h4>
+            <p class="text-muted">Receipt for order @OrderId is not available yet.</p>
+            <a href="/my-orders" class="btn btn-primary mt-3">View My Orders</a>
         </div>
     }
 </div>
@@ -35,6 +42,7 @@
     [Parameter] public string OrderId { get; set; } = "";
 
     [Inject] private Services.ApiService Api { get; set; } = null!;
+    [Inject] private IJSRuntime JS { get; set; } = null!;
 
     private string? html;
     private bool isLoading = true;
@@ -45,8 +53,13 @@
         isLoading = false;
     }
 
-    private void PrintReceipt()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // In a real app, this would use JS interop to print the iframe
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("window.BurgerIAM.observeNewElements");
+        }
     }
+
+    private void PrintReceipt() { }
 }

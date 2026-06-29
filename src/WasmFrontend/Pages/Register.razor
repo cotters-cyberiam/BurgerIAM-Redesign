@@ -3,39 +3,55 @@
 
 <PageTitle>Register - BurgerIAM</PageTitle>
 
-<div class="row justify-content-center mt-5">
-    <div class="col-md-6 col-lg-4">
-        <div class="card shadow">
-            <div class="card-body p-4">
-                <h3 class="text-center mb-4">Create Account</h3>
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-lg animate-on-scroll">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <img src="images/logo.png" alt="BurgerIAM" height="64" class="mb-2" />
+                        <h3 class="fw-bold">Create Account</h3>
+                        <p class="text-muted">Join BurgerIAM today</p>
+                    </div>
 
-                @if (!string.IsNullOrEmpty(error))
-                {
-                    <div class="alert alert-danger">@error</div>
-                }
-                @if (success)
-                {
-                    <div class="alert alert-success">Account created! <a href="/login">Sign in</a></div>
-                }
+                    @if (!string.IsNullOrEmpty(error))
+                    {
+                        <div class="alert alert-danger animate-slide-up">@error</div>
+                    }
+                    @if (success)
+                    {
+                        <div class="alert alert-success animate-slide-up">
+                            Account created! <a href="/login" class="fw-bold">Sign in now</a>
+                        </div>
+                    }
 
-                <div class="mb-3">
-                    <label class="form-label">Name</label>
-                    <InputText @bind-Value="name" class="form-control" placeholder="Your name" />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Email</label>
-                    <InputText @bind-Value="email" class="form-control" placeholder="your@email.com" />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Password</label>
-                    <InputText @bind-Value="password" type="password" class="form-control" placeholder="Password" />
-                </div>
-                <button @onclick="HandleRegister" class="btn btn-primary w-100" disabled="@isLoading">
-                    @(isLoading ? "Creating..." : "Create Account")
-                </button>
+                    <div class="form-floating mb-3">
+                        <InputText @bind-Value="name" class="form-control" placeholder="Your name" id="regName" />
+                        <label for="regName" class="form-label">Name</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <InputText @bind-Value="email" class="form-control" placeholder="your@email.com" id="regEmail" />
+                        <label for="regEmail" class="form-label">Email</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <InputText @bind-Value="password" type="password" class="form-control" placeholder="Password" id="regPassword" />
+                        <label for="regPassword" class="form-label">Password</label>
+                    </div>
+                    <button @onclick="HandleRegister" class="btn btn-primary w-100 btn-lg" disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            <span>Creating...</span>
+                        }
+                        else
+                        {
+                            <span>Create Account</span>
+                        }
+                    </button>
 
-                <div class="text-center mt-3">
-                    <p class="mb-0">Already have an account? <a href="/login">Sign in</a></p>
+                    <div class="text-center mt-4">
+                        <p class="mb-0">Already have an account? <a href="/login" class="fw-bold">Sign in</a></p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -45,6 +61,7 @@
 @code {
     [Inject] private Services.AuthService Auth { get; set; } = null!;
     [Inject] private NavigationManager Nav { get; set; } = null!;
+    [Inject] private IJSRuntime JS { get; set; } = null!;
 
     private string name = "";
     private string email = "";
@@ -57,6 +74,14 @@
     {
         if (Auth.IsLoggedIn)
             Nav.NavigateTo("/");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("window.BurgerIAM.observeNewElements");
+        }
     }
 
     private async Task HandleRegister()

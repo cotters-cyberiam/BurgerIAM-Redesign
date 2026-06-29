@@ -3,40 +3,47 @@
 
 <PageTitle>Order Status - BurgerIAM</PageTitle>
 
-@if (isLoading)
-{
-    <div class="container mt-4">
-        <h2 class="mb-4">Order Status</h2>
-        <div class="text-center"><div class="spinner-border" role="status"></div></div>
-    </div>
-}
-else if (order is null)
-{
-    <div class="container mt-4">
-        <h2 class="mb-4">Order Status</h2>
-        <div class="alert alert-warning">Order not found. <a href="/my-orders">View my orders</a></div>
-    </div>
-}
-else
-{
-    <div class="container mt-4">
-        <h2 class="mb-4">Order Status</h2>
+<div class="container mt-4">
 
-        <div class="card mb-4">
+    @if (isLoading)
+    {
+        <h2 class="mb-4 fw-bold skeleton skeleton-title" style="width: 200px;">&nbsp;</h2>
+        <div class="card border-0 shadow-sm">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text short"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text short"></div>
+            </div>
+        </div>
+    }
+    else if (order is null)
+    {
+        <div class="text-center py-5 animate-on-scroll">
+            <div class="display-1 mb-3">🔍</div>
+            <h4 class="text-muted">Order not found</h4>
+            <a href="/my-orders" class="btn btn-primary mt-3">View My Orders</a>
+        </div>
+    }
+    else
+    {
+        <h2 class="mb-4 fw-bold animate-on-scroll">Order Status</h2>
+
+        <div class="card border-0 shadow-sm mb-4 animate-on-scroll">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                     <div>
-                        <h5 class="mb-1">Order #@Truncate(order.Id, 8)</h5>
+                        <h5 class="mb-1 fw-bold">Order #@Truncate(order.Id, 8)</h5>
                         <small class="text-muted">@OrderDate(order.CreatedAt)</small>
                     </div>
-                    <span class="badge @StatusBadge(order.Status)" style="font-size: 1rem;">@StatusText(order.Status)</span>
+                    <span class="badge fs-6 @StatusBadge(order.Status)">@StatusText(order.Status)</span>
                 </div>
 
                 <div class="order-timeline">
                     @foreach (var step in steps)
                     {
                         <div class="timeline-step @(step.Completed ? "completed" : step.Active ? "active" : "")">
-                            <div class="timeline-icon">@(step.Completed ? "✓" : step.Number)</div>
+                            <div class="timeline-icon">@(step.Completed ? "\u2713" : step.Number)</div>
                             <div class="timeline-content">
                                 <strong>@step.Title</strong>
                                 <small class="text-muted d-block">@step.Description</small>
@@ -47,28 +54,28 @@ else
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-md-6 mb-3">
+        <div class="row mb-3 animate-on-scroll">
+            <div class="col-md-6 mb-2">
                 <a href="/receipt/@OrderId" class="btn btn-outline-primary w-100">View Receipt</a>
             </div>
-            <div class="col-md-6 mb-3">
+            <div class="col-md-6 mb-2">
                 <a href="/feedback/@OrderId" class="btn btn-outline-primary w-100">Leave Feedback</a>
             </div>
         </div>
 
         @if (delivery is not null)
         {
-            <div class="card">
+            <div class="card border-0 shadow-sm animate-on-scroll">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="mb-0">Delivery Status</h5>
+                        <h5 class="mb-0 fw-bold">🚚 Delivery Status</h5>
                         <a href="/delivery/@OrderId" class="btn btn-sm btn-outline-info">Track Delivery</a>
                     </div>
-                    <p>Driver: @delivery.DriverName</p>
-                    <p>Status: @DeliveryStatusText(delivery.Status)</p>
+                    <p class="mb-1"><strong>Driver:</strong> @delivery.DriverName</p>
+                    <p class="mb-1"><strong>Status:</strong> <span class="badge @StatusBadge(delivery.Status)">@DeliveryStatusText(delivery.Status)</span></p>
                     @if (!string.IsNullOrEmpty(delivery.EstimatedDeliveryTime))
                     {
-                        <p>Estimated Delivery: @delivery.EstimatedDeliveryTime</p>
+                        <p class="mb-0"><strong>Estimated:</strong> @delivery.EstimatedDeliveryTime</p>
                     }
                 </div>
             </div>
@@ -77,16 +84,18 @@ else
         @if (order.Status < 6)
         {
             <div class="text-center mt-3">
+                <div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div>
                 <small class="text-muted">Auto-refreshing every 10 seconds...</small>
             </div>
         }
-    </div>
-}
+    }
+</div>
 
 @code {
     [Parameter] public string OrderId { get; set; } = "";
 
     [Inject] private Services.ApiService Api { get; set; } = null!;
+    [Inject] private IJSRuntime JS { get; set; } = null!;
 
     private Models.OrderResponse? order;
     private Models.DeliveryResponse? delivery;
@@ -102,6 +111,14 @@ else
         isLoading = false;
         if (order is not null && order.Status < 6)
             _ = RefreshAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("window.BurgerIAM.observeNewElements");
+        }
     }
 
     private async Task RefreshAsync()

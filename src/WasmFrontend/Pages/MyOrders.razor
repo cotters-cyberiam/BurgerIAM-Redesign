@@ -1,52 +1,70 @@
 @page "/my-orders"
 @attribute [Authorize]
+@implements IDisposable
 
 <PageTitle>My Orders - BurgerIAM</PageTitle>
 
 <div class="container mt-4">
-    <h2 class="mb-4">My Orders</h2>
+    <h2 class="mb-4 fw-bold animate-on-scroll">My Orders</h2>
 
     @if (isLoading)
     {
-        <div class="text-center"><div class="spinner-border" role="status"></div></div>
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                @for (int i = 0; i < 4; i++)
+                {
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="skeleton skeleton-text" style="width: 80px;"></div>
+                        <div class="skeleton skeleton-text" style="width: 120px;"></div>
+                        <div class="skeleton skeleton-text" style="width: 60px;"></div>
+                        <div class="skeleton skeleton-text short"></div>
+                        <div class="skeleton skeleton-button" style="width: 80px;"></div>
+                    </div>
+                }
+            </div>
+        </div>
     }
     else if (orders.Count == 0)
     {
-        <div class="text-center py-5">
+        <div class="text-center py-5 animate-on-scroll">
+            <div class="display-1 mb-3">📋</div>
             <h4 class="text-muted">No orders yet</h4>
-            <a href="/menu" class="btn btn-primary mt-3">Start Ordering</a>
+            <p class="text-muted">Browse our menu and place your first order!</p>
+            <a href="/menu" class="btn btn-primary btn-lg mt-3">Start Ordering</a>
         </div>
     }
     else
     {
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Order ID</th>
-                        <th>Date</th>
-                        <th>Items</th>
-                        <th>Total</th>
-                        <th>Status</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var order in orders)
-                    {
+        <div class="card border-0 shadow-sm animate-on-scroll">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead>
                         <tr>
-                            <td><code>@Truncate(order.Id, 8)</code></td>
-                            <td>@OrderDate(order.CreatedAt)</td>
-                            <td>@order.Items.Count</td>
-                            <td>&pound;@order.TotalAmount.ToString("F2")</td>
-                            <td><span class="badge @StatusBadge(order.Status)">@StatusText(order.Status)</span></td>
-                            <td>
-                                <a href="/order-status/@order.Id" class="btn btn-sm btn-outline-primary">Track</a>
-                            </td>
+                            <th>Order ID</th>
+                            <th>Date</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th></th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var order in orders)
+                        {
+                            <tr class="animate-on-scroll">
+                                <td><code class="fw-bold">@Truncate(order.Id, 8)</code></td>
+                                <td>@OrderDate(order.CreatedAt)</td>
+                                <td>@order.Items.Count item(s)</td>
+                                <td class="fw-bold" style="color: var(--primary);">&pound;@order.TotalAmount.ToString("F2")</td>
+                                <td><span class="badge @StatusBadge(order.Status)">@StatusText(order.Status)</span></td>
+                                <td>
+                                    <a href="/order-status/@order.Id" class="btn btn-sm btn-outline-primary">Track</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
     }
 </div>
@@ -54,6 +72,7 @@
 @code {
     [Inject] private Services.ApiService Api { get; set; } = null!;
     [Inject] private Services.AuthService Auth { get; set; } = null!;
+    [Inject] private IJSRuntime JS { get; set; } = null!;
 
     private List<Models.OrderResponse> orders = [];
     private bool isLoading = true;
@@ -64,6 +83,14 @@
         isLoading = false;
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("window.BurgerIAM.observeNewElements");
+        }
+    }
+
     private static string Truncate(string value, int maxLength) =>
         value?.Length > maxLength ? value[..maxLength] : value ?? "";
 
@@ -72,29 +99,20 @@
 
     private static string StatusText(int status) => status switch
     {
-        0 => "Pending",
-        1 => "Confirmed",
-        2 => "Paid",
-        3 => "Preparing",
-        4 => "Ready",
-        5 => "Out for Delivery",
-        6 => "Delivered",
-        7 => "Cancelled",
-        8 => "Refunded",
-        _ => "Unknown"
+        0 => "Pending", 1 => "Confirmed", 2 => "Paid", 3 => "Preparing",
+        4 => "Ready", 5 => "Out for Delivery", 6 => "Delivered",
+        7 => "Cancelled", 8 => "Refunded", _ => "Unknown"
     };
 
     private static string StatusBadge(int status) => status switch
     {
-        0 => "bg-secondary",
-        1 => "bg-info",
-        2 => "bg-primary",
-        3 => "bg-warning text-dark",
-        4 => "bg-success",
-        5 => "bg-info",
-        6 => "bg-success",
-        7 => "bg-danger",
-        8 => "bg-dark",
-        _ => "bg-secondary"
+        0 => "bg-secondary", 1 => "bg-info", 2 => "bg-primary",
+        3 => "bg-warning text-dark", 4 => "bg-success", 5 => "bg-info",
+        6 => "bg-success", 7 => "bg-danger", 8 => "bg-dark", _ => "bg-secondary"
     };
+
+    public void Dispose()
+    {
+        try { _ = JS.InvokeVoidAsync("window.BurgerIAM.closeMobileNav"); } catch { }
+    }
 }
