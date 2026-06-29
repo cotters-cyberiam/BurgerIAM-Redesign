@@ -122,6 +122,7 @@
     private void SelectCategory(string? cat)
     {
         selectedCategory = cat;
+        StateHasChanged();
     }
 
     private async void AddToCart(Models.MenuItemResponse item)

@@ -2,49 +2,51 @@ window.BurgerIAM = {
     observer: null,
 
     initScrollAnimations() {
-        this.observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
+        var self = window.BurgerIAM;
+        self.observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
                 if (entry.isIntersecting) {
                     entry.target.classList.add('animate-visible');
-                    this.observer.unobserve(entry.target);
+                    self.observer.unobserve(entry.target);
                 }
             });
         }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
 
-        document.querySelectorAll('.animate-on-scroll').forEach(el => {
-            this.observer.observe(el);
+        document.querySelectorAll('.animate-on-scroll').forEach(function (el) {
+            self.observer.observe(el);
         });
     },
 
     observeNewElements() {
-        if (this.observer) {
-            document.querySelectorAll('.animate-on-scroll:not(.animate-visible)').forEach(el => {
-                this.observer.observe(el);
+        var self = window.BurgerIAM;
+        if (self.observer) {
+            document.querySelectorAll('.animate-on-scroll:not(.animate-visible)').forEach(function (el) {
+                self.observer.observe(el);
             });
         } else {
-            this.initScrollAnimations();
+            self.initScrollAnimations();
         }
     },
 
     toggleMobileNav() {
         document.body.classList.toggle('drawer-open');
-        const overlay = document.getElementById('mobileNavOverlay');
+        var overlay = document.getElementById('mobileNavOverlay');
         if (overlay) overlay.classList.toggle('open');
-        const hamburger = document.getElementById('hamburgerBtn');
+        var hamburger = document.getElementById('hamburgerBtn');
         if (hamburger) hamburger.classList.toggle('active');
     },
 
     closeMobileNav() {
         document.body.classList.remove('drawer-open');
-        const overlay = document.getElementById('mobileNavOverlay');
+        var overlay = document.getElementById('mobileNavOverlay');
         if (overlay) overlay.classList.remove('open');
-        const hamburger = document.getElementById('hamburgerBtn');
+        var hamburger = document.getElementById('hamburgerBtn');
         if (hamburger) hamburger.classList.remove('active');
     },
 
     toggleCartDrawer() {
-        const drawer = document.getElementById('cartDrawer');
-        const overlay = document.getElementById('cartDrawerOverlay');
+        var drawer = document.getElementById('cartDrawer');
+        var overlay = document.getElementById('cartDrawerOverlay');
         if (!drawer) return;
         drawer.classList.toggle('open');
         if (overlay) overlay.classList.toggle('open');
@@ -52,8 +54,8 @@ window.BurgerIAM = {
     },
 
     openCartDrawer() {
-        const drawer = document.getElementById('cartDrawer');
-        const overlay = document.getElementById('cartDrawerOverlay');
+        var drawer = document.getElementById('cartDrawer');
+        var overlay = document.getElementById('cartDrawerOverlay');
         if (!drawer) return;
         drawer.classList.add('open');
         if (overlay) overlay.classList.add('open');
@@ -61,8 +63,8 @@ window.BurgerIAM = {
     },
 
     closeCartDrawer() {
-        const drawer = document.getElementById('cartDrawer');
-        const overlay = document.getElementById('cartDrawerOverlay');
+        var drawer = document.getElementById('cartDrawer');
+        var overlay = document.getElementById('cartDrawerOverlay');
         if (!drawer) return;
         drawer.classList.remove('open');
         if (overlay) overlay.classList.remove('open');
@@ -70,7 +72,7 @@ window.BurgerIAM = {
     },
 
     animateCartBadge(count) {
-        const badge = document.getElementById('cartBadge');
+        var badge = document.getElementById('cartBadge');
         if (!badge) return;
         badge.textContent = count;
         badge.classList.remove('bump');
@@ -83,38 +85,36 @@ window.BurgerIAM = {
         }
     },
 
-    showToast(msg, type = 'success') {
-        const container = document.getElementById('toastContainer');
+    showToast: function (msg, type) {
+        if (type === undefined) type = 'success';
+        var container = document.getElementById('toastContainer');
         if (!container) return;
-        const el = document.createElement('div');
-        el.className = `toast ${type}`;
-        const icon = type === 'success' ? '\u2705' : type === 'error' ? '\u274C' : '\u2139\uFE0F';
-        el.innerHTML = `<span>${icon}</span><span>${this.escapeHtml(msg)}</span>`;
+        var el = document.createElement('div');
+        el.className = 'toast ' + type;
+        var icon = type === 'success' ? '\u2705' : type === 'error' ? '\u274C' : '\u2139\uFE0F';
+        var text = document.createElement('span');
+        text.textContent = msg;
+        el.innerHTML = '<span>' + icon + '</span>';
+        el.appendChild(text);
         container.appendChild(el);
-        setTimeout(() => {
+        setTimeout(function () {
             el.classList.add('hide');
-            setTimeout(() => el.remove(), 300);
+            setTimeout(function () { el.remove(); }, 300);
         }, 2500);
     },
 
-    escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    },
-
     initSmoothScrolling() {
-        document.querySelectorAll('a[href^="#"]').forEach(a => {
-            a.addEventListener('click', e => {
+        document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+            a.addEventListener('click', function (e) {
                 e.preventDefault();
-                const target = document.querySelector(a.getAttribute('href'));
+                var target = document.querySelector(a.getAttribute('href'));
                 if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         });
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function () {
     window.BurgerIAM.initScrollAnimations();
     window.BurgerIAM.initSmoothScrolling();
 });
