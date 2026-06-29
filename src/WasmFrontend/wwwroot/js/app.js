@@ -3,6 +3,7 @@ window.BurgerIAM = {
 
     initScrollAnimations() {
         var self = window.BurgerIAM;
+        document.body.classList.add('js-ready');
         self.observer = new IntersectionObserver(function (entries) {
             entries.forEach(function (entry) {
                 if (entry.isIntersecting) {

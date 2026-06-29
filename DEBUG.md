@@ -30,9 +30,11 @@ This file documents issues encountered during development and their resolutions.
 
 **Root cause**: Blazor's `IJSRuntime.InvokeVoidAsync("window.BurgerIAM.xxx")` calls JS methods without object context, so `this` resolves to `window`, not `window.BurgerIAM`. All methods using `this` (e.g., `this.observer`, `this.initScrollAnimations()`) failed silently. Since all page content is wrapped in `.animate-on-scroll` (which starts at `opacity: 0`), the IntersectionObserver never triggered, leaving everything at `opacity: 0`.
 
-**Fix**: Rewrote every `window.BurgerIAM` method to capture `var self = window.BurgerIAM` at the top and use `self` instead of `this`. Also replaced ES6 arrow functions with regular `function` expressions (for broader compatibility) and template literals with string concatenation (for `showToast`).
+**Fix**: Two changes:
+1. Rewrote every `window.BurgerIAM` method to capture `var self = window.BurgerIAM` at the top and use `self` instead of `this`.
+2. Made scroll animations fail-safe: `.animate-on-scroll` only applies `opacity: 0` when parent has `.js-ready` class (added by JS on load). If JS fails or the IntersectionObserver doesn't fire, content remains visible by default.
 
-**Files**: `src/WasmFrontend/wwwroot/js/app.js`, `src/WasmFrontend/Pages/Menu.razor`
+**Files**: `src/WasmFrontend/wwwroot/js/app.js`, `src/WasmFrontend/Pages/Menu.razor`, `src/WasmFrontend/wwwroot/css/app.css`
 
 ---
 

@@ -86,30 +86,32 @@ body.nav-open { overflow: hidden; }
    SCROLL ANIMATIONS
    ═══════════════════════════════════════════ */
 .animate-on-scroll {
-  opacity: 0;
-  transform: translateY(40px);
   transition: opacity 0.7s ease-out, transform 0.7s ease-out;
 }
-.animate-on-scroll.animate-visible {
+.js-ready .animate-on-scroll {
+  opacity: 0;
+  transform: translateY(40px);
+}
+.js-ready .animate-on-scroll.animate-visible {
   opacity: 1;
   transform: translateY(0);
 }
-.animate-on-scroll.animate-left {
+.js-ready .animate-on-scroll.animate-left {
   transform: translateX(-40px);
 }
-.animate-on-scroll.animate-left.animate-visible {
+.js-ready .animate-on-scroll.animate-left.animate-visible {
   transform: translateX(0);
 }
-.animate-on-scroll.animate-right {
+.js-ready .animate-on-scroll.animate-right {
   transform: translateX(40px);
 }
-.animate-on-scroll.animate-right.animate-visible {
+.js-ready .animate-on-scroll.animate-right.animate-visible {
   transform: translateX(0);
 }
-.animate-on-scroll.animate-scale {
+.js-ready .animate-on-scroll.animate-scale {
   transform: scale(0.9);
 }
-.animate-on-scroll.animate-scale.animate-visible {
+.js-ready .animate-on-scroll.animate-scale.animate-visible {
   transform: scale(1);
 }
 
