@@ -49,6 +49,45 @@ This file documents issues encountered during development and their resolutions.
 **Files**: `src/WasmFrontend/Pages/DeliveryTracking.razor`
 # Debug Log
 
+## Running Services for Testing
+
+Start all required services (run from repo root):
+
+```powershell
+# Kill anything on used ports first
+foreach ($port in @(5000,5041,5051,5061,5071)) {
+    Get-Process -Id (Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue).OwningProcess -ErrorAction SilentlyContinue |
+        Stop-Process -Force -ErrorAction SilentlyContinue
+}
+Start-Sleep 2
+
+# Start each service in a new window
+$services = @(
+    @{Name="ApiGateway";     Port=5000; Dir="src/ApiGateway"}
+    @{Name="IdentityService";Port=5041; Dir="src/IdentityService"}
+    @{Name="MenuService";    Port=5051; Dir="src/MenuService"}
+    @{Name="OrderService";   Port=5061; Dir="src/OrderService"}
+    @{Name="PaymentService"; Port=5071; Dir="src/PaymentService"}
+)
+
+foreach ($svc in $services) {
+    $log = "$($svc.Name).log"
+    Start-Process -WindowStyle Normal -FilePath "dotnet" `
+        -ArgumentList "run","--no-build","--urls","http://localhost:$($svc.Port)" `
+        -WorkingDirectory (Join-Path $PWD.Path $svc.Dir) `
+        -RedirectStandardOutput $log -RedirectStandardError $log
+    Start-Sleep 1
+}
+```
+
+Then browse to `http://localhost:5000`. Use **Ctrl+Shift+R** (hard refresh) to bypass Blazor WASM cache and pick up new frontend files.
+
+To run a single service: `dotnet run --project src/<ServiceName> --urls http://localhost:<port>`
+
+---
+
+
+
 This file documents issues encountered during development and their resolutions. Refer here when troubleshooting similar problems.
 
 ---
