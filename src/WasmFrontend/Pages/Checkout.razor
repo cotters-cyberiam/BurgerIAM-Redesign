@@ -8,13 +8,13 @@
 {
     <div class="container mt-4">
         <div class="text-center py-5 animate-on-scroll">
-            <div class="display-1 mb-3">🎉</div>
+            <div style="font-size:4rem;margin-bottom:16px;">&#x1F389;</div>
             <h3 class="fw-bold">Order Placed Successfully!</h3>
-            <p class="text-muted">Order ID: <code class="fw-bold">@TruncateId(orderId)</code></p>
-            <p class="fs-5">Your total: <strong class="fs-4" style="color: var(--primary);">&pound;@savedTotal.ToString("F2")</strong></p>
+            <p style="color:var(--text-muted);">Order ID: <code class="fw-bold">@TruncateId(orderId)</code></p>
+            <p class="fs-5">Your total: <strong class="fs-4" style="color:var(--primary);">&pound;@savedTotal.ToString("F2")</strong></p>
             <div class="mt-4">
                 <a href="/order-status/@orderId" class="btn btn-primary btn-lg me-2">Track Order</a>
-                <a href="/menu" class="btn btn-outline-primary btn-lg">Order More</a>
+                <a href="/menu" class="btn btn-outline btn-lg">Order More</a>
             </div>
         </div>
     </div>
@@ -23,8 +23,8 @@ else if (Cart.IsEmpty)
 {
     <div class="container mt-4">
         <div class="text-center py-5 animate-on-scroll">
-            <div class="display-1 mb-3">🛒</div>
-            <h4 class="text-muted">Your cart is empty</h4>
+            <div style="font-size:4rem;margin-bottom:16px;">&#x1F6D2;</div>
+            <h4 style="color:var(--text-muted);">Your cart is empty</h4>
             <a href="/menu" class="btn btn-primary btn-lg mt-3">Browse Menu</a>
         </div>
     </div>
@@ -32,43 +32,47 @@ else if (Cart.IsEmpty)
 else
 {
     <div class="container mt-4">
-        <h2 class="mb-4 fw-bold animate-on-scroll">Checkout</h2>
+        <h2 class="section-title animate-on-scroll">Checkout</h2>
+        <p class="section-subtitle animate-on-scroll">Complete your order</p>
 
         @if (!string.IsNullOrEmpty(error))
         {
-            <div class="alert alert-danger animate-slide-up">@error</div>
+            <div class="toast error" style="margin-bottom:16px;animation:none;">
+                <span>&#x274C;</span>
+                <span>@error</span>
+            </div>
         }
 
         <div class="row">
             <div class="col-md-7">
-                <div class="card border-0 shadow-sm mb-3 animate-on-scroll">
+                <div class="card mb-3 animate-on-scroll">
                     <div class="card-body">
-                        <h5 class="card-title fw-bold mb-3">📍 Delivery Address</h5>
-                        <div class="form-floating mb-2">
-                            <InputText @bind-Value="deliveryAddress" class="form-control" placeholder="123 Main St, City" id="address" />
-                            <label for="address" class="form-label">Address</label>
+                        <h5 style="font-weight:700;margin-bottom:16px;">&#x1F4CD; Delivery Address</h5>
+                        <div class="form-float">
+                            <InputText @bind-Value="deliveryAddress" placeholder=" " id="address" />
+                            <label for="address">Address</label>
                         </div>
                     </div>
                 </div>
 
-                <div class="card border-0 shadow-sm animate-on-scroll">
+                <div class="card animate-on-scroll">
                     <div class="card-body">
-                        <h5 class="card-title fw-bold mb-3">💳 Payment</h5>
-                        <div class="form-floating mb-3">
-                            <InputText @bind-Value="cardNumber" class="form-control" placeholder="4111 1111 1111 1111" id="card" />
-                            <label for="card" class="form-label">Card Number</label>
+                        <h5 style="font-weight:700;margin-bottom:16px;">&#x1F4B3; Payment</h5>
+                        <div class="form-float mb-3">
+                            <InputText @bind-Value="cardNumber" placeholder=" " id="card" />
+                            <label for="card">Card Number</label>
                         </div>
                         <div class="row">
                             <div class="col">
-                                <div class="form-floating mb-2">
-                                    <InputText @bind-Value="expiry" class="form-control" placeholder="MM/YY" id="expiry" />
-                                    <label for="expiry" class="form-label">Expiry</label>
+                                <div class="form-float">
+                                    <InputText @bind-Value="expiry" placeholder=" " id="expiry" />
+                                    <label for="expiry">Expiry</label>
                                 </div>
                             </div>
                             <div class="col">
-                                <div class="form-floating mb-2">
-                                    <InputText @bind-Value="cvv" class="form-control" placeholder="123" id="cvv" />
-                                    <label for="cvv" class="form-label">CVV</label>
+                                <div class="form-float">
+                                    <InputText @bind-Value="cvv" placeholder=" " id="cvv" />
+                                    <label for="cvv">CVV</label>
                                 </div>
                             </div>
                         </div>
@@ -77,31 +81,31 @@ else
             </div>
 
             <div class="col-md-5">
-                <div class="card border-0 shadow-sm animate-on-scroll sticky-top" style="top: 80px;">
+                <div class="card animate-on-scroll" style="position:sticky;top:80px;">
                     <div class="card-body">
-                        <h5 class="card-title fw-bold mb-3">📋 Order Summary</h5>
+                        <h5 style="font-weight:700;margin-bottom:16px;">&#x1F4CB; Order Summary</h5>
                         @foreach (var item in Cart.Items)
                         {
-                            <div class="d-flex justify-content-between mb-2">
-                                <span>@item.ItemName <span class="text-muted">x@item.Quantity</span></span>
+                            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:0.9rem;">
+                                <span>@item.ItemName <span style="color:var(--text-muted);">x@item.Quantity</span></span>
                                 <span class="fw-medium">&pound;@((item.UnitPrice * item.Quantity).ToString("F2"))</span>
                             </div>
                         }
-                        <hr />
-                        <div class="d-flex justify-content-between mb-1">
-                            <span class="text-muted">Subtotal</span>
+                        <hr style="border-color:var(--border-subtle);" />
+                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;color:var(--text-secondary);font-size:0.9rem;">
+                            <span>Subtotal</span>
                             <span>&pound;@Cart.TotalAmount.ToString("F2")</span>
                         </div>
-                        <div class="d-flex justify-content-between mb-1">
-                            <span class="text-muted">Delivery</span>
-                            <span class="text-success">Free</span>
+                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;color:var(--text-secondary);font-size:0.9rem;">
+                            <span>Delivery</span>
+                            <span style="color:#2ecc71;">Free</span>
                         </div>
-                        <hr />
-                        <div class="d-flex justify-content-between mb-3">
-                            <strong class="fs-5">Total</strong>
-                            <strong class="fs-5" style="color: var(--primary);">&pound;@Cart.TotalAmount.ToString("F2")</strong>
+                        <hr style="border-color:var(--border-subtle);" />
+                        <div style="display:flex;justify-content:space-between;margin-bottom:16px;">
+                            <strong style="font-size:1.1rem;">Total</strong>
+                            <strong style="font-size:1.1rem;color:var(--primary);">&pound;@Cart.TotalAmount.ToString("F2")</strong>
                         </div>
-                        <button @onclick="PlaceOrder" class="btn btn-primary w-100 btn-lg" disabled="@isProcessing">
+                        <button @onclick="PlaceOrder" class="btn btn-primary btn-block btn-lg" disabled="@isProcessing">
                             @if (isProcessing)
                             {
                                 <span class="spinner-border spinner-border-sm me-2" role="status"></span>

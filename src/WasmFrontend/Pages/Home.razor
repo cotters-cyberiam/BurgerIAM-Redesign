@@ -4,22 +4,40 @@
 
 <PageTitle>BurgerIAM - Fast Food Ordering</PageTitle>
 
-<div class="hero-section text-white text-center mb-5 position-relative overflow-hidden" style="min-height: 420px;">
-    <img src="images/banner.png" alt="BurgerIAM" class="hero-bg-img" />
-    <div class="hero-overlay"></div>
-    <div class="container position-relative py-5" style="z-index: 2;">
+<div class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-content">
         <div class="animate-on-scroll">
-            <h1 class="display-4 fw-bold">BurgerIAM</h1>
-            <p class="lead">Delicious fast food, delivered fast.</p>
-            <a href="/menu" class="btn btn-danger btn-lg me-2">View Menu</a>
-            @if (!Auth.IsLoggedIn)
-            {
-                <a href="/register" class="btn btn-outline-light btn-lg">Get Started</a>
-            }
-            else
-            {
-                <a href="/my-orders" class="btn btn-outline-light btn-lg">My Orders</a>
-            }
+            <div class="hero-badge">
+                <span>&#x1F525;</span> Fresh & Fast
+            </div>
+            <h1>Delicious <span class="highlight">Burgers</span>,<br />Delivered Fast</h1>
+            <p>Premium fast food made with fresh ingredients. Order online and track in real-time.</p>
+            <div class="hero-actions">
+                <a href="/menu" class="btn btn-primary btn-lg">View Menu</a>
+                @if (!Auth.IsLoggedIn)
+                {
+                    <a href="/register" class="btn btn-outline btn-lg">Get Started</a>
+                }
+                else
+                {
+                    <a href="/my-orders" class="btn btn-outline btn-lg">My Orders</a>
+                }
+            </div>
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <div class="hero-stat-value">50+</div>
+                    <div class="hero-stat-label">Menu Items</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value">15min</div>
+                    <div class="hero-stat-label">Avg. Delivery</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value">4.9</div>
+                    <div class="hero-stat-label">Customer Rating</div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -28,8 +46,8 @@
     @if (isLoading)
     {
         <div class="text-center mb-4">
-            <div class="skeleton skeleton-title mx-auto" style="width: 200px;"></div>
-            <div class="skeleton skeleton-text mx-auto" style="width: 300px;"></div>
+            <div class="skeleton skeleton-title mx-auto" style="width:200px;"></div>
+            <div class="skeleton skeleton-text mx-auto" style="width:300px;"></div>
         </div>
         <div class="row">
             @for (int i = 0; i < 3; i++)
@@ -44,30 +62,40 @@
     {
         @if (averageRating is not null && averageRating.TotalReviews > 0)
         {
-            <div class="text-center mb-5 animate-on-scroll">
-                <h3 class="fw-bold">Customer Rating</h3>
-                <p class="display-6" style="color: #f1c40f;">
-                    @(new string('\u2605', (int)Math.Round(averageRating.AverageRating)) + new string('\u2606', 5 - (int)Math.Round(averageRating.AverageRating)))
-                    <span class="text-muted fs-5 ms-2">@averageRating.AverageRating:F1 (@averageRating.TotalReviews reviews)</span>
+            <div class="text-center mb-5 animate-on-scroll" style="margin-top:48px;">
+                <h3 class="fw-bold" style="margin-bottom:12px;">What Our Customers Say</h3>
+                <div class="star-rating d-inline-flex" style="gap:6px;">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        <span style="font-size:2rem;color:@(i <= (int)Math.Round(averageRating.AverageRating) ? "#f1c40f" : "rgba(255,255,255,0.15)");">&#x2605;</span>
+                    }
+                </div>
+                <p style="color:var(--text-muted);margin-top:8px;">
+                    @averageRating.AverageRating:F1 average rating (@averageRating.TotalReviews reviews)
                 </p>
             </div>
         }
 
-        <h3 class="mb-4 fw-bold animate-on-scroll">Popular Items</h3>
+        <h3 class="section-title animate-on-scroll" style="margin-top:48px;">Popular Items</h3>
+        <p class="section-subtitle animate-on-scroll">Our most loved dishes</p>
+
         <div class="row">
             @foreach (var item in popularItems)
             {
                 <div class="col-md-6 col-lg-4 mb-4 animate-on-scroll">
-                    <div class="card menu-card h-100 border-0">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="flex-grow-1 me-2">
-                                    <h5 class="card-title mb-1 fw-bold">@item.Name</h5>
-                                    <p class="card-text text-muted small mb-2">@Truncate(item.Description, 60)</p>
-                                </div>
-                                <span class="price-tag">&pound;@item.Price.ToString("F2")</span>
+                    <div class="menu-card h-100">
+                        <div class="menu-card-img">
+                            <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:3rem;">
+                                &#x1F354;
                             </div>
-                            <a href="/menu" class="btn btn-sm btn-outline-primary mt-2">Order Now</a>
+                        </div>
+                        <div class="menu-card-body">
+                            <h5 class="menu-card-name">@item.Name</h5>
+                            <p class="menu-card-desc">@Truncate(item.Description, 60)</p>
+                            <div class="menu-card-footer">
+                                <span class="menu-card-price">&pound;@item.Price.ToString("F2")</span>
+                                <a href="/menu" class="btn btn-primary btn-sm">Order Now</a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -76,30 +104,24 @@
 
         <div class="row mt-5 mb-5">
             <div class="col-md-4 mb-3 animate-on-scroll animate-left">
-                <div class="card text-center h-100 border-0 shadow-sm">
-                    <div class="card-body py-4">
-                        <div class="display-4 mb-2">🍔</div>
-                        <h5 class="fw-bold">Quality Food</h5>
-                        <p class="card-text text-muted">Fresh ingredients, prepared with care.</p>
-                    </div>
+                <div class="stat-card">
+                    <div class="stat-icon">&#x1F354;</div>
+                    <h5 class="stat-title">Quality Food</h5>
+                    <p class="stat-desc">Fresh ingredients, prepared with care.</p>
                 </div>
             </div>
             <div class="col-md-4 mb-3 animate-on-scroll">
-                <div class="card text-center h-100 border-0 shadow-sm">
-                    <div class="card-body py-4">
-                        <div class="display-4 mb-2">🚚</div>
-                        <h5 class="fw-bold">Fast Delivery</h5>
-                        <p class="card-text text-muted">Track your order in real-time.</p>
-                    </div>
+                <div class="stat-card">
+                    <div class="stat-icon">&#x1F69A;</div>
+                    <h5 class="stat-title">Fast Delivery</h5>
+                    <p class="stat-desc">Track your order in real-time.</p>
                 </div>
             </div>
             <div class="col-md-4 mb-3 animate-on-scroll animate-right">
-                <div class="card text-center h-100 border-0 shadow-sm">
-                    <div class="card-body py-4">
-                        <div class="display-4 mb-2">💳</div>
-                        <h5 class="fw-bold">Easy Payment</h5>
-                        <p class="card-text text-muted">Secure checkout with multiple options.</p>
-                    </div>
+                <div class="stat-card">
+                    <div class="stat-icon">&#x1F4B3;</div>
+                    <h5 class="stat-title">Easy Payment</h5>
+                    <p class="stat-desc">Secure checkout with multiple options.</p>
                 </div>
             </div>
         </div>

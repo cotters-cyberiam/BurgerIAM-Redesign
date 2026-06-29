@@ -7,8 +7,8 @@
 
     @if (isLoading)
     {
-        <h2 class="mb-4 fw-bold skeleton skeleton-title" style="width: 200px;">&nbsp;</h2>
-        <div class="card border-0 shadow-sm">
+        <h2 class="mb-4 skeleton skeleton-title" style="width:200px;">&nbsp;</h2>
+        <div class="card">
             <div class="card-body">
                 <div class="skeleton skeleton-text"></div>
                 <div class="skeleton skeleton-text short"></div>
@@ -20,34 +20,32 @@
     else if (order is null)
     {
         <div class="text-center py-5 animate-on-scroll">
-            <div class="display-1 mb-3">🔍</div>
-            <h4 class="text-muted">Order not found</h4>
+            <div style="font-size:4rem;margin-bottom:16px;">&#x1F50D;</div>
+            <h4 style="color:var(--text-muted);">Order not found</h4>
             <a href="/my-orders" class="btn btn-primary mt-3">View My Orders</a>
         </div>
     }
     else
     {
-        <h2 class="mb-4 fw-bold animate-on-scroll">Order Status</h2>
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 animate-on-scroll">
+            <div>
+                <h2 class="fw-bold" style="margin:0;letter-spacing:-0.5px;">Order Status</h2>
+                <p style="color:var(--text-muted);margin:4px 0 0;font-size:0.9rem;">
+                    Order #@Truncate(order.Id, 8) &middot; @OrderDate(order.CreatedAt)
+                </p>
+            </div>
+            <span class="badge @StatusBadge(order.Status)" style="font-size:0.9rem;padding:8px 20px;">@StatusText(order.Status)</span>
+        </div>
 
-        <div class="card border-0 shadow-sm mb-4 animate-on-scroll">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                    <div>
-                        <h5 class="mb-1 fw-bold">Order #@Truncate(order.Id, 8)</h5>
-                        <small class="text-muted">@OrderDate(order.CreatedAt)</small>
-                    </div>
-                    <span class="badge fs-6 @StatusBadge(order.Status)">@StatusText(order.Status)</span>
-                </div>
-
-                <div class="order-timeline">
+        <div class="card mb-4 animate-on-scroll">
+            <div class="card-body" style="padding:32px;">
+                <div class="timeline">
                     @foreach (var step in steps)
                     {
                         <div class="timeline-step @(step.Completed ? "completed" : step.Active ? "active" : "")">
-                            <div class="timeline-icon">@(step.Completed ? "\u2713" : step.Number)</div>
-                            <div class="timeline-content">
-                                <strong>@step.Title</strong>
-                                <small class="text-muted d-block">@step.Description</small>
-                            </div>
+                            <div class="timeline-dot">@(step.Completed ? "\u2713" : step.Number)</div>
+                            <strong class="timeline-title">@step.Title</strong>
+                            <p class="timeline-desc">@step.Description</p>
                         </div>
                     }
                 </div>
@@ -56,26 +54,26 @@
 
         <div class="row mb-3 animate-on-scroll">
             <div class="col-md-6 mb-2">
-                <a href="/receipt/@OrderId" class="btn btn-outline-primary w-100">View Receipt</a>
+                <a href="/receipt/@OrderId" class="btn btn-outline btn-block">View Receipt</a>
             </div>
             <div class="col-md-6 mb-2">
-                <a href="/feedback/@OrderId" class="btn btn-outline-primary w-100">Leave Feedback</a>
+                <a href="/feedback/@OrderId" class="btn btn-outline btn-block">Leave Feedback</a>
             </div>
         </div>
 
         @if (delivery is not null)
         {
-            <div class="card border-0 shadow-sm animate-on-scroll">
+            <div class="card animate-on-scroll">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="mb-0 fw-bold">🚚 Delivery Status</h5>
-                        <a href="/delivery/@OrderId" class="btn btn-sm btn-outline-info">Track Delivery</a>
+                        <h5 class="fw-bold" style="margin:0;">&#x1F69A; Delivery Status</h5>
+                        <a href="/delivery/@OrderId" class="btn btn-sm btn-outline">Track Delivery</a>
                     </div>
-                    <p class="mb-1"><strong>Driver:</strong> @delivery.DriverName</p>
-                    <p class="mb-1"><strong>Status:</strong> <span class="badge @StatusBadge(delivery.Status)">@DeliveryStatusText(delivery.Status)</span></p>
+                    <p class="mb-1" style="font-size:0.9rem;"><strong>Driver:</strong> @delivery.DriverName</p>
+                    <p class="mb-1" style="font-size:0.9rem;"><strong>Status:</strong> <span class="badge @StatusBadge(delivery.Status)">@DeliveryStatusText(delivery.Status)</span></p>
                     @if (!string.IsNullOrEmpty(delivery.EstimatedDeliveryTime))
                     {
-                        <p class="mb-0"><strong>Estimated:</strong> @delivery.EstimatedDeliveryTime</p>
+                        <p class="mb-0" style="font-size:0.9rem;"><strong>Estimated:</strong> @delivery.EstimatedDeliveryTime</p>
                     }
                 </div>
             </div>
@@ -84,8 +82,8 @@
         @if (order.Status < 6)
         {
             <div class="text-center mt-3">
-                <div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div>
-                <small class="text-muted">Auto-refreshing every 10 seconds...</small>
+                <div class="spinner-border spinner-border-sm text-danger me-1" role="status"></div>
+                <small style="color:var(--text-muted);">Auto-refreshing every 10 seconds...</small>
             </div>
         }
     }
@@ -166,9 +164,9 @@
 
     private static string StatusBadge(int status) => status switch
     {
-        0 => "bg-secondary", 1 => "bg-info", 2 => "bg-primary",
-        3 => "bg-warning text-dark", 4 => "bg-success", 5 => "bg-info",
-        6 => "bg-success", 7 => "bg-danger", _ => "bg-secondary"
+        0 => "badge-secondary", 1 => "badge-info", 2 => "badge-primary",
+        3 => "badge-warning", 4 => "badge-success", 5 => "badge-info",
+        6 => "badge-success", 7 => "badge-danger", _ => "badge-secondary"
     };
 
     private static string Truncate(string value, int maxLength) =>

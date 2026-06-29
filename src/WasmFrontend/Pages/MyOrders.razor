@@ -5,20 +5,21 @@
 <PageTitle>My Orders - BurgerIAM</PageTitle>
 
 <div class="container mt-4">
-    <h2 class="mb-4 fw-bold animate-on-scroll">My Orders</h2>
+    <h2 class="section-title animate-on-scroll">My Orders</h2>
+    <p class="section-subtitle animate-on-scroll">Track all your orders in one place</p>
 
     @if (isLoading)
     {
-        <div class="card border-0 shadow-sm">
+        <div class="card">
             <div class="card-body">
                 @for (int i = 0; i < 4; i++)
                 {
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="skeleton skeleton-text" style="width: 80px;"></div>
-                        <div class="skeleton skeleton-text" style="width: 120px;"></div>
-                        <div class="skeleton skeleton-text" style="width: 60px;"></div>
+                        <div class="skeleton skeleton-text" style="width:80px;"></div>
+                        <div class="skeleton skeleton-text" style="width:120px;"></div>
+                        <div class="skeleton skeleton-text" style="width:60px;"></div>
                         <div class="skeleton skeleton-text short"></div>
-                        <div class="skeleton skeleton-button" style="width: 80px;"></div>
+                        <div class="skeleton skeleton-button" style="width:80px;"></div>
                     </div>
                 }
             </div>
@@ -27,17 +28,17 @@
     else if (orders.Count == 0)
     {
         <div class="text-center py-5 animate-on-scroll">
-            <div class="display-1 mb-3">📋</div>
-            <h4 class="text-muted">No orders yet</h4>
-            <p class="text-muted">Browse our menu and place your first order!</p>
+            <div style="font-size:4rem;margin-bottom:16px;">&#x1F4CB;</div>
+            <h4 style="color:var(--text-muted);margin-bottom:8px;">No orders yet</h4>
+            <p style="color:var(--text-muted);">Browse our menu and place your first order!</p>
             <a href="/menu" class="btn btn-primary btn-lg mt-3">Start Ordering</a>
         </div>
     }
     else
     {
-        <div class="card border-0 shadow-sm animate-on-scroll">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0 align-middle">
+        <div class="card animate-on-scroll">
+            <div class="table-wrap">
+                <table class="table mb-0 align-middle">
                     <thead>
                         <tr>
                             <th>Order ID</th>
@@ -55,10 +56,10 @@
                                 <td><code class="fw-bold">@Truncate(order.Id, 8)</code></td>
                                 <td>@OrderDate(order.CreatedAt)</td>
                                 <td>@order.Items.Count item(s)</td>
-                                <td class="fw-bold" style="color: var(--primary);">&pound;@order.TotalAmount.ToString("F2")</td>
+                                <td style="color:var(--primary);font-weight:700;">&pound;@order.TotalAmount.ToString("F2")</td>
                                 <td><span class="badge @StatusBadge(order.Status)">@StatusText(order.Status)</span></td>
                                 <td>
-                                    <a href="/order-status/@order.Id" class="btn btn-sm btn-outline-primary">Track</a>
+                                    <a href="/order-status/@order.Id" class="btn btn-primary btn-sm">Track</a>
                                 </td>
                             </tr>
                         }
@@ -106,9 +107,9 @@
 
     private static string StatusBadge(int status) => status switch
     {
-        0 => "bg-secondary", 1 => "bg-info", 2 => "bg-primary",
-        3 => "bg-warning text-dark", 4 => "bg-success", 5 => "bg-info",
-        6 => "bg-success", 7 => "bg-danger", 8 => "bg-dark", _ => "bg-secondary"
+        0 => "badge-secondary", 1 => "badge-info", 2 => "badge-primary",
+        3 => "badge-warning", 4 => "badge-success", 5 => "badge-info",
+        6 => "badge-success", 7 => "badge-danger", 8 => "badge-dark", _ => "badge-secondary"
     };
 
     public void Dispose()

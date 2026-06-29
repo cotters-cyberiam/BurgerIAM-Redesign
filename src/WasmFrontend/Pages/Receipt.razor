@@ -4,35 +4,36 @@
 <PageTitle>Receipt - BurgerIAM</PageTitle>
 
 <div class="container mt-4">
-    <h2 class="mb-4 fw-bold animate-on-scroll">Receipt</h2>
+    <h2 class="section-title animate-on-scroll">Receipt</h2>
+    <p class="section-subtitle animate-on-scroll">Order summary and details</p>
 
     @if (isLoading)
     {
-        <div class="card border-0 shadow-sm">
+        <div class="card">
             <div class="card-body p-4">
-                <div class="skeleton skeleton-title mx-auto" style="width: 200px;"></div>
+                <div class="skeleton skeleton-title mx-auto" style="width:200px;"></div>
                 <div class="skeleton skeleton-image mt-3"></div>
             </div>
         </div>
     }
     else if (html is not null)
     {
-        <div class="card border-0 shadow-sm animate-on-scroll">
+        <div class="card animate-on-scroll">
             <div class="card-body p-0">
-                <iframe srcdoc="@html" style="width: 100%; min-height: 600px; border: none; border-radius: var(--radius-md);"></iframe>
+                <iframe srcdoc="@html" class="receipt-frame"></iframe>
             </div>
         </div>
         <div class="mt-3 text-center animate-on-scroll">
-            <button @onclick="PrintReceipt" class="btn btn-primary btn-lg me-2">🖨️ Print</button>
-            <a href="/my-orders" class="btn btn-outline-primary btn-lg">Back to Orders</a>
+            <button @onclick="PrintReceipt" class="btn btn-primary btn-lg me-2">&#x1F5A8;&#xFE0F; Print</button>
+            <a href="/my-orders" class="btn btn-outline btn-lg">Back to Orders</a>
         </div>
     }
     else
     {
         <div class="text-center py-5 animate-on-scroll">
-            <div class="display-1 mb-3">🧾</div>
-            <h4 class="text-muted">Receipt not found</h4>
-            <p class="text-muted">Receipt for order @OrderId is not available yet.</p>
+            <div style="font-size:4rem;margin-bottom:16px;">&#x1F9FE;</div>
+            <h4 style="color:var(--text-muted);">Receipt not found</h4>
+            <p style="color:var(--text-muted);">Receipt for order @OrderId is not available yet.</p>
             <a href="/my-orders" class="btn btn-primary mt-3">View My Orders</a>
         </div>
     }

@@ -4,40 +4,44 @@
 <PageTitle>Register - BurgerIAM</PageTitle>
 
 <div class="container">
-    <div class="row justify-content-center mt-5">
+    <div class="row justify-content-center" style="padding-top:80px;">
         <div class="col-md-6 col-lg-4">
-            <div class="card border-0 shadow-lg animate-on-scroll">
-                <div class="card-body p-4">
+            <div class="card animate-on-scroll">
+                <div class="card-body" style="padding:32px;">
                     <div class="text-center mb-4">
-                        <img src="images/logo.png" alt="BurgerIAM" height="64" class="mb-2" />
+                        <div style="font-size:2.5rem;margin-bottom:8px;">&#x1F44B;</div>
                         <h3 class="fw-bold">Create Account</h3>
-                        <p class="text-muted">Join BurgerIAM today</p>
+                        <p style="color:var(--text-muted);">Join BurgerIAM today</p>
                     </div>
 
                     @if (!string.IsNullOrEmpty(error))
                     {
-                        <div class="alert alert-danger animate-slide-up">@error</div>
+                        <div class="toast error" style="margin-bottom:16px;animation:none;border-left-color:var(--primary);">
+                            <span>&#x274C;</span>
+                            <span>@error</span>
+                        </div>
                     }
                     @if (success)
                     {
-                        <div class="alert alert-success animate-slide-up">
-                            Account created! <a href="/login" class="fw-bold">Sign in now</a>
+                        <div class="toast success" style="margin-bottom:16px;animation:none;">
+                            <span>&#x2705;</span>
+                            <span>Account created! <a href="/login" class="fw-bold" style="color:inherit;">Sign in now</a></span>
                         </div>
                     }
 
-                    <div class="form-floating mb-3">
-                        <InputText @bind-Value="name" class="form-control" placeholder="Your name" id="regName" />
-                        <label for="regName" class="form-label">Name</label>
+                    <div class="form-float">
+                        <InputText @bind-Value="name" placeholder=" " id="regName" />
+                        <label for="regName">Name</label>
                     </div>
-                    <div class="form-floating mb-3">
-                        <InputText @bind-Value="email" class="form-control" placeholder="your@email.com" id="regEmail" />
-                        <label for="regEmail" class="form-label">Email</label>
+                    <div class="form-float">
+                        <InputText @bind-Value="email" placeholder=" " id="regEmail" />
+                        <label for="regEmail">Email</label>
                     </div>
-                    <div class="form-floating mb-3">
-                        <InputText @bind-Value="password" type="password" class="form-control" placeholder="Password" id="regPassword" />
-                        <label for="regPassword" class="form-label">Password</label>
+                    <div class="form-float">
+                        <InputText @bind-Value="password" type="password" placeholder=" " id="regPassword" />
+                        <label for="regPassword">Password</label>
                     </div>
-                    <button @onclick="HandleRegister" class="btn btn-primary w-100 btn-lg" disabled="@isLoading">
+                    <button @onclick="HandleRegister" class="btn btn-primary btn-block btn-lg" disabled="@isLoading">
                         @if (isLoading)
                         {
                             <span class="spinner-border spinner-border-sm me-2" role="status"></span>
@@ -50,7 +54,7 @@
                     </button>
 
                     <div class="text-center mt-4">
-                        <p class="mb-0">Already have an account? <a href="/login" class="fw-bold">Sign in</a></p>
+                        <p class="mb-0" style="color:var(--text-muted);">Already have an account? <a href="/login" class="fw-bold" style="color:var(--primary);">Sign in</a></p>
                     </div>
                 </div>
             </div>

@@ -4,30 +4,33 @@
 <PageTitle>Login - BurgerIAM</PageTitle>
 
 <div class="container">
-    <div class="row justify-content-center mt-5">
+    <div class="row justify-content-center" style="padding-top:80px;">
         <div class="col-md-6 col-lg-4">
-            <div class="card border-0 shadow-lg animate-on-scroll">
-                <div class="card-body p-4">
+            <div class="card animate-on-scroll">
+                <div class="card-body" style="padding:32px;">
                     <div class="text-center mb-4">
-                        <img src="images/logo.png" alt="BurgerIAM" height="64" class="mb-2" />
+                        <div style="font-size:2.5rem;margin-bottom:8px;">&#x1F354;</div>
                         <h3 class="fw-bold">Welcome Back</h3>
-                        <p class="text-muted">Sign in to your account</p>
+                        <p style="color:var(--text-muted);">Sign in to your account</p>
                     </div>
 
                     @if (!string.IsNullOrEmpty(error))
                     {
-                        <div class="alert alert-danger animate-slide-up">@error</div>
+                        <div class="toast error" style="margin-bottom:16px;animation:none;border-left-color:var(--primary);">
+                            <span>&#x274C;</span>
+                            <span>@error</span>
+                        </div>
                     }
 
-                    <div class="form-floating mb-3">
-                        <InputText @bind-Value="email" class="form-control" placeholder="your@email.com" id="loginEmail" />
-                        <label for="loginEmail" class="form-label">Email</label>
+                    <div class="form-float">
+                        <InputText @bind-Value="email" placeholder=" " id="loginEmail" />
+                        <label for="loginEmail">Email</label>
                     </div>
-                    <div class="form-floating mb-3">
-                        <InputText @bind-Value="password" type="password" class="form-control" placeholder="Password" id="loginPassword" />
-                        <label for="loginPassword" class="form-label">Password</label>
+                    <div class="form-float">
+                        <InputText @bind-Value="password" type="password" placeholder=" " id="loginPassword" />
+                        <label for="loginPassword">Password</label>
                     </div>
-                    <button @onclick="HandleLogin" class="btn btn-primary w-100 btn-lg" disabled="@isLoading">
+                    <button @onclick="HandleLogin" class="btn btn-primary btn-block btn-lg" disabled="@isLoading">
                         @if (isLoading)
                         {
                             <span class="spinner-border spinner-border-sm me-2" role="status"></span>
@@ -40,7 +43,7 @@
                     </button>
 
                     <div class="text-center mt-4">
-                        <p class="mb-0">Don't have an account? <a href="/register" class="fw-bold">Register</a></p>
+                        <p class="mb-0" style="color:var(--text-muted);">Don't have an account? <a href="/register" class="fw-bold" style="color:var(--primary);">Register</a></p>
                     </div>
                 </div>
             </div>

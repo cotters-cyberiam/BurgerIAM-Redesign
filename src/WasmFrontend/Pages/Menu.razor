@@ -5,7 +5,8 @@
 <PageTitle>Menu - BurgerIAM</PageTitle>
 
 <div class="container mt-4">
-    <h2 class="mb-4 fw-bold animate-on-scroll">Our Menu</h2>
+    <h2 class="section-title animate-on-scroll">Our Menu</h2>
+    <p class="section-subtitle animate-on-scroll">Freshly prepared, delivered fast</p>
 
     @if (isLoading)
     {
@@ -15,7 +16,8 @@
                 <div class="col-md-6 col-lg-4 mb-3">
                     <div class="card">
                         <div class="card-body">
-                            <div class="skeleton skeleton-title"></div>
+                            <div class="skeleton skeleton-image"></div>
+                            <div class="skeleton skeleton-title mt-2"></div>
                             <div class="skeleton skeleton-text"></div>
                             <div class="skeleton skeleton-text short"></div>
                             <div class="skeleton skeleton-button mt-2"></div>
@@ -27,34 +29,43 @@
     }
     else
     {
+        <div class="category-pills mb-4 animate-on-scroll">
+            <button class="category-pill @(selectedCategory == null ? "active" : "")" @onclick="() => SelectCategory(null)">All</button>
+            @foreach (var cat in categories)
+            {
+                <button class="category-pill @(selectedCategory == cat ? "active" : "")" @onclick="() => SelectCategory(cat)">@cat</button>
+            }
+        </div>
+
         @foreach (var category in groupedItems)
         {
-            <h4 class="mt-4 mb-3 animate-on-scroll" style="color: var(--primary); font-weight: 700;">
+            <h4 class="mt-4 mb-3 animate-on-scroll" style="color:var(--primary);font-weight:700;">
                 @category.Key
             </h4>
             <div class="row">
                 @foreach (var item in category)
                 {
                     <div class="col-md-6 col-lg-4 mb-3 animate-on-scroll">
-                        <div class="card menu-card h-100 @(item.IsAvailable ? "" : "opacity-50")">
-                            <div class="card-body d-flex flex-column">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <div class="flex-grow-1 me-2">
-                                        <h5 class="card-title mb-1 fw-bold">@item.Name</h5>
-                                        <p class="card-text text-muted small mb-0">@item.Description</p>
-                                    </div>
-                                    <span class="price-tag">&pound;@item.Price.ToString("F2")</span>
+                        <div class="menu-card h-100 @(item.IsAvailable ? "" : "opacity-50")">
+                            <div class="menu-card-img">
+                                <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:3rem;">
+                                    &#x1F354;
                                 </div>
-                                <div class="mt-auto">
+                            </div>
+                            <div class="menu-card-body">
+                                <h5 class="menu-card-name">@item.Name</h5>
+                                <p class="menu-card-desc">@item.Description</p>
+                                <div class="menu-card-footer">
+                                    <span class="menu-card-price">&pound;@item.Price.ToString("F2")</span>
                                     @if (item.IsAvailable)
                                     {
-                                        <button @onclick="() => AddToCart(item)" class="btn btn-sm btn-primary">
+                                        <button @onclick="() => AddToCart(item)" class="btn btn-primary btn-sm">
                                             Add to Cart
                                         </button>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-secondary">Unavailable</span>
+                                        <span class="badge badge-secondary">Unavailable</span>
                                     }
                                 </div>
                             </div>
@@ -67,7 +78,7 @@
         @if (!groupedItems.Any())
         {
             <div class="text-center py-5">
-                <h4 class="text-muted">No menu items available</h4>
+                <h4 style="color:var(--text-muted);">No menu items available</h4>
             </div>
         }
     }
@@ -80,9 +91,19 @@
 
     private List<Models.MenuItemResponse> items = [];
     private bool isLoading = true;
+    private string? selectedCategory;
+
+    private List<string> categories => items
+        .Where(i => !string.IsNullOrEmpty(i.Category))
+        .Select(i => i.Category!)
+        .Distinct()
+        .ToList();
 
     private ILookup<string, Models.MenuItemResponse> groupedItems =>
-        items.Where(i => !string.IsNullOrEmpty(i.Category)).ToLookup(i => i.Category);
+        items
+            .Where(i => !string.IsNullOrEmpty(i.Category))
+            .Where(i => selectedCategory == null || i.Category == selectedCategory)
+            .ToLookup(i => i.Category!);
 
     protected override async Task OnInitializedAsync()
     {
@@ -98,11 +119,16 @@
         }
     }
 
+    private void SelectCategory(string? cat)
+    {
+        selectedCategory = cat;
+    }
+
     private async void AddToCart(Models.MenuItemResponse item)
     {
         Cart.AddItem(new Models.CartItem(item.Id, item.Name, item.Price, 1));
         await JS.InvokeVoidAsync("window.BurgerIAM.animateCartBadge", Cart.TotalItems);
-        await JS.InvokeVoidAsync("window.BurgerIAM.showFloatingMsg", $"{item.Name} added to cart!", "success");
+        await JS.InvokeVoidAsync("window.BurgerIAM.showToast", $"{item.Name} added to cart!", "success");
     }
 
     public void Dispose()

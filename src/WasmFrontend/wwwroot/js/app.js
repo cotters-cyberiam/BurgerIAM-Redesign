@@ -27,12 +27,45 @@ window.BurgerIAM = {
     },
 
     toggleMobileNav() {
-        document.getElementById('mobileNavOverlay').classList.toggle('show');
-        document.body.classList.toggle('nav-open');
+        document.body.classList.toggle('drawer-open');
+        const overlay = document.getElementById('mobileNavOverlay');
+        if (overlay) overlay.classList.toggle('open');
+        const hamburger = document.getElementById('hamburgerBtn');
+        if (hamburger) hamburger.classList.toggle('active');
     },
 
     closeMobileNav() {
-        document.getElementById('mobileNavOverlay').classList.remove('show');
+        document.body.classList.remove('drawer-open');
+        const overlay = document.getElementById('mobileNavOverlay');
+        if (overlay) overlay.classList.remove('open');
+        const hamburger = document.getElementById('hamburgerBtn');
+        if (hamburger) hamburger.classList.remove('active');
+    },
+
+    toggleCartDrawer() {
+        const drawer = document.getElementById('cartDrawer');
+        const overlay = document.getElementById('cartDrawerOverlay');
+        if (!drawer) return;
+        drawer.classList.toggle('open');
+        if (overlay) overlay.classList.toggle('open');
+        document.body.classList.toggle('nav-open');
+    },
+
+    openCartDrawer() {
+        const drawer = document.getElementById('cartDrawer');
+        const overlay = document.getElementById('cartDrawerOverlay');
+        if (!drawer) return;
+        drawer.classList.add('open');
+        if (overlay) overlay.classList.add('open');
+        document.body.classList.add('nav-open');
+    },
+
+    closeCartDrawer() {
+        const drawer = document.getElementById('cartDrawer');
+        const overlay = document.getElementById('cartDrawerOverlay');
+        if (!drawer) return;
+        drawer.classList.remove('open');
+        if (overlay) overlay.classList.remove('open');
         document.body.classList.remove('nav-open');
     },
 
@@ -40,24 +73,34 @@ window.BurgerIAM = {
         const badge = document.getElementById('cartBadge');
         if (!badge) return;
         badge.textContent = count;
-        badge.classList.remove('cart-bounce');
+        badge.classList.remove('bump');
         void badge.offsetWidth;
         if (count > 0) {
-            badge.classList.add('cart-bounce');
+            badge.classList.add('bump');
             badge.style.display = 'flex';
         } else {
             badge.style.display = 'none';
         }
     },
 
-    showFloatingMsg(msg, type = 'success') {
-        const container = document.getElementById('floatingMsgContainer');
+    showToast(msg, type = 'success') {
+        const container = document.getElementById('toastContainer');
         if (!container) return;
         const el = document.createElement('div');
-        el.className = `floating-msg ${type} animate-slide-up`;
-        el.textContent = msg;
+        el.className = `toast ${type}`;
+        const icon = type === 'success' ? '\u2705' : type === 'error' ? '\u274C' : '\u2139\uFE0F';
+        el.innerHTML = `<span>${icon}</span><span>${this.escapeHtml(msg)}</span>`;
         container.appendChild(el);
-        setTimeout(() => { el.classList.add('fade-out'); setTimeout(() => el.remove(), 300); }, 2500);
+        setTimeout(() => {
+            el.classList.add('hide');
+            setTimeout(() => el.remove(), 300);
+        }, 2500);
+    },
+
+    escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     },
 
     initSmoothScrolling() {

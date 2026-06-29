@@ -7,29 +7,36 @@
 
     @if (!string.IsNullOrEmpty(error))
     {
-        <div class="alert alert-danger animate-slide-up">@error</div>
+        <div class="toast error" style="margin-bottom:16px;animation:none;">
+            <span>&#x274C;</span>
+            <span>@error</span>
+        </div>
     }
 
     @if (submitted)
     {
         <div class="text-center py-5 animate-on-scroll">
-            <div class="display-1 mb-3">🎉</div>
+            <div style="font-size:4rem;margin-bottom:16px;">&#x1F389;</div>
             <h3 class="fw-bold">Thank You!</h3>
-            <p class="text-muted">Your feedback has been submitted.</p>
+            <p style="color:var(--text-muted);">Your feedback has been submitted.</p>
             <a href="/my-orders" class="btn btn-primary btn-lg">Back to Orders</a>
         </div>
     }
     else if (existingFeedback is not null)
     {
-        <h2 class="mb-4 fw-bold animate-on-scroll">Your Feedback</h2>
-        <div class="alert alert-info animate-slide-up">
-            You have already submitted feedback for this order.
+        <h2 class="section-title animate-on-scroll">Your Feedback</h2>
+        <div class="toast info" style="margin-bottom:16px;animation:none;">
+            <span>&#x2139;&#xFE0F;</span>
+            <span>You have already submitted feedback for this order.</span>
         </div>
-        <div class="card border-0 shadow-sm animate-on-scroll">
+        <div class="card animate-on-scroll">
             <div class="card-body">
                 <h5 class="fw-bold mb-2">Your Rating</h5>
-                <div class="fs-2 mb-2" style="color: #f1c40f;">
-                    @(new string('\u2605', existingFeedback.Rating) + new string('\u2606', 5 - existingFeedback.Rating))
+                <div class="star-rating mb-2">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        <span style="font-size:2rem;color:@(i <= existingFeedback.Rating ? "#f1c40f" : "rgba(255,255,255,0.15)");">&#x2605;</span>
+                    }
                 </div>
                 @if (!string.IsNullOrEmpty(existingFeedback.Comment))
                 {
@@ -43,30 +50,32 @@
     }
     else
     {
-        <h2 class="mb-4 fw-bold animate-on-scroll">Leave Feedback</h2>
+        <h2 class="section-title animate-on-scroll">Leave Feedback</h2>
+        <p class="section-subtitle animate-on-scroll">How was your order?</p>
 
         <div class="row justify-content-center">
             <div class="col-md-6">
-                <div class="card border-0 shadow-sm animate-on-scroll">
+                <div class="card animate-on-scroll">
                     <div class="card-body">
-                        <h5 class="card-title fw-bold mb-3">How was your order?</h5>
+                        <h5 class="fw-bold mb-3">Rate your experience</h5>
 
                         <div class="text-center mb-4">
-                            @for (int i = 1; i <= 5; i++)
-                            {
-                                <button @onclick="() => rating = i"
-                                        class="btn star-btn @(i <= rating ? "btn-warning" : "btn-outline-secondary")"
-                                        style="font-size: 2rem;"
-                                        type="button">
-                                    @(i <= rating ? "\u2605" : "\u2606")
-                                </button>
-                            }
+                            <div class="star-rating" style="justify-content:center;">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    <button @onclick="() => rating = i"
+                                            class="star-btn @(i <= rating ? "active" : "")"
+                                            type="button">
+                                        &#x2605;
+                                    </button>
+                                }
+                            </div>
                         </div>
 
                         @if (rating > 0)
                         {
                             <div class="text-center mb-3">
-                                <span class="badge bg-primary fs-6">
+                                <span class="badge badge-primary" style="font-size:0.9rem;padding:6px 18px;">
                                     @(rating switch
                                     {
                                         1 => "Poor",
@@ -80,12 +89,12 @@
                             </div>
                         }
 
-                        <div class="form-floating mb-3">
-                            <InputTextArea @bind-Value="comment" class="form-control" placeholder="Tell us about your experience..." id="comment" rows="3" style="min-height: 100px;" />
-                            <label for="comment" class="form-label">Comment (optional)</label>
+                        <div class="form-float">
+                            <InputTextArea @bind-Value="comment" placeholder=" " id="comment" style="min-height:120px;" />
+                            <label for="comment">Comment (optional)</label>
                         </div>
 
-                        <button @onclick="Submit" class="btn btn-primary w-100 btn-lg" disabled="@(rating == 0 || isSubmitting)">
+                        <button @onclick="Submit" class="btn btn-primary btn-block btn-lg" disabled="@(rating == 0 || isSubmitting)">
                             @if (isSubmitting)
                             {
                                 <span class="spinner-border spinner-border-sm me-2" role="status"></span>
