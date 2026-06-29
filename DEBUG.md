@@ -24,6 +24,18 @@ This file documents issues encountered during development and their resolutions.
 
 ---
 
+## 2026-06-29 — Menu and order tracking pages don't display (content invisible)
+
+**Problem**: The Menu page and Order Tracking page appeared blank — content was rendered in the DOM but remained invisible. All CSS styles and HTML structure were correct.
+
+**Root cause**: Blazor's `IJSRuntime.InvokeVoidAsync("window.BurgerIAM.xxx")` calls JS methods without object context, so `this` resolves to `window`, not `window.BurgerIAM`. All methods using `this` (e.g., `this.observer`, `this.initScrollAnimations()`) failed silently. Since all page content is wrapped in `.animate-on-scroll` (which starts at `opacity: 0`), the IntersectionObserver never triggered, leaving everything at `opacity: 0`.
+
+**Fix**: Rewrote every `window.BurgerIAM` method to capture `var self = window.BurgerIAM` at the top and use `self` instead of `this`. Also replaced ES6 arrow functions with regular `function` expressions (for broader compatibility) and template literals with string concatenation (for `showToast`).
+
+**Files**: `src/WasmFrontend/wwwroot/js/app.js`, `src/WasmFrontend/Pages/Menu.razor`
+
+---
+
 ## 2026-06-25 — Delivery tracking page shows HTML entity codes instead of emoji
 
 **Problem**: The delivery tracking page displayed literal text `&#127881;` instead of the party popper emoji.
