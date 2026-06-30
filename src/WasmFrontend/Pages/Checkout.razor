@@ -86,24 +86,24 @@ else
                         <h5 class="card-section-title">&#x1F4CB; Order Summary</h5>
                         @foreach (var item in Cart.Items)
                         {
-                            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:0.9rem;">
-                                <span>@item.ItemName <span style="color:var(--text-secondary);">x@item.Quantity</span></span>
-                                <span class="fw-medium">&pound;@((item.UnitPrice * item.Quantity).ToString("F2"))</span>
+                            <div class="summary-row">
+                                <span class="summary-label">@item.ItemName <span class="summary-qty">x@(item.Quantity)</span></span>
+                                <span class="summary-price">&pound;@((item.UnitPrice * item.Quantity).ToString("F2"))</span>
                             </div>
                         }
                         <hr style="border-color:var(--border-subtle);" />
-                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;color:var(--text-secondary);font-size:0.9rem;">
+                        <div class="summary-sub">
                             <span>Subtotal</span>
                             <span>&pound;@Cart.TotalAmount.ToString("F2")</span>
                         </div>
-                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;color:var(--text-secondary);font-size:0.9rem;">
+                        <div class="summary-sub">
                             <span>Delivery</span>
-                            <span style="color:#2ecc71;">Free</span>
+                            <span class="summary-free">Free</span>
                         </div>
                         <hr style="border-color:var(--border-subtle);" />
-                        <div style="display:flex;justify-content:space-between;margin-bottom:16px;">
-                            <strong style="font-size:1.1rem;">Total</strong>
-                            <strong style="font-size:1.1rem;color:var(--primary);">&pound;@Cart.TotalAmount.ToString("F2")</strong>
+                        <div class="summary-total">
+                            <span class="summary-total-label">Total</span>
+                            <span class="summary-total-amount">&pound;@Cart.TotalAmount.ToString("F2")</span>
                         </div>
                         <button @onclick="PlaceOrder" class="btn btn-primary btn-block btn-lg" disabled="@isProcessing">
                             @if (isProcessing)
