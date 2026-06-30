@@ -56,6 +56,22 @@
 
 ---
 
+## Completed UX Polish
+
+### 18. Delivery tracking page text hard to read (dark theme contrast)
+- **Status**: ✅ Fixed
+- **Commits**: `2949d96`, `8670e5b`, `ae81d4b`, `1cef55b`, `f0719f6`
+- **Problem**: Text on dark cards was nearly invisible — card backgrounds at 4% opacity barely differentiated from page background. Timeline labels and descriptions used 40% white (`text-muted`). Raw ISO datetime strings displayed for estimated delivery times.
+- **Fix**: 
+  - Card background 4% → 7%, borders 8% → 12% for visible card containers
+  - Added `.card-section-title` class (amber accent `var(--accent)` with bottom border) for all card section headings across OrderStatus, Checkout, Cart, Feedback, DeliveryTracking
+  - Added `.detail-label` (70% white, weight 600) and `.detail-value` (white, weight 500) pattern for label/value pairs
+  - Formatted `EstimatedDeliveryTime` with date formatter (was raw ISO string)
+  - Bumped all `text-muted` (45%) content references to `text-secondary` (70%): auto-refresh text, empty states, quantities, metadata
+  - Completed timeline titles changed from text-muted to green (#2ecc71)
+
+---
+
 ### ~~17. Menu/page content invisible after UX redesign~~ ✅ FIXED
 - **Status**: ✅ Fully fixed — all pages patched
 - **Commit**: `497c91d` (partial), `<current>` (full)

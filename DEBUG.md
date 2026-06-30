@@ -327,3 +327,34 @@ orderReq.Items.AddRange(dto.Items.Select(i => new ProtoOrder.OrderItem { ... }))
 **Fix**: Removed the `if (firstRender)` guard from `OnAfterRenderAsync` in all pages so `observeNewElements()` runs on every render. The JS method already deduplicates by using the `:not(.animate-visible)` selector.
 
 **Files**: `src/WasmFrontend/Pages/Menu.razor`, `Home.razor`, `Checkout.razor`, `OrderStatus.razor`, `MyOrders.razor`, `Cart.razor`, `DeliveryTracking.razor`, `Feedback.razor`, `Login.razor`, `Receipt.razor`, `Register.razor`
+
+---
+
+## 2026-06-30 — Delivery tracking text unreadable (dark theme contrast)
+
+**Problem**: Several readability issues across the delivery tracking, order status, checkout, cart, and feedback pages:
+- Card backgrounds at 4% white were nearly invisible against the dark page background
+- Timeline titles for completed steps and all timeline descriptions used `text-muted` (40% white)
+- Section headings were plain white with no visual hierarchy
+- Detail labels and values had no consistent styling pattern
+- Estimated delivery times displayed as raw ISO datetime strings (`2026-06-29T13:05:41.1753143`)
+- Empty state text and auto-refresh indicators used dim 40% white text
+
+**Fix** (multi-commit):
+1. Card background 4% → 7%, borders 8% → 12% for visible containers
+2. Added `.card-section-title` class: amber accent (`var(--accent)`), weight 700, bottom border — applied to all card section headings across DeliveryTracking, OrderStatus, Checkout, Cart, Feedback
+3. Added `.detail-label` (70% white, weight 600, min-width 90px) and `.detail-value` (white, weight 500) for consistent label/value pairs
+4. Formatted `EstimatedDeliveryTime` using `DeliveryDate()`/`OrderDate()` — converts ISO string to `"MMM dd, yyyy HH:mm"` format
+5. Bumped all `var(--text-muted)` content references to `var(--text-secondary)` (45% → 70% white): auto-refresh text, empty states, order metadata, quantity labels
+6. Changed timeline completed step titles from `text-muted` to green `#2ecc71`
+7. Added `?v=2` cache-buster to CSS link to bypass aggressive Blazor WASM caching
+8. Removed stale `.br`/`.gz` compressed CSS files (also deleted stale copies that reappear)
+
+**Files**:
+- `src/WasmFrontend/wwwroot/css/app.css` — card colors, `.card-section-title`, `.detail-label`, `.detail-value`, timeline colors
+- `src/WasmFrontend/wwwroot/index.html` — cache-busting CSS version
+- `src/WasmFrontend/Pages/DeliveryTracking.razor` — card-section-title, detail-label/value, DeliveryDate formatting
+- `src/WasmFrontend/Pages/OrderStatus.razor` — card-section-title, detail-label/value, OrderDate formatting
+- `src/WasmFrontend/Pages/Checkout.razor` — card-section-title, bumped text colors
+- `src/WasmFrontend/Pages/Cart.razor` — card-section-title, bumped text colors
+- `src/WasmFrontend/Pages/Feedback.razor` — card-section-title
