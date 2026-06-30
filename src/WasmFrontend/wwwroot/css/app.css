@@ -716,7 +716,7 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 
 .detail-row { font-size: 0.95rem; margin-bottom: 10px; }
 .detail-label {
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-weight: 600;
   display: inline-block;
   min-width: 90px;

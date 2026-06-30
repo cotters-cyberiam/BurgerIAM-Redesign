@@ -73,7 +73,7 @@
                     <p class="mb-1 detail-row"><span class="detail-label">Status:</span> <span class="badge @StatusBadge(delivery.Status)">@DeliveryStatusText(delivery.Status)</span></p>
                     @if (!string.IsNullOrEmpty(delivery.EstimatedDeliveryTime))
                     {
-                        <p class="mb-0 detail-row"><span class="detail-label">Estimated:</span> @OrderDate(delivery.EstimatedDeliveryTime)</p>
+                        <p class="mb-0 detail-row"><span class="detail-label">Estimated:</span> <span class="detail-value">@OrderDate(delivery.EstimatedDeliveryTime)</span></p>
                     }
                 </div>
             </div>

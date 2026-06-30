@@ -103,11 +103,11 @@
                         <p class="mb-1 detail-row"><span class="detail-label">Address:</span> <span class="detail-value">@delivery.DeliveryAddress</span></p>
                         @if (!string.IsNullOrEmpty(delivery.EstimatedDeliveryTime))
                         {
-                            <p class="mb-1 detail-row"><span class="detail-label">Estimated:</span> @DeliveryDate(delivery.EstimatedDeliveryTime)</p>
+                            <p class="mb-1 detail-row"><span class="detail-label">Estimated:</span> <span class="detail-value">@DeliveryDate(delivery.EstimatedDeliveryTime)</span></p>
                         }
                         @if (!string.IsNullOrEmpty(delivery.CompletedAt))
                         {
-                            <p class="mb-0 detail-row"><span class="detail-label">Delivered at:</span> @DeliveryDate(delivery.CompletedAt)</p>
+                            <p class="mb-0 detail-row"><span class="detail-label">Delivered at:</span> <span class="detail-value">@DeliveryDate(delivery.CompletedAt)</span></p>
                         }
                     </div>
                 </div>
