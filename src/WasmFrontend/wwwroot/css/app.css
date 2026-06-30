@@ -1178,10 +1178,10 @@ textarea.form-input { resize: vertical; min-height: 100px; }
    ═══════════════════════════════════════════ */
 .receipt-frame {
   width: 100%;
-  min-height: 500px;
+  min-height: 520px;
   border: none;
   border-radius: var(--radius-md);
-  background: white;
+  background: transparent;
 }
 
 /* ═══════════════════════════════════════════

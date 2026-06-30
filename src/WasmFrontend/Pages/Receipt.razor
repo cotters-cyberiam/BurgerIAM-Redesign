@@ -19,7 +19,7 @@
     else if (html is not null)
     {
         <div class="card animate-on-scroll">
-            <div class="card-body p-0">
+            <div class="card-body p-0" style="background:transparent;">
                 <iframe srcdoc="@html" class="receipt-frame"></iframe>
             </div>
         </div>
@@ -32,8 +32,8 @@
     {
         <div class="text-center py-5 animate-on-scroll">
             <div style="font-size:4rem;margin-bottom:16px;">&#x1F9FE;</div>
-            <h4 style="color:var(--text-muted);">Receipt not found</h4>
-            <p style="color:var(--text-muted);">Receipt for order @OrderId is not available yet.</p>
+            <h4 style="color:var(--text-secondary);">Receipt not found</h4>
+            <p style="color:var(--text-secondary);">Receipt for order @OrderId is not available yet.</p>
             <a href="/my-orders" class="btn btn-primary mt-3">View My Orders</a>
         </div>
     }
