@@ -138,11 +138,11 @@ public sealed class ApiService
         }
     }
 
-    public async Task<string?> GetReceiptHtmlAsync(string orderId)
+    public async Task<ReceiptDetail?> GetReceiptAsync(string orderId)
     {
         try
         {
-            return await _http.GetStringAsync($"/api/receipts/{orderId}");
+            return await _http.GetFromJsonAsync<ReceiptDetail>($"/api/receipts/{orderId}");
         }
         catch
         {

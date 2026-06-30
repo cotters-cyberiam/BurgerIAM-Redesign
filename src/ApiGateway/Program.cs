@@ -215,7 +215,9 @@ app.MapPost("/api/orders", async (CreateOrderDto dto,
         await kitchenClient.SeedKitchenOrderAsync(new ProtoKitchen.SeedKitchenOrderRequest { OrderId = order.Id });
 
         var receiptHttp = httpFactory.CreateClient();
-        await receiptHttp.PostAsync($"{GetServiceUrl("Receipt")}/receipts?orderId={order.Id}&customerId={order.CustomerId}&amount={order.TotalAmount}", null);
+        var itemsPayload = order.Items.Select(i => new { menuItemId = i.MenuItemId, itemName = i.ItemName, quantity = i.Quantity, unitPrice = i.UnitPrice }).ToList();
+        var receiptBody = new { orderId = order.Id, customerId = order.CustomerId, customerEmail = order.CustomerEmail, totalAmount = order.TotalAmount, itemsJson = JsonSerializer.Serialize(itemsPayload) };
+        await receiptHttp.PostAsJsonAsync($"{GetServiceUrl("Receipt")}/receipts", receiptBody);
 
         await progress.EnqueueOrderAsync(order.Id);
 
@@ -390,8 +392,8 @@ app.MapGet("/api/receipts/{orderId}", async (string orderId, IHttpClientFactory 
         var response = await httpClient.GetAsync($"/receipts/{orderId}");
         if (!response.IsSuccessStatusCode)
             return Results.NotFound(new { error = $"Receipt for order {orderId} not found" });
-        var html = await response.Content.ReadAsStringAsync();
-        return Results.Content(html, "text/html");
+        var json = await response.Content.ReadAsStringAsync();
+        return Results.Content(json, "application/json", Encoding.UTF8);
     }
     catch
     {

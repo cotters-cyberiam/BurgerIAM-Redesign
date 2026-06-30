@@ -1,40 +1,116 @@
 @page "/receipt/{OrderId}"
 @attribute [Authorize]
+@using System.Text.Json
 
 <PageTitle>Receipt - BurgerIAM</PageTitle>
 
 <div class="container mt-4">
-    <h2 class="section-title animate-on-scroll">Receipt</h2>
-    <p class="section-subtitle animate-on-scroll">Order summary and details</p>
 
     @if (isLoading)
     {
+        <h2 class="mb-4 skeleton skeleton-title" style="width:200px;">&nbsp;</h2>
         <div class="card">
             <div class="card-body p-4">
-                <div class="skeleton skeleton-title mx-auto" style="width:200px;"></div>
-                <div class="skeleton skeleton-image mt-3"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text short"></div>
+                <div class="skeleton skeleton-text"></div>
             </div>
         </div>
     }
-    else if (html is not null)
-    {
-        <div class="card animate-on-scroll">
-            <div class="card-body p-0" style="background:transparent;">
-                <iframe srcdoc="@html" class="receipt-frame"></iframe>
-            </div>
-        </div>
-        <div class="mt-3 text-center animate-on-scroll">
-            <button @onclick="PrintReceipt" class="btn btn-primary btn-lg me-2">&#x1F5A8;&#xFE0F; Print</button>
-            <a href="/my-orders" class="btn btn-outline btn-lg">Back to Orders</a>
-        </div>
-    }
-    else
+    else if (receipt is null)
     {
         <div class="text-center py-5 animate-on-scroll">
             <div style="font-size:4rem;margin-bottom:16px;">&#x1F9FE;</div>
             <h4 style="color:var(--text-secondary);">Receipt not found</h4>
             <p style="color:var(--text-secondary);">Receipt for order @OrderId is not available yet.</p>
             <a href="/my-orders" class="btn btn-primary mt-3">View My Orders</a>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 animate-on-scroll">
+            <div>
+                <h2 class="fw-bold" style="margin:0;letter-spacing:-0.5px;">Receipt</h2>
+                <p style="color:var(--text-secondary);margin:4px 0 0;font-size:0.9rem;">
+                    Receipt #@Truncate(receipt.Id, 8) &middot; @FormatDate(receipt.CreatedAt)
+                </p>
+            </div>
+        </div>
+
+        <div class="card mb-4 animate-on-scroll">
+            <div class="card-body" style="padding:32px;">
+                <h5 class="card-section-title">Order Summary</h5>
+
+                <div class="receipt-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Receipt #</span>
+                        <span class="detail-value">@Truncate(receipt.Id, 8)</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Order ID</span>
+                        <span class="detail-value">@receipt.OrderId</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Date</span>
+                        <span class="detail-value">@FormatDate(receipt.CreatedAt)</span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(receipt.CustomerEmail))
+                    {
+                        <div class="detail-row">
+                            <span class="detail-label">Email</span>
+                            <span class="detail-value">@receipt.CustomerEmail</span>
+                        </div>
+                    }
+                </div>
+
+                @if (items.Count > 0)
+                {
+                    <hr style="border-color:rgba(255,255,255,0.08);margin:24px 0;" />
+                    <h5 class="card-section-title">Items</h5>
+                    <table class="receipt-table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th class="text-center">Qty</th>
+                                <th class="text-end">Price</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in items)
+                            {
+                                var lineTotal = item.Quantity * item.UnitPrice;
+                                <tr>
+                                    <td>@item.ItemName</td>
+                                    <td class="text-center">@item.Quantity</td>
+                                    <td class="text-end">&pound;@item.UnitPrice:F2</td>
+                                    <td class="text-end">&pound;@lineTotal:F2</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+
+                <hr style="border-color:rgba(255,255,255,0.08);margin:24px 0;" />
+                <div class="receipt-total">
+                    <span class="receipt-total-label">Total</span>
+                    <span class="receipt-total-amount">&pound;@receipt.TotalAmount:F2</span>
+                </div>
+
+                <div class="receipt-footer">
+                    <div class="receipt-brand">BurgerIAM</div>
+                    <div class="receipt-thanks">Thank you for your order!</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3 animate-on-scroll">
+            <div class="col-md-6 mb-2">
+                <button @onclick="PrintReceipt" class="btn btn-primary btn-block btn-lg">&#x1F5A8;&#xFE0F; Print</button>
+            </div>
+            <div class="col-md-6 mb-2">
+                <a href="/my-orders" class="btn btn-outline btn-block btn-lg">Back to Orders</a>
+            </div>
         </div>
     }
 </div>
@@ -45,12 +121,21 @@
     [Inject] private Services.ApiService Api { get; set; } = null!;
     [Inject] private IJSRuntime JS { get; set; } = null!;
 
-    private string? html;
+    private Models.ReceiptDetail? receipt;
     private bool isLoading = true;
+    private List<ReceiptItem> items = [];
 
     protected override async Task OnInitializedAsync()
     {
-        html = await Api.GetReceiptHtmlAsync(OrderId);
+        receipt = await Api.GetReceiptAsync(OrderId);
+        if (receipt is not null && !string.IsNullOrEmpty(receipt.ItemsJson) && receipt.ItemsJson != "[]")
+        {
+            try
+            {
+                items = JsonSerializer.Deserialize<List<ReceiptItem>>(receipt.ItemsJson) ?? [];
+            }
+            catch { }
+        }
         isLoading = false;
     }
 
@@ -60,4 +145,12 @@
     }
 
     private void PrintReceipt() { }
+
+    private static string Truncate(string value, int maxLength) =>
+        value?.Length > maxLength ? value[..maxLength] : value ?? "";
+
+    private static string FormatDate(string dateStr) =>
+        DateTime.TryParse(dateStr, out var dt) ? dt.ToString("MMM dd, yyyy HH:mm") : dateStr;
+
+    private record ReceiptItem(string MenuItemId, string ItemName, int Quantity, double UnitPrice);
 }

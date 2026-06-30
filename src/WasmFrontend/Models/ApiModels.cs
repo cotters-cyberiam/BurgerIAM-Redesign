@@ -20,4 +20,5 @@ public record FeedbackDetail(string Id, string OrderId, string CustomerId, int R
 public record AverageRatingResponse(double AverageRating, int TotalReviews);
 public record NotificationResponse(string Id, string CustomerId, string Title, string Message, bool IsRead, string CreatedAt);
 public record UnreadCountResponse(int Count);
+public record ReceiptDetail(string Id, string OrderId, string CustomerId, string? CustomerEmail, double TotalAmount, string? ItemsJson, string CreatedAt);
 public record CartItem(string MenuItemId, string ItemName, double UnitPrice, int Quantity);
