@@ -358,3 +358,26 @@ orderReq.Items.AddRange(dto.Items.Select(i => new ProtoOrder.OrderItem { ... }))
 - `src/WasmFrontend/Pages/Checkout.razor` — card-section-title, bumped text colors
 - `src/WasmFrontend/Pages/Cart.razor` — card-section-title, bumped text colors
 - `src/WasmFrontend/Pages/Feedback.razor` — card-section-title
+
+---
+
+## 2026-06-30 — Receipt page white background clashes with dark theme
+
+**Problem**: The receipt page displayed a stark white iframe on the dark-themed site. The `BuildReceiptHtml` method in ReceiptService generated light-themed HTML (white background, `#333` text, `#eee` borders, `#666` muted text), and the `receipt-frame` CSS explicitly set `background: white`.
+
+**Fix** (commit `ea60ebd`):
+- Rewrote `BuildReceiptHtml` with full dark theme matching the BurgerIAM design system:
+  - Page background `#0d0d1a` with `Plus Jakarta Sans` font
+  - Gradient header (`#e63946` → `#f4a261`) matching the brand logo style
+  - Card container using the same pattern as site cards: `rgba(255,255,255,0.04)` background, `rgba(255,255,255,0.08)` border, `16px` border-radius
+  - Muted labels at 50% white (`rgba(255,255,255,0.5)`), values in full white with weight 600
+  - Total amount in large red (`#e63946`) 32px bold
+  - Footer gradient brand name with muted thank-you text
+  - Date format changed from `"yyyy-MM-dd HH:mm"` to `"MMM dd, yyyy HH:mm"` for readability
+- Updated `.receipt-frame` CSS: removed `background: white`, set to `transparent`
+- Bumped empty state heading/text on Receipt.razor from `text-muted` to `text-secondary`
+
+**Files**:
+- `src/ReceiptService/Program.cs` — `BuildReceiptHtml` dark theme redesign
+- `src/WasmFrontend/wwwroot/css/app.css` — `.receipt-frame` background fix
+- `src/WasmFrontend/Pages/Receipt.razor` — empty state text color

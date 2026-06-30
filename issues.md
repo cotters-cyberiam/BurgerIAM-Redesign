@@ -60,7 +60,7 @@
 
 ### 18. Delivery tracking page text hard to read (dark theme contrast)
 - **Status**: ✅ Fixed
-- **Commits**: `2949d96`, `8670e5b`, `ae81d4b`, `1cef55b`, `f0719f6`
+- **Commits**: `2949d96`, `8670e5b`, `ae81d4b`, `1cef55b`, `f0719f6`, `769e44b`, `66fa5ae`
 - **Problem**: Text on dark cards was nearly invisible — card backgrounds at 4% opacity barely differentiated from page background. Timeline labels and descriptions used 40% white (`text-muted`). Raw ISO datetime strings displayed for estimated delivery times.
 - **Fix**: 
   - Card background 4% → 7%, borders 8% → 12% for visible card containers
@@ -69,6 +69,18 @@
   - Formatted `EstimatedDeliveryTime` with date formatter (was raw ISO string)
   - Bumped all `text-muted` (45%) content references to `text-secondary` (70%): auto-refresh text, empty states, quantities, metadata
   - Completed timeline titles changed from text-muted to green (#2ecc71)
+
+### 19. Receipt page shows white background (clashes with dark theme)
+- **Status**: ✅ Fixed
+- **Commits**: `ea60ebd`
+- **Problem**: The receipt iframe had a plain white background (`receipt-frame { background: white }`) and the server-generated HTML used light theme (white bg, `#333` text, `#eee` borders). This looked jarring against the dark site theme.
+- **Fix**: Redesigned `BuildReceiptHtml` in ReceiptService with full dark theme matching the site:
+  - Background `#0d0d1a`, `Plus Jakarta Sans` font, gradient brand header
+  - Card container with `rgba(255,255,255,0.04)` bg and subtle border
+  - Muted labels (50% white), white bold values, red total in large font
+  - Formatted dates as `"MMM dd, yyyy HH:mm"` instead of `"yyyy-MM-dd HH:mm"`
+  - Updated `receipt-frame` CSS: removed white background, transparent instead
+  - Bumped empty state text on Receipt.razor to `text-secondary`
 
 ---
 
