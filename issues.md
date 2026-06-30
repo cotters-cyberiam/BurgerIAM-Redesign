@@ -70,17 +70,61 @@
   - Bumped all `text-muted` (45%) content references to `text-secondary` (70%): auto-refresh text, empty states, quantities, metadata
   - Completed timeline titles changed from text-muted to green (#2ecc71)
 
-### 19. Receipt page shows white background (clashes with dark theme)
+### 19. Receipt page uses iframe with inconsistent styling
 - **Status**: ✅ Fixed
-- **Commits**: `ea60ebd`
-- **Problem**: The receipt iframe had a plain white background (`receipt-frame { background: white }`) and the server-generated HTML used light theme (white bg, `#333` text, `#eee` borders). This looked jarring against the dark site theme.
-- **Fix**: Redesigned `BuildReceiptHtml` in ReceiptService with full dark theme matching the site:
-  - Background `#0d0d1a`, `Plus Jakarta Sans` font, gradient brand header
-  - Card container with `rgba(255,255,255,0.04)` bg and subtle border
-  - Muted labels (50% white), white bold values, red total in large font
-  - Formatted dates as `"MMM dd, yyyy HH:mm"` instead of `"yyyy-MM-dd HH:mm"`
-  - Updated `receipt-frame` CSS: removed white background, transparent instead
-  - Bumped empty state text on Receipt.razor to `text-secondary`
+- **Commits**: `ea60ebd`, `2dfcf93`, `66467e6`
+- **Problem**: Receipt page rendered server-generated HTML inside an `<iframe>` with completely different fonts, colors, and layout than the native Blazor feedback/order-status pages.
+- **Fix**: 
+  - Phase 1 (`ea60ebd`): Redesigned `BuildReceiptHtml` with dark theme matching the site
+  - Phase 2 (`2dfcf93`): ReceiptService now returns JSON instead of HTML; Receipt.razor rewritten as native Blazor component (no iframe) using same design patterns as Feedback/OrderStatus (card, detail-row, skeleton loading, CSS variables)
+  - Added `ReceiptDetail` model, updated ApiService, gateway proxies JSON
+  - Phase 3 (`66467e6`): Fixed amount formatting (`ToString("F2")` instead of Razor colon syntax)
+
+### 20. Checkout order summary shows `@item.Quantity` literally
+- **Status**: ✅ Fixed
+- **Commits**: `a6b6161`
+- **Problem**: `x@item.Quantity` in Checkout.razor rendered as literal text instead of evaluating the expression (e.g., `x@item.Quantity` instead of `x2`).
+- **Root cause**: In Blazor, `@` preceded by text without whitespace can fail to parse as a code expression when using Razor implicit expressions.
+- **Fix**: Changed to explicit expression `x@(item.Quantity)`.
+
+### 21. Checkout order summary uses inconsistent inline styles
+- **Status**: ✅ Fixed
+- **Commits**: `a6b6161`
+- **Problem**: Checkout order summary used raw inline styles (`style="color:var(--text-secondary);font-size:0.9rem;"`) instead of CSS classes, making it inconsistent with the rest of the app's design system.
+- **Fix**: Replaced inline styles with dedicated CSS classes (`.summary-row`, `.summary-sub`, `.summary-total`, etc.) matching the pattern used by delivery/status pages.
+- Replaced hardcoded `#2ecc71` with `--success` CSS variable.
+
+### 22. Profile dropdown menu doesn't open (Bootstrap JS not loaded)
+- **Status**: ✅ Fixed
+- **Commits**: `<current>`
+- **Problem**: The profile button in the nav bar used `data-bs-toggle="dropdown"` (Bootstrap 5 JS behavior), but Bootstrap JS is not included in the Blazor WASM app. Clicking the user's name did nothing.
+- **Fix**: Replaced Bootstrap dropdown with Blazor-managed state variable + CSS overlay for click-outside dismissal.
+
+### 23. Receipt POST failure kills order creation
+- **Status**: ✅ Fixed
+- **Commits**: `bf6d96c`
+- **Problem**: The receipt creation HTTP call inside `POST /api/orders` was not wrapped in its own try-catch. If the ReceiptService was unreachable or returned an error, the exception propagated to the outer catch block, returning a 400 error and aborting the entire order.
+- **Fix**: Wrapped receipt POST in try-catch with console warning. Order creation now succeeds even if receipt creation fails.
+
+### 24. Auth token expiry has no visible logout mechanism
+- **Status**: ✅ Fixed
+- **Commits**: `<current>`
+- **Problem**: With the Bootstrap dropdown broken (see #22), users had no way to log out when their JWT token expired. The 401 error from `/api/orders` was surfaced as an opaque Blazor WASM stack trace.
+- **Fix**: See #22 — Blazor-managed dropdown with working logout button.
+
+### 25. Sign-in fails silently with no diagnostic information
+- **Status**: ✅ Fixed
+- **Commits**: `<current>`
+- **Problem**: Multiple issues prevented sign-in from working reliably or providing useful feedback:
+  1. ApiGateway login/register endpoints used protobuf-generated types as Minimal API request body parameters, which is fragile (System.Text.Json deserialization into protobuf message types can break with different field naming conventions or protobuf version changes).
+  2. No exception handling on login/register gRPC calls — if IdentityService was down, the Gateway returned a raw 500, and the frontend showed the generic "Invalid email or password" with no diagnostic info.
+  3. `AuthService.Login()` discarded the server's error response body — all failures were masked as "Invalid email or password" regardless of the actual cause.
+- **Fix**:
+  - Replaced `ProtoIdentity.LoginRequest`/`ProtoIdentity.RegisterRequest` with plain C# DTOs (`LoginRequestDto`/`RegisterRequestDto`) for REST binding, then manually mapped to protobuf types — same proven pattern as `CreateOrderDto` (Issue documented in DEBUG.md 2026-06-24).
+  - Wrapped gRPC calls in login/register endpoints with try-catch, returning `400 BadRequest` with the actual error message instead of a raw 500.
+  - `AuthService.Login()` now reads the `error` field from the JSON response body on non-success status codes and returns it to the UI.
+  - IdentityService connectivity errors, JWT key mismatches, and invalid credentials now all show distinct error messages in the UI.
+- **Files**: `src/ApiGateway/Program.cs`, `src/WasmFrontend/Services/AuthService.cs`, `src/WasmFrontend/Pages/Login.razor`
 
 ---
 

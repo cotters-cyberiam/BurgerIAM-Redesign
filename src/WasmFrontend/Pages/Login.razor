@@ -77,11 +77,11 @@
         isLoading = true;
         error = null;
 
-        var result = await Auth.Login(email, password);
+        var (result, loginError) = await Auth.Login(email, password);
         if (result is not null)
             Nav.NavigateTo("/menu");
         else
-            error = "Invalid email or password";
+            error = loginError ?? "Invalid email or password";
 
         isLoading = false;
     }

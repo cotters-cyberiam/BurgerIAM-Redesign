@@ -32,15 +32,19 @@
                         <span id="cartBadge" class="badge" style="display:@(Cart.TotalItems > 0 ? "flex" : "none")">@Cart.TotalItems</span>
                     </button>
                     <div class="dropdown" style="position:relative;">
-                        <button class="profile-btn" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button class="profile-btn" @onclick="ToggleProfileMenu" @onclick:stopPropagation="true">
                             <span class="profile-avatar">@(Auth.UserName?[..1].ToUpperInvariant() ?? "?")</span>
                             @Auth.UserName
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow" style="background:#151528;border:1px solid rgba(255,255,255,0.08);">
-                            <li><a class="dropdown-item text-white" href="/my-orders" style="background:transparent;">My Orders</a></li>
-                            <li><hr class="dropdown-divider" style="border-color:rgba(255,255,255,0.08);" /></li>
-                            <li><a class="dropdown-item text-white" href="" @onclick="Logout" style="background:transparent;">Logout</a></li>
-                        </ul>
+                        @if (showProfileMenu)
+                        {
+                            <div class="profile-overlay" @onclick="ToggleProfileMenu" @onclick:stopPropagation="true"></div>
+                            <div class="dropdown-menu dropdown-menu-end shadow d-block" style="background:#151528;border:1px solid rgba(255,255,255,0.08);position:absolute;top:100%;right:0;z-index:1000;min-width:160px;padding:8px 0;margin-top:4px;border-radius:12px;">
+                                <a class="dropdown-item text-white" href="/my-orders" @onclick="ToggleProfileMenu" style="display:block;padding:8px 16px;text-decoration:none;background:transparent;">My Orders</a>
+                                <hr style="border-color:rgba(255,255,255,0.08);margin:4px 0;" />
+                                <a class="dropdown-item text-white" href="" @onclick="Logout" style="display:block;padding:8px 16px;text-decoration:none;background:transparent;">Logout</a>
+                            </div>
+                        }
                     </div>
                 }
                 else
@@ -197,6 +201,13 @@
     [Inject] private Services.CartService Cart { get; set; } = null!;
     [Inject] private NavigationManager Nav { get; set; } = null!;
     [Inject] private IJSRuntime JS { get; set; } = null!;
+
+    private bool showProfileMenu;
+
+    private void ToggleProfileMenu()
+    {
+        showProfileMenu = !showProfileMenu;
+    }
 
     protected override void OnInitialized()
     {
