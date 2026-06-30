@@ -14,18 +14,18 @@
   --accent-light: #f9c784;
 
   --bg-dark: #0d0d1a;
-  --bg-card: rgba(255, 255, 255, 0.04);
-  --bg-card-hover: rgba(255, 255, 255, 0.08);
+  --bg-card: rgba(255, 255, 255, 0.07);
+  --bg-card-hover: rgba(255, 255, 255, 0.11);
   --bg-surface: #151528;
   --bg-gradient: linear-gradient(135deg, #0d0d1a 0%, #1a1a3e 50%, #0d0d1a 100%);
 
   --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.65);
-  --text-muted: rgba(255, 255, 255, 0.4);
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.45);
   --text-inverse: #0d0d1a;
 
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-card: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-card: rgba(255, 255, 255, 0.12);
 
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.4);
@@ -704,12 +704,12 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 .card-body { padding: 24px; }
 .card-body-sm { padding: 16px; }
 
-.detail-row { font-size: 0.9rem; }
+.detail-row { font-size: 0.95rem; margin-bottom: 10px; }
 .detail-label {
-  color: var(--text-secondary);
-  font-weight: 600;
+  color: var(--text-primary);
+  font-weight: 700;
   display: inline-block;
-  min-width: 80px;
+  min-width: 90px;
 }
 
 /* ═══════════════════════════════════════════
