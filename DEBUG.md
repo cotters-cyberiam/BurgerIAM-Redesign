@@ -381,3 +381,25 @@ orderReq.Items.AddRange(dto.Items.Select(i => new ProtoOrder.OrderItem { ... }))
 - `src/ReceiptService/Program.cs` — `BuildReceiptHtml` dark theme redesign
 - `src/WasmFrontend/wwwroot/css/app.css` — `.receipt-frame` background fix
 - `src/WasmFrontend/Pages/Receipt.razor` — empty state text color
+
+---
+
+## 2026-06-30 — Sign-in fails silently with generic "Invalid email or password"
+
+**Problem**: Two compounding issues prevented sign-in from working or giving useful feedback:
+1. `ApiGateway` login/register endpoints used protobuf generated types (`ProtoIdentity.LoginRequest`, `ProtoIdentity.RegisterRequest`) as Minimal API body parameters. The same pattern broke `CreateOrderRequest` before (the `RepeatedField<T>` collection was getter-only). For simple string fields the risk is lower but still fragile.
+2. No exception handling around the gRPC call in `/api/auth/login`. If `IdentityService` was down, the Gateway returned a raw 500. The frontend then discarded the error body and showed "Invalid email or password" for every failure — network errors, wrong credentials, service down, all looked the same.
+
+**Root cause**:  
+- Protobuf message types have non-standard property setters (`pb::ProtoPreconditions.CheckNotNull`) and the `IMessage` interface adds overhead that `System.Text.Json` wasn't designed to handle. The earlier `CreateOrderRequest` workaround (2026-06-24) proved that plain DTOs are safer for REST binding.
+- The login endpoint was the only high-traffic endpoint with zero exception handling — every other `RequireAuthorization()` gRPC endpoint had try-catch, but `/api/auth/login` and `/api/auth/register` did not.
+- `AuthService.Login()` didn't read the response body on error — it just returned `null`.
+
+**Fix**:
+- Created `LoginRequestDto` and `RegisterRequestDto` plain records in `ApiGateway/Program.cs`.
+- Replaced protobuf parameter binding with DTOs, then manually mapped to protobuf types before the gRPC call (same pattern as `CreateOrderDto`).
+- Wrapped the gRPC calls in `try-catch` so connectivity errors return `400 BadRequest { error: "..." }` instead of a raw 500.
+- `AuthService.Login()` now reads the response body's `error` field on non-2xx and returns it to the UI. The `Login` method signature changed from `Task<AuthResponse?>` to `Task<(AuthResponse? Result, string? Error)>`.
+- `Login.razor` displays the actual server error message instead of the hardcoded string.
+
+**Files**: `src/ApiGateway/Program.cs`, `src/WasmFrontend/Services/AuthService.cs`, `src/WasmFrontend/Pages/Login.razor`

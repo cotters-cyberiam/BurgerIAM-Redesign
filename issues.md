@@ -96,7 +96,7 @@
 
 ### 22. Profile dropdown menu doesn't open (Bootstrap JS not loaded)
 - **Status**: ✅ Fixed
-- **Commits**: `<current>`
+- **Commits**: `a515c98`
 - **Problem**: The profile button in the nav bar used `data-bs-toggle="dropdown"` (Bootstrap 5 JS behavior), but Bootstrap JS is not included in the Blazor WASM app. Clicking the user's name did nothing.
 - **Fix**: Replaced Bootstrap dropdown with Blazor-managed state variable + CSS overlay for click-outside dismissal.
 
@@ -108,13 +108,13 @@
 
 ### 24. Auth token expiry has no visible logout mechanism
 - **Status**: ✅ Fixed
-- **Commits**: `<current>`
+- **Commits**: `a515c98`
 - **Problem**: With the Bootstrap dropdown broken (see #22), users had no way to log out when their JWT token expired. The 401 error from `/api/orders` was surfaced as an opaque Blazor WASM stack trace.
 - **Fix**: See #22 — Blazor-managed dropdown with working logout button.
 
 ### 25. Sign-in fails silently with no diagnostic information
 - **Status**: ✅ Fixed
-- **Commits**: `<current>`
+- **Commits**: `a515c98`
 - **Problem**: Multiple issues prevented sign-in from working reliably or providing useful feedback:
   1. ApiGateway login/register endpoints used protobuf-generated types as Minimal API request body parameters, which is fragile (System.Text.Json deserialization into protobuf message types can break with different field naming conventions or protobuf version changes).
   2. No exception handling on login/register gRPC calls — if IdentityService was down, the Gateway returned a raw 500, and the frontend showed the generic "Invalid email or password" with no diagnostic info.
@@ -130,7 +130,7 @@
 
 ### ~~17. Menu/page content invisible after UX redesign~~ ✅ FIXED
 - **Status**: ✅ Fully fixed — all pages patched
-- **Commit**: `497c91d` (partial), `<current>` (full)
+- **Commit**: `497c91d` (partial), `a515c98` (full)
 - **Root cause**: `OnAfterRenderAsync` guarded `observeNewElements()` behind `if (firstRender)`. On first render, only skeleton loaders exist (no `.animate-on-scroll`). When real data loads and items render on subsequent passes, `firstRender` is `false`, so elements never get observed by the IntersectionObserver and remain at `opacity: 0`.
 - **Fix**: Removed the `if (firstRender)` guard from all remaining pages: `MyOrders.razor`, `Cart.razor`, `DeliveryTracking.razor`, `Feedback.razor`, `Login.razor`, `Receipt.razor`, `Register.razor` (previously fixed: `Menu.razor`, `Home.razor`, `Checkout.razor`, `OrderStatus.razor`). The JS `observeNewElements()` already deduplicates with `:not(.animate-visible)`.
 - **File**: `src/BurgerIAM.EventBus/InMemoryEventBus.cs:18`
