@@ -315,3 +315,15 @@ orderReq.Items.AddRange(dto.Items.Select(i => new ProtoOrder.OrderItem { ... }))
 - Wrapped `ApiService.CreateOrderAsync()`, `ProcessPaymentAsync()`, `SubmitFeedbackAsync()`, and `GetMenuAsync()` in `try/catch` returning `null`/empty on failure (matching the pattern of all other methods).
 - Wrapped `Checkout.razor.PlaceOrder()` body in `try/catch` with user-friendly error display.
 - Added `try/catch` to ApiGateway `POST /api/orders` endpoint returning `BadRequest` on failure (matching all other endpoints).
+
+---
+
+## 2026-06-30 — Menu page blank (no items visible) after UX redesign
+
+**Problem**: After the UX redesign, the Menu page appeared blank — the page loaded but no menu items were visible. The data was being fetched correctly from the API but content was not displayed.
+
+**Root cause**: The scroll-animation system uses `IntersectionObserver` to add `.animate-visible` class to `.animate-on-scroll` elements (which start at `opacity: 0`). The `OnAfterRenderAsync` in each page called `window.BurgerIAM.observeNewElements()` only on first render (`if (firstRender)`). However, on first render, skeleton loaders are shown (no `.animate-on-scroll`). When the API data loads and actual items re-render, `firstRender` is `false`, so `observeNewElements` is never called. The items stay at `opacity: 0` permanently.
+
+**Fix**: Removed the `if (firstRender)` guard from `OnAfterRenderAsync` in all pages so `observeNewElements()` runs on every render. The JS method already deduplicates by using the `:not(.animate-visible)` selector.
+
+**Files**: `src/WasmFrontend/Pages/Menu.razor`, `Home.razor`, `Checkout.razor`, `OrderStatus.razor`
