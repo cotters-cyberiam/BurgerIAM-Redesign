@@ -21,7 +21,7 @@
     {
         <div class="text-center py-5 animate-on-scroll">
             <div style="font-size:4rem;margin-bottom:16px;">&#x1F50D;</div>
-            <h4 style="color:var(--text-muted);">Order not found</h4>
+            <h4 style="color:var(--text-secondary);">Order not found</h4>
             <a href="/my-orders" class="btn btn-primary mt-3">View My Orders</a>
         </div>
     }
@@ -30,7 +30,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 animate-on-scroll">
             <div>
                 <h2 class="fw-bold" style="margin:0;letter-spacing:-0.5px;">Order Status</h2>
-                <p style="color:var(--text-muted);margin:4px 0 0;font-size:0.9rem;">
+                <p style="color:var(--text-secondary);margin:4px 0 0;font-size:0.9rem;">
                     Order #@Truncate(order.Id, 8) &middot; @OrderDate(order.CreatedAt)
                 </p>
             </div>
@@ -66,14 +66,14 @@
             <div class="card animate-on-scroll">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="fw-bold" style="margin:0;">&#x1F69A; Delivery Status</h5>
+                        <h5 class="card-section-title" style="margin-bottom:0;padding-bottom:0;border:none;">&#x1F69A; Delivery Status</h5>
                         <a href="/delivery/@OrderId" class="btn btn-sm btn-outline">Track Delivery</a>
                     </div>
-                    <p class="mb-1" style="font-size:0.9rem;"><strong>Driver:</strong> @delivery.DriverName</p>
-                    <p class="mb-1" style="font-size:0.9rem;"><strong>Status:</strong> <span class="badge @StatusBadge(delivery.Status)">@DeliveryStatusText(delivery.Status)</span></p>
+                    <p class="mb-1 detail-row"><span class="detail-label">Driver:</span> @delivery.DriverName</p>
+                    <p class="mb-1 detail-row"><span class="detail-label">Status:</span> <span class="badge @StatusBadge(delivery.Status)">@DeliveryStatusText(delivery.Status)</span></p>
                     @if (!string.IsNullOrEmpty(delivery.EstimatedDeliveryTime))
                     {
-                        <p class="mb-0" style="font-size:0.9rem;"><strong>Estimated:</strong> @delivery.EstimatedDeliveryTime</p>
+                        <p class="mb-0 detail-row"><span class="detail-label">Estimated:</span> @delivery.EstimatedDeliveryTime</p>
                     }
                 </div>
             </div>
@@ -83,7 +83,7 @@
         {
             <div class="text-center mt-3">
                 <div class="spinner-border spinner-border-sm text-danger me-1" role="status"></div>
-                <small style="color:var(--text-muted);">Auto-refreshing every 10 seconds...</small>
+                <small style="color:var(--text-secondary);">Auto-refreshing every 10 seconds...</small>
             </div>
         }
     }
