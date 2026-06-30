@@ -149,10 +149,7 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            await JS.InvokeVoidAsync("window.BurgerIAM.observeNewElements");
-        }
+        await JS.InvokeVoidAsync("window.BurgerIAM.observeNewElements");
     }
 
     private static string Truncate(string? value, int max) =>
