@@ -704,10 +704,20 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 .card-body { padding: 24px; }
 .card-body-sm { padding: 16px; }
 
+.card-section-title {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-card);
+  letter-spacing: 0.3px;
+}
+
 .detail-row { font-size: 0.95rem; margin-bottom: 10px; }
 .detail-label {
-  color: var(--text-primary);
-  font-weight: 700;
+  color: var(--text-secondary);
+  font-weight: 600;
   display: inline-block;
   min-width: 90px;
 }
