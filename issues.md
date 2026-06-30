@@ -57,11 +57,10 @@
 ---
 
 ### ~~17. Menu/page content invisible after UX redesign~~ ✅ FIXED
-- **Status**: ✅ Fixed (Menu, Home, Checkout) — `OrderStatus.razor` **still outstanding**
-- **Commit**: `497c91d`
+- **Status**: ✅ Fully fixed — all pages patched
+- **Commit**: `497c91d` (partial), `<current>` (full)
 - **Root cause**: `OnAfterRenderAsync` guarded `observeNewElements()` behind `if (firstRender)`. On first render, only skeleton loaders exist (no `.animate-on-scroll`). When real data loads and items render on subsequent passes, `firstRender` is `false`, so elements never get observed by the IntersectionObserver and remain at `opacity: 0`.
-- **Fix**: Removed the `if (firstRender)` guard from `Menu.razor`, `Home.razor`, `Checkout.razor`, `OrderStatus.razor`. The JS `observeNewElements()` already deduplicates with `:not(.animate-visible)`.
-- **Outstanding**: The order tracking page (`OrderStatus.razor`) auto-refreshes every 10s, which may have a separate timing/rendering issue that still causes blankness. Verify and potentially move `observeNewElements` to the `RefreshAsync` loop or call it after `StateHasChanged`.
+- **Fix**: Removed the `if (firstRender)` guard from all remaining pages: `MyOrders.razor`, `Cart.razor`, `DeliveryTracking.razor`, `Feedback.razor`, `Login.razor`, `Receipt.razor`, `Register.razor` (previously fixed: `Menu.razor`, `Home.razor`, `Checkout.razor`, `OrderStatus.razor`). The JS `observeNewElements()` already deduplicates with `:not(.animate-visible)`.
 - **File**: `src/BurgerIAM.EventBus/InMemoryEventBus.cs:18`
 - **Problem**: `handler(@event, cancellationToken)` returns a `Task` that is never `await`ed. Handlers run fire-and-forget. Exceptions in handlers are silently swallowed.
 - **Required**: `await handler(@event, cancellationToken)` or capture all tasks and `await Task.WhenAll(...)`.

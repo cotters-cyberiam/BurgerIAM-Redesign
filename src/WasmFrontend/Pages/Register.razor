@@ -82,10 +82,7 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            await JS.InvokeVoidAsync("window.BurgerIAM.observeNewElements");
-        }
+        await JS.InvokeVoidAsync("window.BurgerIAM.observeNewElements");
     }
 
     private async Task HandleRegister()

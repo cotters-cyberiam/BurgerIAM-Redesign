@@ -326,4 +326,4 @@ orderReq.Items.AddRange(dto.Items.Select(i => new ProtoOrder.OrderItem { ... }))
 
 **Fix**: Removed the `if (firstRender)` guard from `OnAfterRenderAsync` in all pages so `observeNewElements()` runs on every render. The JS method already deduplicates by using the `:not(.animate-visible)` selector.
 
-**Files**: `src/WasmFrontend/Pages/Menu.razor`, `Home.razor`, `Checkout.razor`, `OrderStatus.razor`
+**Files**: `src/WasmFrontend/Pages/Menu.razor`, `Home.razor`, `Checkout.razor`, `OrderStatus.razor`, `MyOrders.razor`, `Cart.razor`, `DeliveryTracking.razor`, `Feedback.razor`, `Login.razor`, `Receipt.razor`, `Register.razor`
