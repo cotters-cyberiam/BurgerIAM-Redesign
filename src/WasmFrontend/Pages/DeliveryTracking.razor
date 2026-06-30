@@ -92,22 +92,22 @@
                 <div class="card mb-3 animate-on-scroll">
                     <div class="card-body">
                         <h5 class="fw-bold" style="margin-bottom:12px;">Driver Details</h5>
-                        <p class="mb-1" style="font-size:0.9rem;"><strong>Name:</strong> @delivery.DriverName</p>
-                        <p class="mb-0" style="font-size:0.9rem;"><strong>Status:</strong> <span class="badge @StatusBadge(delivery.Status)">@StatusText(delivery.Status)</span></p>
+                        <p class="mb-1 detail-row"><span class="detail-label">Name:</span> @delivery.DriverName</p>
+                        <p class="mb-0 detail-row"><span class="detail-label">Status:</span> <span class="badge @StatusBadge(delivery.Status)">@StatusText(delivery.Status)</span></p>
                     </div>
                 </div>
 
                 <div class="card mb-3 animate-on-scroll">
                     <div class="card-body">
                         <h5 class="fw-bold" style="margin-bottom:12px;">Delivery Info</h5>
-                        <p class="mb-1" style="font-size:0.9rem;"><strong>Address:</strong> @delivery.DeliveryAddress</p>
+                        <p class="mb-1 detail-row"><span class="detail-label">Address:</span> @delivery.DeliveryAddress</p>
                         @if (!string.IsNullOrEmpty(delivery.EstimatedDeliveryTime))
                         {
-                            <p class="mb-1" style="font-size:0.9rem;"><strong>Estimated:</strong> @delivery.EstimatedDeliveryTime</p>
+                            <p class="mb-1 detail-row"><span class="detail-label">Estimated:</span> @delivery.EstimatedDeliveryTime</p>
                         }
                         @if (!string.IsNullOrEmpty(delivery.CompletedAt))
                         {
-                            <p class="mb-0" style="font-size:0.9rem;"><strong>Delivered at:</strong> @DeliveryDate(delivery.CompletedAt)</p>
+                            <p class="mb-0 detail-row"><span class="detail-label">Delivered at:</span> @DeliveryDate(delivery.CompletedAt)</p>
                         }
                     </div>
                 </div>

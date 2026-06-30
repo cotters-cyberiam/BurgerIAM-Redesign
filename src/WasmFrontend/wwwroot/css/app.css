@@ -704,6 +704,14 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 .card-body { padding: 24px; }
 .card-body-sm { padding: 16px; }
 
+.detail-row { font-size: 0.9rem; }
+.detail-label {
+  color: var(--text-secondary);
+  font-weight: 600;
+  display: inline-block;
+  min-width: 80px;
+}
+
 /* ═══════════════════════════════════════════
    MENU CARDS
    ═══════════════════════════════════════════ */
@@ -926,7 +934,7 @@ textarea.form-input { resize: vertical; min-height: 100px; }
   letter-spacing: -0.5px;
 }
 .section-subtitle {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin: 0 0 32px;
   font-size: 0.95rem;
 }
@@ -994,11 +1002,11 @@ textarea.form-input { resize: vertical; min-height: 100px; }
   font-size: 0.95rem;
   margin: 0 0 2px;
 }
-.timeline-step.completed .timeline-title { color: var(--text-muted); }
+.timeline-step.completed .timeline-title { color: #2ecc71; }
 .timeline-step.active .timeline-title { color: var(--primary); }
 .timeline-desc {
   font-size: 0.82rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin: 0;
 }
 
