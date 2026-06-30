@@ -214,10 +214,19 @@ app.MapPost("/api/orders", async (CreateOrderDto dto,
 
         await kitchenClient.SeedKitchenOrderAsync(new ProtoKitchen.SeedKitchenOrderRequest { OrderId = order.Id });
 
-        var receiptHttp = httpFactory.CreateClient();
-        var itemsPayload = order.Items.Select(i => new { menuItemId = i.MenuItemId, itemName = i.ItemName, quantity = i.Quantity, unitPrice = i.UnitPrice }).ToList();
-        var receiptBody = new { orderId = order.Id, customerId = order.CustomerId, customerEmail = order.CustomerEmail, totalAmount = order.TotalAmount, itemsJson = JsonSerializer.Serialize(itemsPayload) };
-        await receiptHttp.PostAsJsonAsync($"{GetServiceUrl("Receipt")}/receipts", receiptBody);
+        try
+        {
+            var receiptHttp = httpFactory.CreateClient();
+            var itemsPayload = order.Items.Select(i => new { menuItemId = i.MenuItemId, itemName = i.ItemName, quantity = i.Quantity, unitPrice = i.UnitPrice }).ToList();
+            var receiptBody = new { orderId = order.Id, customerId = order.CustomerId, customerEmail = order.CustomerEmail, totalAmount = order.TotalAmount, itemsJson = JsonSerializer.Serialize(itemsPayload) };
+            var receiptResponse = await receiptHttp.PostAsJsonAsync($"{GetServiceUrl("Receipt")}/receipts", receiptBody);
+            if (!receiptResponse.IsSuccessStatusCode)
+                Console.WriteLine($"[WARN] Receipt creation failed: {await receiptResponse.Content.ReadAsStringAsync()}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[WARN] Receipt creation error: {ex.Message}");
+        }
 
         await progress.EnqueueOrderAsync(order.Id);
 
