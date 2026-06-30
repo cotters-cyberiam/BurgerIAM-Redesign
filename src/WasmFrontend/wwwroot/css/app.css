@@ -721,6 +721,10 @@ textarea.form-input { resize: vertical; min-height: 100px; }
   display: inline-block;
   min-width: 90px;
 }
+.detail-value {
+  color: var(--text-primary);
+  font-weight: 500;
+}
 
 /* ═══════════════════════════════════════════
    MENU CARDS

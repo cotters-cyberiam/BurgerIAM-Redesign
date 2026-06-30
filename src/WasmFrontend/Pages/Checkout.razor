@@ -10,7 +10,7 @@
         <div class="text-center py-5 animate-on-scroll">
             <div style="font-size:4rem;margin-bottom:16px;">&#x1F389;</div>
             <h3 class="fw-bold">Order Placed Successfully!</h3>
-            <p style="color:var(--text-muted);">Order ID: <code class="fw-bold">@TruncateId(orderId)</code></p>
+            <p style="color:var(--text-secondary);">Order ID: <code class="fw-bold">@TruncateId(orderId)</code></p>
             <p class="fs-5">Your total: <strong class="fs-4" style="color:var(--primary);">&pound;@savedTotal.ToString("F2")</strong></p>
             <div class="mt-4">
                 <a href="/order-status/@orderId" class="btn btn-primary btn-lg me-2">Track Order</a>
@@ -87,7 +87,7 @@ else
                         @foreach (var item in Cart.Items)
                         {
                             <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:0.9rem;">
-                                <span>@item.ItemName <span style="color:var(--text-muted);">x@item.Quantity</span></span>
+                                <span>@item.ItemName <span style="color:var(--text-secondary);">x@item.Quantity</span></span>
                                 <span class="fw-medium">&pound;@((item.UnitPrice * item.Quantity).ToString("F2"))</span>
                             </div>
                         }

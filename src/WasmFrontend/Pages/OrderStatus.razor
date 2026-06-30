@@ -69,11 +69,11 @@
                         <h5 class="card-section-title" style="margin-bottom:0;padding-bottom:0;border:none;">&#x1F69A; Delivery Status</h5>
                         <a href="/delivery/@OrderId" class="btn btn-sm btn-outline">Track Delivery</a>
                     </div>
-                    <p class="mb-1 detail-row"><span class="detail-label">Driver:</span> @delivery.DriverName</p>
+                    <p class="mb-1 detail-row"><span class="detail-label">Driver:</span> <span class="detail-value">@delivery.DriverName</span></p>
                     <p class="mb-1 detail-row"><span class="detail-label">Status:</span> <span class="badge @StatusBadge(delivery.Status)">@DeliveryStatusText(delivery.Status)</span></p>
                     @if (!string.IsNullOrEmpty(delivery.EstimatedDeliveryTime))
                     {
-                        <p class="mb-0 detail-row"><span class="detail-label">Estimated:</span> @delivery.EstimatedDeliveryTime</p>
+                        <p class="mb-0 detail-row"><span class="detail-label">Estimated:</span> @OrderDate(delivery.EstimatedDeliveryTime)</p>
                     }
                 </div>
             </div>

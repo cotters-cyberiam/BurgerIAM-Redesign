@@ -33,7 +33,7 @@
     {
         <div class="text-center py-5 animate-on-scroll">
             <div style="font-size:4rem;margin-bottom:16px;">&#x1F50D;</div>
-            <h4 style="color:var(--text-muted);">Delivery information not available</h4>
+            <h4 style="color:var(--text-secondary);">Delivery information not available</h4>
             <a href="/order-status/@OrderId" class="btn btn-primary mt-3">Check Order Status</a>
         </div>
     }
@@ -50,7 +50,7 @@
                             @((MarkupString)(delivery.Status >= 4 ? "\U0001F389" : delivery.Status >= 3 ? "\U0001F69A" : delivery.Status >= 2 ? "\U0001F4E6" : "\U0001F4C5"))
                         </div>
                         <h4 class="fw-bold" style="color:var(--primary);">@StatusText(delivery.Status)</h4>
-                        <p style="color:var(--text-muted);">Order: <code>@OrderId[..Math.Min(8, OrderId.Length)]</code></p>
+                        <p style="color:var(--text-secondary);">Order: <code>@OrderId[..Math.Min(8, OrderId.Length)]</code></p>
                     </div>
                 </div>
 
@@ -92,7 +92,7 @@
                 <div class="card mb-3 animate-on-scroll">
                     <div class="card-body">
                         <h5 class="card-section-title">Driver Details</h5>
-                        <p class="mb-1 detail-row"><span class="detail-label">Name:</span> @delivery.DriverName</p>
+                        <p class="mb-1 detail-row"><span class="detail-label">Name:</span> <span class="detail-value">@delivery.DriverName</span></p>
                         <p class="mb-0 detail-row"><span class="detail-label">Status:</span> <span class="badge @StatusBadge(delivery.Status)">@StatusText(delivery.Status)</span></p>
                     </div>
                 </div>
@@ -100,10 +100,10 @@
                 <div class="card mb-3 animate-on-scroll">
                     <div class="card-body">
                         <h5 class="card-section-title">Delivery Info</h5>
-                        <p class="mb-1 detail-row"><span class="detail-label">Address:</span> @delivery.DeliveryAddress</p>
+                        <p class="mb-1 detail-row"><span class="detail-label">Address:</span> <span class="detail-value">@delivery.DeliveryAddress</span></p>
                         @if (!string.IsNullOrEmpty(delivery.EstimatedDeliveryTime))
                         {
-                            <p class="mb-1 detail-row"><span class="detail-label">Estimated:</span> @delivery.EstimatedDeliveryTime</p>
+                            <p class="mb-1 detail-row"><span class="detail-label">Estimated:</span> @DeliveryDate(delivery.EstimatedDeliveryTime)</p>
                         }
                         @if (!string.IsNullOrEmpty(delivery.CompletedAt))
                         {
@@ -123,7 +123,7 @@
         {
             <div class="text-center mt-3">
                 <div class="spinner-border spinner-border-sm text-danger me-1" role="status"></div>
-                <small style="color:var(--text-muted);">Auto-refreshing every 10 seconds...</small>
+                <small style="color:var(--text-secondary);">Auto-refreshing every 10 seconds...</small>
             </div>
         }
     }
