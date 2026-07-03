@@ -1,5 +1,3 @@
-using BurgerIAM.Shared.Events;
-using BurgerIAM.TestUtilities;
 using Microsoft.EntityFrameworkCore;
 using ReceiptService.Data;
 using ReceiptService.Services;
@@ -18,42 +16,7 @@ public class ReceiptServiceHandlerTests
 
     private static ReceiptServiceHandler CreateHandler(AppDbContext db)
     {
-        var eventBus = new InMemoryEventBus();
-        return new ReceiptServiceHandler(db, eventBus);
-    }
-
-    [Fact]
-    public async Task HandlePaymentConfirmed_CreatesReceipt()
-    {
-        var db = CreateDbContext();
-        var handler = CreateHandler(db);
-        var paymentEvent = new PaymentConfirmedEvent
-        {
-            OrderId = "order-1",
-            PaymentId = "pay-1",
-            Amount = 15.99m
-        };
-        await handler.HandlePaymentConfirmed(paymentEvent, CancellationToken.None);
-        var receipt = await db.Receipts.FirstOrDefaultAsync(r => r.OrderId == "order-1");
-        Assert.NotNull(receipt);
-        Assert.Equal(15.99, receipt.TotalAmount);
-    }
-
-    [Fact]
-    public async Task HandlePaymentConfirmed_Duplicate_DoesNotCreateDuplicate()
-    {
-        var db = CreateDbContext();
-        var handler = CreateHandler(db);
-        db.Receipts.Add(new ReceiptEntity { OrderId = "order-1", CustomerId = "c1", TotalAmount = 10 });
-        await db.SaveChangesAsync();
-        var paymentEvent = new PaymentConfirmedEvent
-        {
-            OrderId = "order-1",
-            PaymentId = "pay-1",
-            Amount = 15.99m
-        };
-        await handler.HandlePaymentConfirmed(paymentEvent, CancellationToken.None);
-        Assert.Single(db.Receipts);
+        return new ReceiptServiceHandler(db);
     }
 
     [Fact]

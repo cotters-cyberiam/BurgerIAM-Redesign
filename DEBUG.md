@@ -419,3 +419,20 @@ orderReq.Items.AddRange(dto.Items.Select(i => new ProtoOrder.OrderItem { ... }))
 2. `Login.razor.HandleLogin()` calls `Cart.Clear()` immediately after successful authentication, ensuring every new session starts with an empty cart.
 
 **Files**: `src/WasmFrontend/Pages/Menu.razor`, `src/WasmFrontend/Pages/Login.razor`
+
+---
+
+## 2026-07-03 — Receipt shows no items and no prices (race with event-driven creation)
+
+**Problem**: After placing an order, the receipt page displayed an empty items list and zero/empty prices even though the order had items with correct prices.
+
+**Root cause**: Dual receipt creation paths (issue #6 in issues.md). The `PaymentConfirmedEvent` published during `ProcessPaymentAsync` triggered `ReceiptService.EventBusHostedService`, which created a receipt with `ItemsJson = "[]"` and no customer info. Since the in-memory event bus ran handlers synchronously during the publish call, this happened **before** the ApiGateway's HTTP `POST /receipts` call (which had full item data). The HTTP call found an existing receipt and skipped.
+
+**Fix**: Removed the event-driven receipt creation path entirely:
+- Deleted `ReceiptService/EventBusHostedService.cs`
+- Removed `IEventBus` registration and `EventBusHostedService` from `ReceiptService/Program.cs`
+- Removed unused `IEventBus` dependency and `HandlePaymentConfirmed` from `ReceiptServiceHandler`
+- Removed the two `HandlePaymentConfirmed` tests (they tested removed functionality)
+- Receipt creation now happens exclusively via the ApiGateway's HTTP `POST /receipts` call, which passes order items, customer info, and total amount correctly
+
+**Files**: `src/ReceiptService/EventBusHostedService.cs` (deleted), `src/ReceiptService/Program.cs`, `src/ReceiptService/Services/ReceiptServiceHandler.cs`, `tests/ReceiptService.Tests/ReceiptServiceHandlerTests.cs`

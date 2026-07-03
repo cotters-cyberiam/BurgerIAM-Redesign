@@ -42,10 +42,11 @@
 - **Problem**: `string GetServiceUrl(string name) => servicesConfig[name] ?? $"http://localhost:5{name}";` — when a config key is missing, this produces garbage like `http://localhost:5Identity`.
 - **Required**: Remove the fallback or make it return a sensible default.
 
-### 6. Receipt generated twice (dual invocation)
-- **Files**: `src/ApiGateway/Program.cs:218` + `src/ReceiptService/EventBusHostedService.cs`
-- **Problem**: ApiGateway's `POST /api/orders` calls ReceiptService directly via HTTP to create a receipt. Simultaneously, the PaymentService publishes `PaymentConfirmedEvent`, and ReceiptService's `EventBusHostedService` also handles it by creating the same receipt. This produces duplicate receipts.
-- **Required**: Remove the direct HTTP call from ApiGateway (let the event-driven flow handle it), or remove the EventBus handler.
+### 6. Receipt generated twice (dual invocation) ✅ FIXED
+- **Status**: ✅ Fixed
+- **Commits**: (current)
+- **Problem**: ApiGateway's `POST /api/orders` calls ReceiptService directly via HTTP to create a receipt. Simultaneously, the PaymentService publishes `PaymentConfirmedEvent`, and ReceiptService's `EventBusHostedService` also handles it by creating the same receipt. This produced duplicate receipts — the event-driven path won the race and created a receipt with empty `ItemsJson = "[]"`, causing the HTTP path (with full item data) to skip.
+- **Fix**: Removed the event-driven receipt creation path entirely. Deleted `EventBusHostedService.cs`, removed `IEventBus` registration from `Program.cs`, and removed unused `HandlePaymentConfirmed` from `ReceiptServiceHandler`. Receipt creation now happens exclusively via the HTTP path with full item data.
 
 ### 7. FeedbackService missing EventBusHostedService
 - **File**: `src/FeedbackService/` (no `EventBusHostedService.cs`)

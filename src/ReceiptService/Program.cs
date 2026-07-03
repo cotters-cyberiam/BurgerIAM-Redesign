@@ -1,7 +1,4 @@
-using System.Text.Json;
-using BurgerIAM.EventBus;
 using Microsoft.EntityFrameworkCore;
-using ReceiptService;
 using ReceiptService.Data;
 using ReceiptService.Services;
 
@@ -10,19 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-var eventBusConnection = builder.Configuration.GetValue<string>("EventBus:ConnectionString");
-if (string.IsNullOrWhiteSpace(eventBusConnection))
-{
-    builder.Services.AddSingleton<IEventBus, InMemoryEventBus>();
-}
-else
-{
-    var exchangeName = builder.Configuration.GetValue<string>("EventBus:ExchangeName") ?? "burgeriam.exchange";
-    builder.Services.AddSingleton<IEventBus>(_ => new RabbitMQEventBus(eventBusConnection, exchangeName));
-}
-
 builder.Services.AddScoped<ReceiptServiceHandler>();
-builder.Services.AddHostedService<EventBusHostedService>();
 
 var app = builder.Build();
 
