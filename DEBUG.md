@@ -403,3 +403,19 @@ orderReq.Items.AddRange(dto.Items.Select(i => new ProtoOrder.OrderItem { ... }))
 - `Login.razor` displays the actual server error message instead of the hardcoded string.
 
 **Files**: `src/ApiGateway/Program.cs`, `src/WasmFrontend/Services/AuthService.cs`, `src/WasmFrontend/Pages/Login.razor`
+
+---
+
+## 2026-07-03 — Unauthenticated users can add items to cart (ghost cart)
+
+**Problem**: The Menu page (`[AllowAnonymous]`) allowed any unauthenticated user to click "Add to Cart". The `CartService` accepted items regardless of auth state. Since `Cart.razor` and `Checkout.razor` require `[Authorize]`, the items accumulated invisibly. When the user finally logged in, the cart was full of stale items from before authentication — or items added during a previous anonymous session were still there.
+
+**Root cause**: Two compounding issues:
+1. `Menu.razor.AddToCart()` had no auth check — it called `Cart.AddItem()` unconditionally
+2. `Login.razor` never cleared the cart on successful login — old items persisted across sessions
+
+**Fix**:
+1. `Menu.razor.AddToCart()` now checks `Auth.IsLoggedIn` first. If not logged in, it redirects to `/login` without adding the item.
+2. `Login.razor.HandleLogin()` calls `Cart.Clear()` immediately after successful authentication, ensuring every new session starts with an empty cart.
+
+**Files**: `src/WasmFrontend/Pages/Menu.razor`, `src/WasmFrontend/Pages/Login.razor`

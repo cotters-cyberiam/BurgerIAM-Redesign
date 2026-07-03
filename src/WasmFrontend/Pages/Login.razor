@@ -53,6 +53,7 @@
 
 @code {
     [Inject] private Services.AuthService Auth { get; set; } = null!;
+    [Inject] private Services.CartService Cart { get; set; } = null!;
     [Inject] private NavigationManager Nav { get; set; } = null!;
     [Inject] private IJSRuntime JS { get; set; } = null!;
 
@@ -79,7 +80,10 @@
 
         var (result, loginError) = await Auth.Login(email, password);
         if (result is not null)
+        {
+            Cart.Clear();
             Nav.NavigateTo("/menu");
+        }
         else
             error = loginError ?? "Invalid email or password";
 

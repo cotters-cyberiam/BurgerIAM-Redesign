@@ -87,6 +87,8 @@
 @code {
     [Inject] private Services.ApiService Api { get; set; } = null!;
     [Inject] private Services.CartService Cart { get; set; } = null!;
+    [Inject] private Services.AuthService Auth { get; set; } = null!;
+    [Inject] private NavigationManager Nav { get; set; } = null!;
     [Inject] private IJSRuntime JS { get; set; } = null!;
 
     private List<Models.MenuItemResponse> items = [];
@@ -124,6 +126,12 @@
 
     private async void AddToCart(Models.MenuItemResponse item)
     {
+        if (!Auth.IsLoggedIn)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
         Cart.AddItem(new Models.CartItem(item.Id, item.Name, item.Price, 1));
         await JS.InvokeVoidAsync("window.BurgerIAM.animateCartBadge", Cart.TotalItems);
         await JS.InvokeVoidAsync("window.BurgerIAM.showToast", $"{item.Name} added to cart!", "success");

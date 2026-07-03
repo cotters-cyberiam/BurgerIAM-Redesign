@@ -128,7 +128,16 @@
 
 ---
 
-### ~~17. Menu/page content invisible after UX redesign~~ ✅ FIXED
+### 17. Unauthenticated users can add items to cart (ghost cart) ✅ FIXED
+- **Status**: ✅ Fixed
+- **Commit**: (current)
+- **Problem**: Menu.razor (`[AllowAnonymous]`) let anyone call `AddToCart()` regardless of auth state. Items accumulated invisibly since Cart/Checkout require `[Authorize]`. On login, stale items from anonymous sessions persisted.
+- **Fix**: 
+  - `Menu.razor.AddToCart()` checks `Auth.IsLoggedIn` first — redirects to `/login` without adding item if unauthenticated
+  - `Login.razor` calls `Cart.Clear()` immediately after successful login
+- **Files**: `src/WasmFrontend/Pages/Menu.razor`, `src/WasmFrontend/Pages/Login.razor`
+
+### ~~18. Menu/page content invisible after UX redesign~~ ✅ FIXED
 - **Status**: ✅ Fully fixed — all pages patched
 - **Commit**: `497c91d` (partial), `a515c98` (full)
 - **Root cause**: `OnAfterRenderAsync` guarded `observeNewElements()` behind `if (firstRender)`. On first render, only skeleton loaders exist (no `.animate-on-scroll`). When real data loads and items render on subsequent passes, `firstRender` is `false`, so elements never get observed by the IntersectionObserver and remain at `opacity: 0`.
