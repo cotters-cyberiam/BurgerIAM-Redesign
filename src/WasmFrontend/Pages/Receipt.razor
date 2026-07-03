@@ -132,7 +132,8 @@
         {
             try
             {
-                items = JsonSerializer.Deserialize<List<ReceiptItem>>(receipt.ItemsJson) ?? [];
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                items = JsonSerializer.Deserialize<List<ReceiptItem>>(receipt.ItemsJson, options) ?? [];
             }
             catch { }
         }

@@ -436,3 +436,15 @@ orderReq.Items.AddRange(dto.Items.Select(i => new ProtoOrder.OrderItem { ... }))
 - Receipt creation now happens exclusively via the ApiGateway's HTTP `POST /receipts` call, which passes order items, customer info, and total amount correctly
 
 **Files**: `src/ReceiptService/EventBusHostedService.cs` (deleted), `src/ReceiptService/Program.cs`, `src/ReceiptService/Services/ReceiptServiceHandler.cs`, `tests/ReceiptService.Tests/ReceiptServiceHandlerTests.cs`
+
+---
+
+## 2026-07-03 — Receipt items show as "0"/£0.00 due to JSON case sensitivity
+
+**Problem**: The receipt items table displayed default values (item name "0", quantity 0, price £0.00) even though the total amount was correct. The `ItemsJson` field in the receipt had correct data, but the frontend couldn't parse it.
+
+**Root cause**: The ApiGateway serializes receipt items into JSON using camelCase property names (`menuItemId`, `itemName`, `quantity`, `unitPrice`). The `Receipt.razor` page uses `JsonSerializer.Deserialize<List<ReceiptItem>>()` to parse this JSON back. However, the default `JsonSerializerOptions` uses **case-sensitive** property matching, while the `ReceiptItem` positional record has PascalCase constructor parameters (`MenuItemId`, `ItemName`). The case mismatch caused all properties to default to `null`/`0`.
+
+**Fix**: Added `PropertyNameCaseInsensitive = true` to the `JsonSerializerOptions` used in `Receipt.razor`'s item deserialization. This correctly maps camelCase JSON properties to the PascalCase record parameters.
+
+**Files**: `src/WasmFrontend/Pages/Receipt.razor`
