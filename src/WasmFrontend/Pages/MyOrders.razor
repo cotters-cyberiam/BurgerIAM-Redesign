@@ -10,13 +10,13 @@
 
     @if (isLoading)
     {
-        <div class="card">
+        <div class="card animate-on-scroll">
             <div class="card-body">
                 @for (int i = 0; i < 4; i++)
                 {
                     <div class="d-flex align-items-center gap-3 mb-3">
                         <div class="skeleton skeleton-text" style="width:80px;"></div>
-                        <div class="skeleton skeleton-text" style="width:120px;"></div>
+                        <div class="skeleton skeleton-text" style="width:140px;"></div>
                         <div class="skeleton skeleton-text" style="width:60px;"></div>
                         <div class="skeleton skeleton-text short"></div>
                         <div class="skeleton skeleton-button" style="width:80px;"></div>
@@ -29,42 +29,71 @@
     {
         <div class="text-center py-5 animate-on-scroll">
             <div style="font-size:4rem;margin-bottom:16px;">&#x1F4CB;</div>
-            <h4 style="color:var(--text-muted);margin-bottom:8px;">No orders yet</h4>
-            <p style="color:var(--text-muted);">Browse our menu and place your first order!</p>
+            <h4 style="color:var(--text-secondary);margin-bottom:8px;">No orders yet</h4>
+            <p style="color:var(--text-secondary);">Browse our menu and place your first order!</p>
             <a href="/menu" class="btn btn-primary btn-lg mt-3">Start Ordering</a>
         </div>
     }
     else
     {
+        <div class="row mb-4 animate-on-scroll">
+            <div class="col-md-4 mb-2">
+                <div class="card text-center" style="padding:20px;">
+                    <div class="stat-icon">&#x1F4CB;</div>
+                    <div class="stat-title">@orders.Count</div>
+                    <p class="stat-desc">Total Orders</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-2">
+                <div class="card text-center" style="padding:20px;">
+                    <div class="stat-icon">&#x1F4C5;</div>
+                    <div class="stat-title">@LastOrderDate()</div>
+                    <p class="stat-desc">Last Order</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-2">
+                <div class="card text-center" style="padding:20px;">
+                    <div class="stat-icon">&#x1F4B0;</div>
+                    <div class="stat-title">&pound;@TotalSpent().ToString("F2")</div>
+                    <p class="stat-desc">Total Spent</p>
+                </div>
+            </div>
+        </div>
+
         <div class="card animate-on-scroll">
-            <div class="table-wrap">
-                <table class="table mb-0 align-middle">
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Date</th>
-                            <th>Items</th>
-                            <th>Total</th>
-                            <th>Status</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var order in orders)
-                        {
-                            <tr class="animate-on-scroll">
-                                <td><code class="fw-bold">@Truncate(order.Id, 8)</code></td>
-                                <td>@OrderDate(order.CreatedAt)</td>
-                                <td>@order.Items.Count item(s)</td>
-                                <td style="color:var(--primary);font-weight:700;">&pound;@order.TotalAmount.ToString("F2")</td>
-                                <td><span class="badge @StatusBadge(order.Status)">@StatusText(order.Status)</span></td>
-                                <td>
-                                    <a href="/order-status/@order.Id" class="btn btn-primary btn-sm">Track</a>
-                                </td>
+            <div class="card-body p-0">
+                <div class="table-wrap" style="border:none;">
+                    <table class="table mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Date</th>
+                                <th>Items</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th></th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in orders)
+                            {
+                                <tr>
+                                    <td><code class="fw-bold">@Truncate(order.Id, 8)</code></td>
+                                    <td>@OrderDate(order.CreatedAt)</td>
+                                    <td>@order.Items.Count item(s)</td>
+                                    <td style="color:var(--primary);font-weight:700;">&pound;@order.TotalAmount.ToString("F2")</td>
+                                    <td><span class="badge @StatusBadge(order.Status)">@StatusText(order.Status)</span></td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <a href="/order-status/@order.Id" class="btn btn-primary btn-sm">Track</a>
+                                            <a href="/receipt/@order.Id" class="btn btn-outline btn-sm">Receipt</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     }
@@ -94,6 +123,12 @@
 
     private static string OrderDate(string dateStr) =>
         DateTime.TryParse(dateStr, out var dt) ? dt.ToString("MMM dd, yyyy HH:mm") : dateStr;
+
+    private string LastOrderDate() =>
+        orders.Count > 0 ? OrderDate(orders.MaxBy(o => o.CreatedAt)!.CreatedAt) : "-";
+
+    private double TotalSpent() =>
+        orders.Sum(o => o.TotalAmount);
 
     private static string StatusText(int status) => status switch
     {
