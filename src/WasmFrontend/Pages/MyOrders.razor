@@ -28,7 +28,7 @@
     else if (orders.Count == 0)
     {
         <div class="text-center py-5 animate-on-scroll">
-            <div style="font-size:4rem;margin-bottom:16px;">&#x1F4CB;</div>
+            <div style="font-size:4rem;margin-bottom:16px;">📋</div>
             <h4 style="color:var(--text-secondary);margin-bottom:8px;">No orders yet</h4>
             <p style="color:var(--text-secondary);">Browse our menu and place your first order!</p>
             <a href="/menu" class="btn btn-primary btn-lg mt-3">Start Ordering</a>
@@ -38,62 +38,58 @@
     {
         <div class="row mb-4 animate-on-scroll">
             <div class="col-md-4 mb-2">
-                <div class="card text-center" style="padding:20px;">
-                    <div class="stat-icon">&#x1F4CB;</div>
+                <div class="stat-card">
+                    <div class="stat-icon">📋</div>
                     <div class="stat-title">@orders.Count</div>
                     <p class="stat-desc">Total Orders</p>
                 </div>
             </div>
             <div class="col-md-4 mb-2">
-                <div class="card text-center" style="padding:20px;">
-                    <div class="stat-icon">&#x1F4C5;</div>
+                <div class="stat-card">
+                    <div class="stat-icon">📅</div>
                     <div class="stat-title">@LastOrderDate()</div>
                     <p class="stat-desc">Last Order</p>
                 </div>
             </div>
             <div class="col-md-4 mb-2">
-                <div class="card text-center" style="padding:20px;">
-                    <div class="stat-icon">&#x1F4B0;</div>
-                    <div class="stat-title">&pound;@TotalSpent().ToString("F2")</div>
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-title">£@TotalSpent().ToString("F2")</div>
                     <p class="stat-desc">Total Spent</p>
                 </div>
             </div>
         </div>
 
         <div class="card animate-on-scroll">
-            <div class="card-body p-0">
-                <div class="table-wrap" style="border:none;">
-                    <table class="table mb-0 align-middle">
-                        <thead>
-                            <tr>
-                                <th>Order ID</th>
-                                <th>Date</th>
-                                <th>Items</th>
-                                <th>Total</th>
-                                <th>Status</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var order in orders)
-                            {
-                                <tr>
-                                    <td><code class="fw-bold">@Truncate(order.Id, 8)</code></td>
-                                    <td>@OrderDate(order.CreatedAt)</td>
-                                    <td>@order.Items.Count item(s)</td>
-                                    <td style="color:var(--primary);font-weight:700;">&pound;@order.TotalAmount.ToString("F2")</td>
-                                    <td><span class="badge @StatusBadge(order.Status)">@StatusText(order.Status)</span></td>
-                                    <td>
-                                        <div class="d-flex gap-1">
-                                            <a href="/order-status/@order.Id" class="btn btn-primary btn-sm">Track</a>
-                                            <a href="/receipt/@order.Id" class="btn btn-outline btn-sm">Receipt</a>
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
+            <div class="card-body">
+                <h5 class="card-section-title">📋 Order History</h5>
+
+                @foreach (var order in orders)
+                {
+                    <div class="order-card">
+                        <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <code class="order-card-id">#@Truncate(order.Id, 8)</code>
+                                <span class="order-card-date">@OrderDate(order.CreatedAt)</span>
+                            </div>
+                            <span class="badge @StatusBadge(order.Status)">@StatusText(order.Status)</span>
+                        </div>
+
+                        <p class="mb-1 detail-row">
+                            <span class="detail-label">Items:</span>
+                            <span class="detail-value">@order.Items.Count item(s)</span>
+                        </p>
+                        <p class="mb-1 detail-row">
+                            <span class="detail-label">Total:</span>
+                            <span class="detail-value fw-bold" style="color:var(--primary)">£@order.TotalAmount.ToString("F2")</span>
+                        </p>
+
+                        <div class="d-flex gap-2 mt-3">
+                            <a href="/order-status/@order.Id" class="btn btn-primary btn-sm">Track Order</a>
+                            <a href="/receipt/@order.Id" class="btn btn-outline btn-sm">Receipt</a>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
     }
