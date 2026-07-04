@@ -147,9 +147,8 @@
 {
     <div class="reviews-overlay" @onclick="CloseReviewsPanel">
         <div class="reviews-panel" @onclick:stopPropagation>
-            <button class="reviews-close" @onclick="CloseReviewsPanel" type="button">&times;</button>
-            <h4 class="fw-bold" style="margin:0;">Customer Reviews</h4>
-            <p style="color:var(--text-secondary);font-size:0.85rem;margin:4px 0 0;">
+            <h3 class="fw-bold" style="margin:0;">Customer Reviews</h3>
+            <p style="color:var(--text-secondary);font-size:1.1rem;margin:6px 0 0;">
                 @averageRating?.AverageRating.ToString("F1") average rating &mdash; @_reviews.Count reviews
             </p>
             <div class="reviews-carousel">

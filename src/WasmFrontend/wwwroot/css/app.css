@@ -1431,8 +1431,8 @@ table tr:hover td { background: rgba(255,255,255,0.02); }
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 32px;
-  max-width: 840px;
+  padding: 48px;
+  max-width: 1260px;
   width: 90%;
   position: relative;
   max-height: 90vh;
@@ -1441,15 +1441,15 @@ table tr:hover td { background: rgba(255,255,255,0.02); }
 
 .reviews-close {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 36px;
-  height: 36px;
+  top: 18px;
+  right: 18px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
   border: none;
   background: rgba(255,255,255,0.08);
   color: #fff;
-  font-size: 1.2rem;
+  font-size: 1.8rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1464,52 +1464,52 @@ table tr:hover td { background: rgba(255,255,255,0.02); }
 
 .reviews-carousel {
   overflow: hidden;
-  margin-top: 16px;
+  margin-top: 24px;
 }
 
 .reviews-track {
   display: flex;
-  gap: 16px;
+  gap: 24px;
   transition: transform 0.5s ease;
 }
 
 .review-card {
-  min-width: calc(33.333% - 11px);
+  min-width: calc(33.333% - 16px);
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 12px;
-  padding: 20px;
+  padding: 30px;
   box-sizing: border-box;
 }
 
 .review-card-stars {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   color: #f1c40f;
-  font-size: 1.1rem;
-  letter-spacing: 2px;
+  font-size: 1.65rem;
+  letter-spacing: 3px;
 }
 
 .review-card-comment {
   color: var(--text-secondary);
-  font-size: 0.85rem;
-  line-height: 1.5;
-  margin: 0 0 8px;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  margin: 0 0 12px;
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 5;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .review-card-date {
   color: rgba(255,255,255,0.35);
-  font-size: 0.75rem;
+  font-size: 0.95rem;
 }
 
 .review-card-empty {
   color: rgba(255,255,255,0.35);
   font-style: italic;
   text-align: center;
-  padding: 40px 0;
+  padding: 60px 0;
 }
 
 .reviews-link {
@@ -1525,11 +1525,11 @@ table tr:hover td { background: rgba(255,255,255,0.02); }
 
 @media (max-width: 768px) {
   .reviews-panel {
-    padding: 20px;
+    padding: 28px;
     width: 95%;
   }
   .review-card {
-    min-width: calc(50% - 8px);
+    min-width: calc(50% - 12px);
   }
 }
 
