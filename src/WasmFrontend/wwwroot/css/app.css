@@ -1465,6 +1465,11 @@ table tr:hover td { background: rgba(255,255,255,0.02); }
 .reviews-carousel {
   overflow: hidden;
   margin-top: 24px;
+  transition: opacity 3s ease;
+}
+
+.reviews-carousel.fading {
+  opacity: 0;
 }
 
 .reviews-track {
