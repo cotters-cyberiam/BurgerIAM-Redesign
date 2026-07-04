@@ -91,6 +91,12 @@
                                 <img src="@drinkImg" alt="@item.Name" class="drink-icon" />
                             </div>
                         }
+                        else if (item.Category == "Sides" && _sidesImageMap.TryGetValue(item.Id, out var sidesImg))
+                        {
+                            <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                                <img src="@sidesImg" alt="@item.Name" class="sides-icon" />
+                            </div>
+                        }
                         else
                         {
                             <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:3rem;">
@@ -146,6 +152,8 @@
     private bool isLoading = true;
     private readonly Dictionary<string, string> _drinkImageMap = [];
     private static readonly string[] _drinkImages = ["/images/drink1.png", "/images/drink2.png"];
+    private readonly Dictionary<string, string> _sidesImageMap = [];
+    private static readonly string[] _sidesImages = ["/images/sides.png", "/images/sides1.png", "/images/sides3.png"];
 
     protected override async Task OnInitializedAsync()
     {
@@ -159,6 +167,10 @@
         foreach (var item in menu.Where(i => i.Category == "Drinks"))
         {
             _drinkImageMap[item.Id] = _drinkImages[rng.Next(_drinkImages.Length)];
+        }
+        foreach (var item in menu.Where(i => i.Category == "Sides"))
+        {
+            _sidesImageMap[item.Id] = _sidesImages[rng.Next(_sidesImages.Length)];
         }
         isLoading = false;
     }

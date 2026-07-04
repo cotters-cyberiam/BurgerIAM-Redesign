@@ -792,7 +792,7 @@ textarea.form-input { resize: vertical; min-height: 100px; }
   background: linear-gradient(135deg, rgba(230,57,70,0.2), rgba(244,162,97,0.2));
 }
 
-.drink-icon {
+.drink-icon, .sides-icon {
   width: 48px;
   height: 48px;
   object-fit: contain;
