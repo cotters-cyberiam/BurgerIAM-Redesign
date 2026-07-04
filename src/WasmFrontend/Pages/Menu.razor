@@ -129,14 +129,15 @@
     protected override async Task OnInitializedAsync()
     {
         items = await Api.GetMenuAsync();
-        var rng = Random.Shared;
-        foreach (var item in items.Where(i => i.Category == "Drinks"))
+        var drinks = items.Where(i => i.Category == "Drinks").ToList();
+        for (int i = 0; i < drinks.Count; i++)
         {
-            _drinkImageMap[item.Id] = _drinkImages[rng.Next(_drinkImages.Length)];
+            _drinkImageMap[drinks[i].Id] = _drinkImages[i % _drinkImages.Length];
         }
-        foreach (var item in items.Where(i => i.Category == "Sides"))
+        var sides = items.Where(i => i.Category == "Sides").ToList();
+        for (int i = 0; i < sides.Count; i++)
         {
-            _sidesImageMap[item.Id] = _sidesImages[rng.Next(_sidesImages.Length)];
+            _sidesImageMap[sides[i].Id] = _sidesImages[i % _sidesImages.Length];
         }
         isLoading = false;
     }
