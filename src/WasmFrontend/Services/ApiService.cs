@@ -138,6 +138,18 @@ public sealed class ApiService
         }
     }
 
+    public async Task<List<FeedbackDetail>> GetAllFeedbackAsync(int limit = 50)
+    {
+        try
+        {
+            return await _http.GetFromJsonAsync<List<FeedbackDetail>>($"/api/feedback/all?limit={limit}") ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
     public async Task<ReceiptDetail?> GetReceiptAsync(string orderId)
     {
         try

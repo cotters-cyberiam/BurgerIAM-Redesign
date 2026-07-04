@@ -71,7 +71,7 @@
                     }
                 </div>
                 <p style="color:var(--text-muted);margin-top:8px;">
-                    @averageRating.AverageRating.ToString("F1") average rating (@averageRating.TotalReviews reviews)
+                    @averageRating.AverageRating.ToString("F1") average rating (<span class="reviews-link" @onclick="OpenReviewsPanel" role="button">@averageRating.TotalReviews reviews</span>)
                 </p>
             </div>
         }
@@ -143,6 +143,50 @@
     }
 </div>
 
+@if (_showReviewsPanel && _reviews.Count > 0)
+{
+    <div class="reviews-overlay" @onclick="CloseReviewsPanel">
+        <div class="reviews-panel" @onclick:stopPropagation>
+            <button class="reviews-close" @onclick="CloseReviewsPanel" type="button">&times;</button>
+            <h4 class="fw-bold" style="margin:0;">Customer Reviews</h4>
+            <p style="color:var(--text-secondary);font-size:0.85rem;margin:4px 0 0;">
+                @averageRating?.AverageRating.ToString("F1") average rating &mdash; @_reviews.Count reviews
+            </p>
+            <div class="reviews-carousel">
+                <div class="reviews-track" id="reviewsTrack" data-offset="0">
+                    @foreach (var review in _reviews)
+                    {
+                        <div class="review-card">
+                            <div class="review-card-stars">
+                                @for (int s = 1; s <= 5; s++)
+                                {
+                                    @if (s <= review.Rating)
+                                    {
+                                        <span>&#x2605;</span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:rgba(255,255,255,0.15);">&#x2605;</span>
+                                    }
+                                }
+                            </div>
+                            @if (!string.IsNullOrEmpty(review.Comment))
+                            {
+                                <p class="review-card-comment">@review.Comment</p>
+                            }
+                            else
+                            {
+                                <p class="review-card-empty">No comment</p>
+                            }
+                            <div class="review-card-date">@FormatDate(review.CreatedAt)</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Inject] private Services.ApiService Api { get; set; } = null!;
     [Inject] private Services.AuthService Auth { get; set; } = null!;
@@ -154,6 +198,8 @@
     private static readonly string[] _drinkImages = ["/images/drink1.png", "/images/drink2.png"];
     private readonly Dictionary<string, string> _sidesImageMap = [];
     private static readonly string[] _sidesImages = ["/images/sides.png", "/images/sides1.png", "/images/sides3.png"];
+    private List<Models.FeedbackDetail> _reviews = [];
+    private bool _showReviewsPanel;
 
     protected override async Task OnInitializedAsync()
     {
@@ -179,15 +225,39 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await JS.InvokeVoidAsync("window.BurgerIAM.observeNewElements");
+        if (_showReviewsPanel)
+        {
+            await JS.InvokeVoidAsync("window.BurgerIAM.initReviewsCarousel", _reviews.Count);
+        }
+    }
+
+    private async Task OpenReviewsPanel()
+    {
+        if (_reviews.Count == 0)
+        {
+            _reviews = await Api.GetAllFeedbackAsync(50);
+        }
+        _showReviewsPanel = true;
+        StateHasChanged();
+    }
+
+    private async Task CloseReviewsPanel()
+    {
+        _showReviewsPanel = false;
+        await JS.InvokeVoidAsync("window.BurgerIAM.destroyReviewsCarousel");
     }
 
     private static string Truncate(string? value, int max) =>
         !string.IsNullOrEmpty(value) && value.Length > max ? value[..max] + "..." : value ?? "";
+
+    private static string FormatDate(string iso) =>
+        DateTime.TryParse(iso, out var dt) ? dt.ToString("MMM dd, yyyy") : iso;
 
     [Inject] private IJSRuntime JS { get; set; } = null!;
 
     public async ValueTask DisposeAsync()
     {
         try { await JS.InvokeVoidAsync("window.BurgerIAM.closeMobileNav"); } catch { }
+        try { await JS.InvokeVoidAsync("window.BurgerIAM.destroyReviewsCarousel"); } catch { }
     }
 }

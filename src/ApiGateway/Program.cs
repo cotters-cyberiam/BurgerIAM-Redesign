@@ -409,6 +409,12 @@ app.MapGet("/api/feedback/rating/average", async (ProtoFeedback.FeedbackService.
     return Results.Ok(rating);
 });
 
+app.MapGet("/api/feedback/all", async (int? limit, ProtoFeedback.FeedbackService.FeedbackServiceClient client) =>
+{
+    var response = await client.GetAllFeedbackAsync(new ProtoFeedback.GetAllFeedbackRequest { Limit = limit ?? 50 });
+    return Results.Ok(response.Feedbacks);
+});
+
 app.MapGet("/api/receipts/{orderId}", async (string orderId, IHttpClientFactory httpFactory) =>
 {
     var httpClient = httpFactory.CreateClient("Receipt");

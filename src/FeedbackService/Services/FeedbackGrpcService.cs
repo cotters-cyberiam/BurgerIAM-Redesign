@@ -74,6 +74,18 @@ public sealed class FeedbackGrpcService : ProtoFeedback.FeedbackService.Feedback
         };
     }
 
+    public override async Task<ProtoFeedback.GetAllFeedbackResponse> GetAllFeedback(ProtoFeedback.GetAllFeedbackRequest request, ServerCallContext context)
+    {
+        var feedbacks = await _db.FeedbackEntries
+            .OrderByDescending(f => f.CreatedAt)
+            .Take(request.Limit > 0 ? request.Limit : 50)
+            .ToListAsync(context.CancellationToken);
+
+        var response = new ProtoFeedback.GetAllFeedbackResponse();
+        response.Feedbacks.AddRange(feedbacks.Select(MapToProto));
+        return response;
+    }
+
     private static ProtoFeedback.Feedback MapToProto(FeedbackEntity entity)
     {
         return new ProtoFeedback.Feedback

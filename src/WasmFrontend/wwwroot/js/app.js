@@ -112,6 +112,37 @@ window.BurgerIAM = {
                 if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         });
+    },
+
+    initReviewsCarousel: function (totalCards) {
+        var self = window.BurgerIAM;
+        if (self._reviewTimer) clearInterval(self._reviewTimer);
+        var track = document.getElementById('reviewsTrack');
+        if (!track) return;
+        var cardWidth = track.querySelector('.review-card')?.offsetWidth || 270;
+        var gap = 16;
+        var step = cardWidth + gap;
+        self._reviewTimer = setInterval(function () {
+            var offset = parseInt(track.getAttribute('data-offset') || '0', 10);
+            var visible = window.innerWidth <= 480 ? 1 : window.innerWidth <= 768 ? 2 : 3;
+            var maxOffset = Math.max(0, totalCards - visible);
+            offset = offset + 1 > maxOffset ? 0 : offset + 1;
+            track.setAttribute('data-offset', offset);
+            track.style.transform = 'translateX(-' + (offset * step) + 'px)';
+        }, 4000);
+    },
+
+    destroyReviewsCarousel: function () {
+        var self = window.BurgerIAM;
+        if (self._reviewTimer) {
+            clearInterval(self._reviewTimer);
+            self._reviewTimer = null;
+        }
+        var track = document.getElementById('reviewsTrack');
+        if (track) {
+            track.removeAttribute('data-offset');
+            track.style.transform = '';
+        }
     }
 };
 
