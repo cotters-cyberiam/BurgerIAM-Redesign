@@ -162,6 +162,8 @@ if (Directory.Exists(wasmFrontendPath))
 
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "ApiGateway" }));
 
+app.MapGet("/api/auth/validate", () => Results.Ok(new { valid = true })).RequireAuthorization();
+
 app.MapPost("/api/auth/login", async (LoginRequestDto dto, ProtoIdentity.IdentityService.IdentityServiceClient client) =>
 {
     try
