@@ -1517,12 +1517,26 @@ table tr:hover td { background: rgba(255,255,255,0.02); }
   padding: 60px 0;
 }
 
-.star-quarter {
+.star-fill {
   display: inline-block;
-  font-size: inherit;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  position: relative;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+}
+
+.star-fill .star-empty {
+  position: absolute;
+  inset: 0;
+  color: rgba(255,255,255,0.15);
+}
+
+.star-fill .star-filled {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  color: #f1c40f;
+  white-space: nowrap;
 }
 
 .reviews-link {

@@ -67,7 +67,10 @@
                 <div class="star-rating d-inline-flex" style="gap:6px;font-size:2rem;">
                     @foreach (var star in RenderStars(averageRating.AverageRating))
                     {
-                        <span class="star-quarter" style="background: linear-gradient(90deg, #f1c40f @(star.FillPct)%, rgba(255,255,255,0.15) @(star.FillPct)%);">&#x2605;</span>
+                        <span class="star-fill">
+                            <span class="star-empty">&#x2605;</span>
+                            <span class="star-filled" style="width:@(star.FillPct)%">&#x2605;</span>
+                        </span>
                     }
                 </div>
                 <p style="color:var(--text-muted);margin-top:8px;">
@@ -152,7 +155,10 @@
                 <span style="font-size:1.4rem;display:inline-flex;gap:3px;">
                     @foreach (var star in RenderStars(averageRating?.AverageRating ?? 0))
                     {
-                        <span class="star-quarter" style="background: linear-gradient(90deg, #f1c40f @(star.FillPct)%, rgba(255,255,255,0.15) @(star.FillPct)%;">&#x2605;</span>
+                        <span class="star-fill">
+                            <span class="star-empty">&#x2605;</span>
+                            <span class="star-filled" style="width:@(star.FillPct)%">&#x2605;</span>
+                        </span>
                     }
                 </span>
                 @averageRating?.AverageRating.ToString("F1") &mdash; @_reviews.Count reviews
