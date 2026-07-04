@@ -64,10 +64,10 @@
         {
             <div class="text-center mb-5 animate-on-scroll" style="margin-top:48px;">
                 <h3 class="fw-bold" style="margin-bottom:12px;">What Our Customers Say</h3>
-                <div class="star-rating d-inline-flex" style="gap:6px;">
-                    @for (int i = 1; i <= 5; i++)
+                <div class="star-rating d-inline-flex" style="gap:6px;font-size:2rem;">
+                    @foreach (var star in RenderStars(averageRating.AverageRating))
                     {
-                        <span style="font-size:2rem;color:@(i <= (int)Math.Round(averageRating.AverageRating) ? "#f1c40f" : "rgba(255,255,255,0.15)");">&#x2605;</span>
+                        <span class="star-quarter" style="background: linear-gradient(90deg, #f1c40f @(star.FillPct)%, rgba(255,255,255,0.15) @(star.FillPct)%);">&#x2605;</span>
                     }
                 </div>
                 <p style="color:var(--text-muted);margin-top:8px;">
@@ -148,9 +148,15 @@
     <div class="reviews-overlay" @onclick="CloseReviewsPanel">
         <div class="reviews-panel" @onclick:stopPropagation>
             <h3 class="fw-bold" style="margin:0;">Customer Reviews</h3>
-            <p style="color:var(--text-secondary);font-size:1.1rem;margin:6px 0 0;">
-                @averageRating?.AverageRating.ToString("F1") average rating &mdash; @_reviews.Count reviews
-            </p>
+            <div style="color:var(--text-secondary);font-size:1.1rem;margin:6px 0 0;display:flex;align-items:center;gap:8px;">
+                <span style="font-size:1.4rem;display:inline-flex;gap:3px;">
+                    @foreach (var star in RenderStars(averageRating?.AverageRating ?? 0))
+                    {
+                        <span class="star-quarter" style="background: linear-gradient(90deg, #f1c40f @(star.FillPct)%, rgba(255,255,255,0.15) @(star.FillPct)%;">&#x2605;</span>
+                    }
+                </span>
+                @averageRating?.AverageRating.ToString("F1") &mdash; @_reviews.Count reviews
+            </div>
             <div class="reviews-carousel">
                 <div class="reviews-track" id="reviewsTrack" data-offset="0">
                     @foreach (var review in _reviews)
@@ -245,6 +251,29 @@
         _showReviewsPanel = false;
         await JS.InvokeVoidAsync("window.BurgerIAM.destroyReviewsCarousel");
     }
+
+    private static IEnumerable<StarFill> RenderStars(double rating)
+    {
+        for (int s = 1; s <= 5; s++)
+        {
+            if (s <= Math.Floor(rating))
+            {
+                yield return new StarFill(100);
+            }
+            else if (s > Math.Ceiling(rating))
+            {
+                yield return new StarFill(0);
+            }
+            else
+            {
+                var fraction = rating - Math.Floor(rating);
+                var rounded = Math.Ceiling(fraction * 4) / 4.0;
+                yield return new StarFill((int)(rounded * 100));
+            }
+        }
+    }
+
+    private record StarFill(int FillPct);
 
     private static string Truncate(string? value, int max) =>
         !string.IsNullOrEmpty(value) && value.Length > max ? value[..max] + "..." : value ?? "";

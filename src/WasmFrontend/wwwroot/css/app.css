@@ -1517,6 +1517,14 @@ table tr:hover td { background: rgba(255,255,255,0.02); }
   padding: 60px 0;
 }
 
+.star-quarter {
+  display: inline-block;
+  font-size: inherit;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 .reviews-link {
   color: var(--accent);
   cursor: pointer;
