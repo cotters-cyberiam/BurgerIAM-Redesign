@@ -28,6 +28,19 @@ public class IdentityGrpcServiceTests
         return new IdentityGrpcService(db, config);
     }
 
+    private static void SeedTokenVersion(AppDbContext db)
+    {
+        if (!db.TokenVersions.Any())
+        {
+            db.TokenVersions.Add(new TokenVersion
+            {
+                Version = Guid.NewGuid().ToString("N"),
+                GeneratedAt = DateTime.UtcNow
+            });
+            db.SaveChanges();
+        }
+    }
+
     [Fact]
     public async Task Register_CreatesUser()
     {
@@ -69,6 +82,7 @@ public class IdentityGrpcServiceTests
     public async Task Login_ValidCredentials_ReturnsToken()
     {
         var db = CreateDbContext();
+        SeedTokenVersion(db);
         var service = CreateService(db);
 
         await service.Register(new BurgerIAM.Protos.Identity.RegisterRequest
@@ -115,6 +129,7 @@ public class IdentityGrpcServiceTests
     public async Task ValidateToken_ValidToken_ReturnsValid()
     {
         var db = CreateDbContext();
+        SeedTokenVersion(db);
         var service = CreateService(db);
 
         await service.Register(new BurgerIAM.Protos.Identity.RegisterRequest
@@ -148,6 +163,46 @@ public class IdentityGrpcServiceTests
         var validation = await service.ValidateToken(new BurgerIAM.Protos.Identity.ValidateTokenRequest
         {
             Token = "invalid-token"
+        }, new MockServerCallContext());
+
+        Assert.False(validation.IsValid);
+    }
+
+    [Fact]
+    public async Task ValidateToken_TokenVersionMismatch_ReturnsInvalid()
+    {
+        var db = CreateDbContext();
+        SeedTokenVersion(db);
+        var service = CreateService(db);
+
+        await service.Register(new BurgerIAM.Protos.Identity.RegisterRequest
+        {
+            Email = "test@test.com",
+            Password = "password123",
+            Name = "Test User"
+        }, new MockServerCallContext());
+
+        var loginResponse = await service.Login(new BurgerIAM.Protos.Identity.LoginRequest
+        {
+            Email = "test@test.com",
+            Password = "password123"
+        }, new MockServerCallContext());
+
+        var version = db.TokenVersions.First();
+        db.TokenVersions.Remove(version);
+        db.SaveChanges();
+
+        var newVersion = new TokenVersion
+        {
+            Version = Guid.NewGuid().ToString("N"),
+            GeneratedAt = DateTime.UtcNow
+        };
+        db.TokenVersions.Add(newVersion);
+        db.SaveChanges();
+
+        var validation = await service.ValidateToken(new BurgerIAM.Protos.Identity.ValidateTokenRequest
+        {
+            Token = loginResponse.Token
         }, new MockServerCallContext());
 
         Assert.False(validation.IsValid);

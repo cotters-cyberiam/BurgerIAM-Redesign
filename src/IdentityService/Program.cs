@@ -15,6 +15,29 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
+
+    db.Database.ExecuteSqlRaw(
+        "CREATE TABLE IF NOT EXISTS TokenVersions (" +
+        "Id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+        "Version TEXT NOT NULL, " +
+        "GeneratedAt TEXT NOT NULL)");
+
+    var tokenVersion = db.TokenVersions.FirstOrDefault();
+    if (tokenVersion is null)
+    {
+        tokenVersion = new IdentityService.Data.TokenVersion
+        {
+            Version = Guid.NewGuid().ToString("N"),
+            GeneratedAt = DateTime.UtcNow
+        };
+        db.TokenVersions.Add(tokenVersion);
+    }
+    else
+    {
+        tokenVersion.Version = Guid.NewGuid().ToString("N");
+        tokenVersion.GeneratedAt = DateTime.UtcNow;
+    }
+    db.SaveChanges();
 }
 
 app.MapGrpcService<IdentityGrpcService>();

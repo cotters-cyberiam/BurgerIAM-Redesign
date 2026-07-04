@@ -29,7 +29,10 @@ public sealed class IdentityGrpcService : ProtoIdentity.IdentityService.Identity
             return new ProtoIdentity.LoginResponse { Error = "Invalid email or password" };
         }
 
-        var token = GenerateJwtToken(user);
+        var tokenVersion = await _db.TokenVersions.FirstOrDefaultAsync(context.CancellationToken);
+        var version = tokenVersion?.Version ?? Guid.NewGuid().ToString("N");
+
+        var token = GenerateJwtToken(user, version);
 
         return new ProtoIdentity.LoginResponse
         {
@@ -78,6 +81,14 @@ public sealed class IdentityGrpcService : ProtoIdentity.IdentityService.Identity
                 ClockSkew = TimeSpan.Zero
             }, out _);
 
+            var tokenVersionClaim = result.FindFirst("token_version")?.Value;
+            if (tokenVersionClaim is null)
+                return new ProtoIdentity.ValidateTokenResponse { IsValid = false };
+
+            var currentVersion = await _db.TokenVersions.FirstOrDefaultAsync(context.CancellationToken);
+            if (currentVersion is null || tokenVersionClaim != currentVersion.Version)
+                return new ProtoIdentity.ValidateTokenResponse { IsValid = false };
+
             var userId = result.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var role = result.FindFirst(ClaimTypes.Role)?.Value;
 
@@ -94,7 +105,7 @@ public sealed class IdentityGrpcService : ProtoIdentity.IdentityService.Identity
         }
     }
 
-    private string GenerateJwtToken(User user)
+    private string GenerateJwtToken(User user, string tokenVersion)
     {
         var key = Encoding.UTF8.GetBytes(_config["Jwt:Key"]!);
         var claims = new[]
@@ -102,7 +113,8 @@ public sealed class IdentityGrpcService : ProtoIdentity.IdentityService.Identity
             new Claim(ClaimTypes.NameIdentifier, user.Id),
             new Claim(ClaimTypes.Email, user.Email),
             new Claim(ClaimTypes.Name, user.Name),
-            new Claim(ClaimTypes.Role, user.Role)
+            new Claim(ClaimTypes.Role, user.Role),
+            new Claim("token_version", tokenVersion)
         };
 
         var token = new JwtSecurityToken(
