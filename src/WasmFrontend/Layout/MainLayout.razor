@@ -1,19 +1,274 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-    <div class="content-area">
-        <main>
-            <div class="container-fluid">
-                @Body
+<div class="page d-flex flex-column min-vh-100">
+
+    @* ── Top Navigation ── *@
+    <nav class="top-nav">
+        <div class="top-nav-inner">
+            <div class="d-flex align-items-center gap-3">
+                <button class="hamburger" id="hamburgerBtn" @onclick="ToggleNav" aria-label="Toggle menu">
+                    <span></span><span></span><span></span>
+                </button>
+                <a class="nav-brand" href="/">
+                    <img src="images/logo.png" alt="BurgerIAM" />
+                    <span>BurgerIAM</span>
+                </a>
             </div>
-        </main>
-        <footer class="footer bg-dark text-white text-center py-3">
-            <div class="container">
-                <small>&copy; 2026 BurgerIAM - Fast Food Ordering System</small>
+
+            <div class="nav-links">
+                <NavLink class="nav-link" href="/menu">Menu</NavLink>
+                @if (Auth.IsLoggedIn)
+                {
+                    <NavLink class="nav-link" href="/my-orders">My Orders</NavLink>
+                }
             </div>
-        </footer>
+
+            <div class="nav-actions">
+                @if (Auth.IsLoggedIn)
+                {
+                    <button class="cart-btn" @onclick="ToggleCartDrawer" title="Cart">
+                        <span>&#x1F6D2;</span>
+                        <span id="cartBadge" class="badge" style="display:@(Cart.TotalItems > 0 ? "flex" : "none")">@Cart.TotalItems</span>
+                    </button>
+                    <div class="dropdown" style="position:relative;">
+                        <button class="profile-btn" @onclick="ToggleProfileMenu" @onclick:stopPropagation="true">
+                            <span class="profile-avatar">@(Auth.UserName?[..1].ToUpperInvariant() ?? "?")</span>
+                            @Auth.UserName
+                        </button>
+                        @if (showProfileMenu)
+                        {
+                            <div class="profile-overlay" @onclick="ToggleProfileMenu" @onclick:stopPropagation="true"></div>
+                            <div class="dropdown-menu dropdown-menu-end shadow d-block" style="background:#151528;border:1px solid rgba(255,255,255,0.08);position:absolute;top:100%;right:0;z-index:1000;min-width:160px;padding:8px 0;margin-top:4px;border-radius:12px;">
+                                <a class="dropdown-item text-white" href="/my-orders" @onclick="ToggleProfileMenu" style="display:block;padding:8px 16px;text-decoration:none;background:transparent;">My Orders</a>
+                                <hr style="border-color:rgba(255,255,255,0.08);margin:4px 0;" />
+                                <a class="dropdown-item text-white" href="" @onclick="Logout" style="display:block;padding:8px 16px;text-decoration:none;background:transparent;">Logout</a>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <a href="/login" class="btn btn-outline" style="padding:8px 16px;font-size:0.85rem;">Sign In</a>
+                    <a href="/register" class="btn btn-primary" style="padding:8px 16px;font-size:0.85rem;">Register</a>
+                }
+            </div>
+        </div>
+    </nav>
+
+    @* ── Mobile Drawer Overlay ── *@
+    <div class="drawer-overlay" id="mobileNavOverlay" @onclick="CloseNav"></div>
+
+    @* ── Mobile Drawer ── *@
+    <div class="mobile-drawer">
+        <div class="drawer-header">
+            <a class="nav-brand" href="/" @onclick="CloseNav">
+                <img src="images/logo.png" alt="BurgerIAM" />
+                <span>BurgerIAM</span>
+            </a>
+            <button class="drawer-close" @onclick="CloseNav">&times;</button>
+        </div>
+        <div class="drawer-body">
+            <NavLink class="nav-link" href="/menu" @onclick="CloseNav">
+                <span class="icon">&#x1F354;</span> Menu
+            </NavLink>
+            @if (Auth.IsLoggedIn)
+            {
+                <NavLink class="nav-link" href="/my-orders" @onclick="CloseNav">
+                    <span class="icon">&#x1F4CB;</span> My Orders
+                </NavLink>
+                <NavLink class="nav-link" href="/cart" @onclick="CloseNav">
+                    <span class="icon">&#x1F6D2;</span> Cart
+                    @if (Cart.TotalItems > 0)
+                    {
+                        <span class="badge badge-primary ms-auto">@Cart.TotalItems</span>
+                    }
+                </NavLink>
+            }
+        </div>
+        <div class="drawer-footer">
+            @if (Auth.IsLoggedIn)
+            {
+                <small style="color:var(--text-muted);display:block;margin-bottom:8px;">Signed in as <strong>@Auth.UserName</strong></small>
+                <button class="btn btn-outline btn-block" style="font-size:0.85rem;" @onclick="Logout">Logout</button>
+            }
+            else
+            {
+                <a href="/login" class="btn btn-primary btn-block mb-2" @onclick="CloseNav">Sign In</a>
+                <a href="/register" class="btn btn-outline btn-block" @onclick="CloseNav">Register</a>
+            }
+        </div>
     </div>
+
+    @* ── Cart Drawer Overlay ── *@
+    <div class="cart-drawer-overlay" id="cartDrawerOverlay" @onclick="CloseCartDrawer"></div>
+
+    @* ── Cart Drawer ── *@
+    <div class="cart-drawer" id="cartDrawer">
+        <div class="cart-drawer-header">
+            <h3>Shopping Cart</h3>
+            <button class="close-btn" @onclick="CloseCartDrawer">&times;</button>
+        </div>
+        <div class="cart-drawer-body">
+            @if (Cart.IsEmpty)
+            {
+                <div class="text-center py-5" style="color:var(--text-muted);">
+                    <div style="font-size:3rem;margin-bottom:12px;">&#x1F6D2;</div>
+                    <p>Your cart is empty</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var item in Cart.Items)
+                {
+                    <div class="cart-item-row">
+                        <div class="cart-item-info">
+                            <div class="name">@item.ItemName</div>
+                            <div class="price">&pound;@item.UnitPrice.ToString("F2")</div>
+                        </div>
+                        <div class="cart-item-qty">
+                            <button @onclick="() => UpdateQty(item.MenuItemId, item.Quantity - 1)">-</button>
+                            <span>@item.Quantity</span>
+                            <button @onclick="() => UpdateQty(item.MenuItemId, item.Quantity + 1)">+</button>
+                        </div>
+                        <div class="cart-item-total">&pound;@((item.UnitPrice * item.Quantity).ToString("F2"))</div>
+                        <button class="cart-item-remove" @onclick="() => RemoveItem(item.MenuItemId)" title="Remove">&times;</button>
+                    </div>
+                }
+            }
+        </div>
+        @if (!Cart.IsEmpty)
+        {
+            <div class="cart-drawer-footer">
+                <div class="cart-summary-row">
+                    <span>Subtotal (@Cart.TotalItems items)</span>
+                    <span>&pound;@Cart.TotalAmount.ToString("F2")</span>
+                </div>
+                <div class="cart-summary-row">
+                    <span>Delivery</span>
+                    <span style="color:#2ecc71;">Free</span>
+                </div>
+                <div class="cart-summary-row total">
+                    <span>Total</span>
+                    <span class="amount">&pound;@Cart.TotalAmount.ToString("F2")</span>
+                </div>
+                <a href="/checkout" class="btn btn-primary btn-block btn-lg" @onclick="CloseCartDrawer">
+                    Checkout
+                </a>
+            </div>
+        }
+    </div>
+
+    @* ── Main Content ── *@
+    <main class="flex-grow-1">
+        <div class="page-wrapper">
+            @Body
+        </div>
+    </main>
+
+    @* ── Footer ── *@
+    <footer style="border-top:1px solid var(--border-subtle);padding:24px 0;margin-top:48px;">
+        <div class="container">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2" style="color:var(--text-muted);font-size:0.85rem;">
+                    <span style="font-weight:800;background:linear-gradient(135deg,var(--primary),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">BurgerIAM</span>
+                    <span>&copy; @DateTime.Now.Year</span>
+                </div>
+                <div class="d-flex gap-4" style="color:var(--text-muted);font-size:0.8rem;">
+                    <a href="/menu" style="color:inherit;text-decoration:none;">Menu</a>
+                    <a href="/my-orders" style="color:inherit;text-decoration:none;">Orders</a>
+                    <a href="/login" style="color:inherit;text-decoration:none;">Sign In</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    @* ── FAB ── *@
+    @if (Auth.IsLoggedIn && Cart.TotalItems > 0)
+    {
+        <button class="fab" @onclick="ToggleCartDrawer" title="View Cart">
+            <span>&#x1F6D2;</span>
+            @if (Cart.TotalItems > 0)
+            {
+                <span class="badge">@Cart.TotalItems</span>
+            }
+        </button>
+    }
 </div>
+
+@code {
+    [Inject] private Services.AuthService Auth { get; set; } = null!;
+    [Inject] private Services.CartService Cart { get; set; } = null!;
+    [Inject] private NavigationManager Nav { get; set; } = null!;
+    [Inject] private IJSRuntime JS { get; set; } = null!;
+
+    private bool showProfileMenu;
+
+    private void ToggleProfileMenu()
+    {
+        showProfileMenu = !showProfileMenu;
+    }
+
+    protected override void OnInitialized()
+    {
+        Cart.CartChanged += OnCartChanged;
+    }
+
+    private void OnCartChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && Cart.TotalItems > 0)
+        {
+            await JS.InvokeVoidAsync("window.BurgerIAM.animateCartBadge", Cart.TotalItems);
+        }
+    }
+
+    private async void ToggleNav()
+    {
+        await JS.InvokeVoidAsync("window.BurgerIAM.toggleMobileNav");
+    }
+
+    private async void CloseNav()
+    {
+        await JS.InvokeVoidAsync("window.BurgerIAM.closeMobileNav");
+    }
+
+    private async void ToggleCartDrawer()
+    {
+        await JS.InvokeVoidAsync("window.BurgerIAM.toggleCartDrawer");
+    }
+
+    private async void CloseCartDrawer()
+    {
+        await JS.InvokeVoidAsync("window.BurgerIAM.closeCartDrawer");
+    }
+
+    private async void UpdateQty(string menuItemId, int qty)
+    {
+        Cart.UpdateQuantity(menuItemId, qty);
+        await JS.InvokeVoidAsync("window.BurgerIAM.animateCartBadge", Cart.TotalItems);
+    }
+
+    private async void RemoveItem(string menuItemId)
+    {
+        Cart.RemoveItem(menuItemId);
+        await JS.InvokeVoidAsync("window.BurgerIAM.animateCartBadge", Cart.TotalItems);
+        await JS.InvokeVoidAsync("window.BurgerIAM.showToast", "Item removed from cart", "info");
+    }
+
+    private async Task Logout()
+    {
+        CloseNav();
+        await Auth.LogoutAsync();
+        Nav.NavigateTo("/");
+    }
+
+    public void Dispose()
+    {
+        Cart.CartChanged -= OnCartChanged;
+    }
+}

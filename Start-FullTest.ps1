@@ -7,7 +7,7 @@
 .PARAMETER RunTests
     After starting all services, runs the ManualTestApp against all 10 service URLs.
 .PARAMETER StartupDelaySeconds
-    Seconds to wait for services to initialize before running tests (default: 15).
+    Seconds to wait for services to initialize before running tests (default: 75).
 .PARAMETER NoBuild
     Skip dotnet build before starting services (useful if already built).
 .EXAMPLE
@@ -17,7 +17,7 @@
 
 param(
     [switch]$RunTests,
-    [int]$StartupDelaySeconds = 15,
+    [int]$StartupDelaySeconds = 75,
     [switch]$NoBuild
 )
 

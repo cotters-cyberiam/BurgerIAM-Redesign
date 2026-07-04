@@ -4,111 +4,128 @@
 <PageTitle>Delivery Tracking - BurgerIAM</PageTitle>
 
 <div class="container mt-4">
-    <h2 class="mb-4">Delivery Tracking</h2>
 
     @if (isLoading)
     {
-        <div class="text-center"><div class="spinner-border" role="status"></div></div>
+        <h2 class="mb-4 skeleton skeleton-title" style="width:250px;">&nbsp;</h2>
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <div class="skeleton skeleton-avatar mx-auto mb-3"></div>
+                        <div class="skeleton skeleton-title mx-auto" style="width:150px;"></div>
+                        <div class="skeleton skeleton-text mx-auto" style="width:200px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="skeleton skeleton-title"></div>
+                        <div class="skeleton skeleton-text"></div>
+                        <div class="skeleton skeleton-text short"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     }
     else if (delivery is null)
     {
-        <div class="alert alert-warning">
-            Delivery information not available. <a href="/order-status/@OrderId">Check order status</a>
+        <div class="text-center py-5 animate-on-scroll">
+            <div style="font-size:4rem;margin-bottom:16px;">&#x1F50D;</div>
+            <h4 style="color:var(--text-secondary);">Delivery information not available</h4>
+            <a href="/order-status/@OrderId" class="btn btn-primary mt-3">Check Order Status</a>
         </div>
     }
     else
     {
+        <h2 class="section-title animate-on-scroll">Delivery Tracking</h2>
+        <p class="section-subtitle animate-on-scroll">Real-time delivery updates</p>
 
-    <div class="row">
-        <div class="col-md-8">
-            <div class="card mb-4">
-                <div class="card-body text-center py-4">
-                    <h5 class="mb-3">Delivery Status</h5>
-                    <div class="display-1 mb-3">
-                        @((MarkupString)(delivery.Status >= 4 ? "🎉" : delivery.Status >= 3 ? "🚚" : delivery.Status >= 2 ? "📦" : "📅"))
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-4 animate-on-scroll">
+                    <div class="card-body text-center py-4">
+                        <div style="font-size:4rem;margin-bottom:12px;">
+                            @((MarkupString)(delivery.Status >= 4 ? "\U0001F389" : delivery.Status >= 3 ? "\U0001F69A" : delivery.Status >= 2 ? "\U0001F4E6" : "\U0001F4C5"))
+                        </div>
+                        <h4 class="fw-bold" style="color:var(--primary);">@StatusText(delivery.Status)</h4>
+                        <p style="color:var(--text-secondary);">Order: <code>@OrderId[..Math.Min(8, OrderId.Length)]</code></p>
                     </div>
-                    <h4 class="@StatusColor(delivery.Status)">@StatusText(delivery.Status)</h4>
-                    <p class="text-muted">Order: <code>@OrderId[..8]</code></p>
                 </div>
-            </div>
 
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5>Tracking Timeline</h5>
-                    <div class="tracking-timeline">
-                        <div class="d-flex align-items-center mb-3 @(delivery.Status >= 0 ? "text-success" : "text-muted")">
-                            <span class="me-2 fs-5">@(delivery.Status >= 0 ? "✓" : "○")</span>
-                            <div>
-                                <strong>Order Placed</strong>
+                <div class="card animate-on-scroll">
+                    <div class="card-body">
+                        <h5 class="card-section-title">Tracking Timeline</h5>
+                        <div class="timeline">
+                            <div class="timeline-step @(delivery.Status >= 0 ? "completed" : "")">
+                                <div class="timeline-dot">@(delivery.Status >= 0 ? "\u2713" : "1")</div>
+                                <strong class="timeline-title">Order Placed</strong>
+                                <p class="timeline-desc">Your order has been received</p>
                             </div>
-                        </div>
-                        <div class="d-flex align-items-center mb-3 @(delivery.Status >= 1 ? "text-success" : "text-muted")">
-                            <span class="me-2 fs-5">@(delivery.Status >= 1 ? "✓" : "○")</span>
-                            <div>
-                                <strong>Driver Assigned</strong>
-                                <small class="d-block text-muted">@delivery.DriverName</small>
+                            <div class="timeline-step @(delivery.Status >= 1 ? "completed" : delivery.Status == 0 ? "" : "")">
+                                <div class="timeline-dot">@(delivery.Status >= 1 ? "\u2713" : "2")</div>
+                                <strong class="timeline-title">Driver Assigned</strong>
+                                <p class="timeline-desc">@delivery.DriverName is on the way</p>
                             </div>
-                        </div>
-                        <div class="d-flex align-items-center mb-3 @(delivery.Status >= 2 ? "text-success" : "text-muted")">
-                            <span class="me-2 fs-5">@(delivery.Status >= 2 ? "✓" : "○")</span>
-                            <div>
-                                <strong>Order Picked Up</strong>
+                            <div class="timeline-step @(delivery.Status >= 2 ? "completed" : delivery.Status == 1 ? "active" : "")">
+                                <div class="timeline-dot">@(delivery.Status >= 2 ? "\u2713" : "3")</div>
+                                <strong class="timeline-title">Order Picked Up</strong>
+                                <p class="timeline-desc">Food has been collected</p>
                             </div>
-                        </div>
-                        <div class="d-flex align-items-center mb-3 @(delivery.Status >= 3 ? "text-success" : "text-muted")">
-                            <span class="me-2 fs-5">@(delivery.Status >= 3 ? "✓" : "○")</span>
-                            <div>
-                                <strong>In Transit</strong>
+                            <div class="timeline-step @(delivery.Status >= 3 ? "completed" : delivery.Status == 2 ? "active" : "")">
+                                <div class="timeline-dot">@(delivery.Status >= 3 ? "\u2713" : "4")</div>
+                                <strong class="timeline-title">In Transit</strong>
+                                <p class="timeline-desc">On the way to you</p>
                             </div>
-                        </div>
-                        <div class="d-flex align-items-center mb-3 @(delivery.Status >= 4 ? "text-success" : "text-muted")">
-                            <span class="me-2 fs-5">@(delivery.Status >= 4 ? "✓" : "○")</span>
-                            <div>
-                                <strong>Delivered</strong>
+                            <div class="timeline-step @(delivery.Status >= 4 ? "completed" : delivery.Status == 3 ? "active" : "")">
+                                <div class="timeline-dot">@(delivery.Status >= 4 ? "\u2713" : "5")</div>
+                                <strong class="timeline-title">Delivered</strong>
+                                <p class="timeline-desc">Enjoy your meal!</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="col-md-4">
-            <div class="card mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">Driver Details</h5>
-                    <p><strong>Name:</strong> @delivery.DriverName</p>
-                    <p><strong>Status:</strong> <span class="badge @StatusBadge(delivery.Status)">@StatusText(delivery.Status)</span></p>
+            <div class="col-md-4">
+                <div class="card mb-3 animate-on-scroll">
+                    <div class="card-body">
+                        <h5 class="card-section-title">Driver Details</h5>
+                        <p class="mb-1 detail-row"><span class="detail-label">Name:</span> <span class="detail-value">@delivery.DriverName</span></p>
+                        <p class="mb-0 detail-row"><span class="detail-label">Status:</span> <span class="badge @StatusBadge(delivery.Status)">@StatusText(delivery.Status)</span></p>
+                    </div>
+                </div>
+
+                <div class="card mb-3 animate-on-scroll">
+                    <div class="card-body">
+                        <h5 class="card-section-title">Delivery Info</h5>
+                        <p class="mb-1 detail-row"><span class="detail-label">Address:</span> <span class="detail-value">@delivery.DeliveryAddress</span></p>
+                        @if (!string.IsNullOrEmpty(delivery.EstimatedDeliveryTime))
+                        {
+                            <p class="mb-1 detail-row"><span class="detail-label">Estimated:</span> <span class="detail-value">@DeliveryDate(delivery.EstimatedDeliveryTime)</span></p>
+                        }
+                        @if (!string.IsNullOrEmpty(delivery.CompletedAt))
+                        {
+                            <p class="mb-0 detail-row"><span class="detail-label">Delivered at:</span> <span class="detail-value">@DeliveryDate(delivery.CompletedAt)</span></p>
+                        }
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 animate-on-scroll">
+                    <a href="/order-status/@OrderId" class="btn btn-outline">Full Order Status</a>
+                    <a href="/receipt/@OrderId" class="btn btn-outline">View Receipt</a>
                 </div>
             </div>
-
-            <div class="card mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">Delivery Info</h5>
-                    <p><strong>Address:</strong> @delivery.DeliveryAddress</p>
-                    @if (!string.IsNullOrEmpty(delivery.EstimatedDeliveryTime))
-                    {
-                        <p><strong>Estimated:</strong> @delivery.EstimatedDeliveryTime</p>
-                    }
-                    @if (!string.IsNullOrEmpty(delivery.CompletedAt))
-                    {
-                        <p><strong>Delivered at:</strong> @DeliveryDate(delivery.CompletedAt)</p>
-                    }
-                </div>
-            </div>
-
-            <div class="d-grid gap-2">
-                <a href="/order-status/@OrderId" class="btn btn-outline-primary">Full Order Status</a>
-                <a href="/receipt/@OrderId" class="btn btn-outline-secondary">View Receipt</a>
-            </div>
         </div>
-    </div>
 
-    @if (delivery.Status < 4)
-    {
-        <div class="text-center mt-3">
-            <small class="text-muted">Auto-refreshing every 10 seconds...</small>
-        </div>
-    }
+        @if (delivery.Status < 4)
+        {
+            <div class="text-center mt-3">
+                <div class="spinner-border spinner-border-sm text-danger me-1" role="status"></div>
+                <small style="color:var(--text-secondary);">Auto-refreshing every 10 seconds...</small>
+            </div>
+        }
     }
 </div>
 
@@ -116,6 +133,7 @@
     [Parameter] public string OrderId { get; set; } = "";
 
     [Inject] private Services.ApiService Api { get; set; } = null!;
+    [Inject] private IJSRuntime JS { get; set; } = null!;
 
     private Models.DeliveryResponse? delivery;
     private bool isLoading = true;
@@ -126,6 +144,11 @@
         isLoading = false;
         if (delivery is not null && delivery.Status < 4)
             _ = RefreshAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("window.BurgerIAM.observeNewElements");
     }
 
     private async Task RefreshAsync()
@@ -149,16 +172,10 @@
         3 => "In Transit", 4 => "Delivered", 5 => "Failed", _ => "Unknown"
     };
 
-    private static string StatusColor(int status) => status switch
-    {
-        0 => "text-secondary", 1 => "text-info", 2 => "text-primary",
-        3 => "text-warning", 4 => "text-success", 5 => "text-danger", _ => "text-secondary"
-    };
-
     private static string StatusBadge(int status) => status switch
     {
-        0 => "bg-secondary", 1 => "bg-info", 2 => "bg-primary",
-        3 => "bg-warning text-dark", 4 => "bg-success", 5 => "bg-danger", _ => "bg-secondary"
+        0 => "badge-secondary", 1 => "badge-info", 2 => "badge-primary",
+        3 => "badge-warning", 4 => "badge-success", 5 => "badge-danger", _ => "badge-secondary"
     };
 
     private static string DeliveryDate(string dateStr) =>

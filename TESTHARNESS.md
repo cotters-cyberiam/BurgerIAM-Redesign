@@ -255,13 +255,13 @@ dotnet run --project tests/ManualTestApp -- http://localhost:5041 http://localho
 
 **Projects:** `FeedbackService.Tests`, `NotificationService.Tests`, `ReceiptService.Tests`
 
-**Tests:** 17 (7 Feedback + 6 Notification + 4 Receipt)
+**Tests:** 15 (7 Feedback + 6 Notification + 2 Receipt)
 
 | File | Tests | What It Verifies |
 |---|---|---|
 | `FeedbackGrpcServiceTests.cs` | 7 | SubmitFeedback (valid + duplicate + invalid rating), GetOrderFeedback (exists + not found), GetAverageRating (empty + with ratings) |
 | `NotificationGrpcServiceTests.cs` | 6 | GetNotifications (empty + filtered), MarkAsRead (existing + not found), GetUnreadCount, HandleOrderDelivered event handler |
-| `ReceiptServiceHandlerTests.cs` | 4 | HandlePaymentConfirmed (creates + no duplicate), GetReceipt (exists + not found) |
+| `ReceiptServiceHandlerTests.cs` | 2 | GetReceipt (exists + not found) |
 
 **How to run:**
 ```powershell
@@ -455,7 +455,7 @@ public async Task Event_Triggers_Handler()
 | 4 | DeliveryService.Tests | 9 |
 | 5 | FeedbackService.Tests | 7 |
 | 5 | NotificationService.Tests | 6 |
-| 5 | ReceiptService.Tests | 4 |
+| 5 | ReceiptService.Tests | 2 |
 | 6 | ApiGateway.Tests | 14 |
 | 6 | WasmFrontend.Tests | 20 |
-| | **Total** | **118** |
+| | **Total** | **116** |

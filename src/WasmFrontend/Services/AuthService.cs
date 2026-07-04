@@ -43,16 +43,28 @@ public sealed class AuthService
             _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
     }
 
-    public async Task<AuthResponse?> Login(string email, string password)
+    public async Task<(AuthResponse? Result, string? Error)> Login(string email, string password)
     {
-        var response = await _http.PostAsJsonAsync("/api/auth/login", new LoginRequest(email, password));
-        if (!response.IsSuccessStatusCode) return null;
+        try
+        {
+            var response = await _http.PostAsJsonAsync("/api/auth/login", new LoginRequest(email, password));
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                return (null, body?.GetValueOrDefault("error", "Invalid email or password") ?? "Invalid email or password");
+            }
 
-        var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        if (result is null) return null;
+            var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
+            if (result is null)
+                return (null, "Invalid server response");
 
-        await StoreAuthAsync(result);
-        return result;
+            await StoreAuthAsync(result);
+            return (result, null);
+        }
+        catch (Exception ex)
+        {
+            return (null, $"Connection error: {ex.Message}");
+        }
     }
 
     public async Task<string?> Register(string email, string password, string name)

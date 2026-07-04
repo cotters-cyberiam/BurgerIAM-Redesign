@@ -1,93 +1,208 @@
 @page "/"
 @attribute [AllowAnonymous]
+@implements IAsyncDisposable
 
 <PageTitle>BurgerIAM - Fast Food Ordering</PageTitle>
 
-<div class="hero-section text-white text-center mb-4 position-relative overflow-hidden" style="min-height: 420px;">
-    <img src="images/banner.png" alt="BurgerIAM" class="hero-bg-img" />
-    <div class="hero-overlay"></div>
-    <div class="container position-relative py-5" style="z-index: 2;">
-        <h1 class="display-4 fw-bold">BurgerIAM</h1>
-        <p class="lead">Delicious fast food, delivered fast.</p>
-        <a href="/menu" class="btn btn-danger btn-lg me-2">View Menu</a>
-        @if (!Auth.IsLoggedIn)
-        {
-            <a href="/register" class="btn btn-outline-light btn-lg">Get Started</a>
-        }
-        else
-        {
-            <a href="/my-orders" class="btn btn-outline-light btn-lg">My Orders</a>
-        }
+<div class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-content">
+        <div class="animate-on-scroll">
+            <div class="hero-badge">
+                <span>&#x1F525;</span> Fresh & Fast
+            </div>
+            <h1>Delicious <span class="highlight">Burgers</span>,<br />Delivered Fast</h1>
+            <p>Premium fast food made with fresh ingredients. Order online and track in real-time.</p>
+            <div class="hero-actions">
+                <a href="/menu" class="btn btn-primary btn-lg">View Menu</a>
+                @if (!Auth.IsLoggedIn)
+                {
+                    <a href="/register" class="btn btn-outline btn-lg">Get Started</a>
+                }
+                else
+                {
+                    <a href="/my-orders" class="btn btn-outline btn-lg">My Orders</a>
+                }
+            </div>
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <div class="hero-stat-value">50+</div>
+                    <div class="hero-stat-label">Menu Items</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value">15min</div>
+                    <div class="hero-stat-label">Avg. Delivery</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value">4.9</div>
+                    <div class="hero-stat-label">Customer Rating</div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <div class="container">
-    @if (averageRating is not null)
-    {
-        <div class="text-center mb-4">
-            <h3>Customer Rating</h3>
-            <p class="display-6 text-warning">
-                @(new string('★', (int)Math.Round(averageRating.AverageRating)) + new string('☆', 5 - (int)Math.Round(averageRating.AverageRating)))
-                <span class="text-muted fs-5">@averageRating.AverageRating:F1 (@averageRating.TotalReviews reviews)</span>
-            </p>
-        </div>
-    }
-
-    <h3 class="mb-3">Popular Items</h3>
     @if (isLoading)
     {
-        <div class="text-center"><div class="spinner-border" role="status"></div></div>
+        <div class="text-center mb-4">
+            <div class="skeleton skeleton-title mx-auto" style="width:200px;"></div>
+            <div class="skeleton skeleton-text mx-auto" style="width:300px;"></div>
+        </div>
+        <div class="row">
+            @for (int i = 0; i < 3; i++)
+            {
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card"><div class="skeleton skeleton-card"></div></div>
+                </div>
+            }
+        </div>
     }
     else
     {
+        @if (averageRating is not null && averageRating.TotalReviews > 0)
+        {
+            <div class="text-center mb-5 animate-on-scroll" style="margin-top:48px;">
+                <h3 class="fw-bold" style="margin-bottom:12px;">What Our Customers Say</h3>
+                <div class="star-rating d-inline-flex" style="gap:6px;font-size:2rem;">
+                    @foreach (var star in RenderStars(averageRating.AverageRating))
+                    {
+                        <span class="star-fill">
+                            <span class="star-empty">&#x2605;</span>
+                            <span class="star-filled" style="width:@(star.FillPct)%">&#x2605;</span>
+                        </span>
+                    }
+                </div>
+                <p style="color:var(--text-muted);margin-top:8px;">
+                    @averageRating.AverageRating.ToString("F1") average rating (<span class="reviews-link" @onclick="OpenReviewsPanel" role="button">@averageRating.TotalReviews reviews</span>)
+                </p>
+            </div>
+        }
+
+        <h3 class="section-title animate-on-scroll" style="margin-top:48px;">Popular Items</h3>
+        <p class="section-subtitle animate-on-scroll">Our most loved dishes</p>
+
         <div class="row">
             @foreach (var item in popularItems)
             {
-                <div class="col-md-6 col-lg-4 mb-3">
-                    <div class="card menu-card h-100">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h5 class="card-title mb-1">@item.Name</h5>
-                                    <p class="card-text text-muted small">@item.Description</p>
-                                </div>
-                                <span class="price-tag">&pound;@item.Price.ToString("F2")</span>
+                <div class="col-md-6 col-lg-4 mb-4 animate-on-scroll">
+                    <div class="menu-card h-100">
+                        <div class="menu-card-img">
+                        @if (item.Category == "Drinks" && _drinkImageMap.TryGetValue(item.Id, out var drinkImg))
+                        {
+                            <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                                <img src="@drinkImg" alt="@item.Name" class="drink-icon" />
                             </div>
-                            <a href="/menu" class="btn btn-sm btn-outline-primary mt-2">Order Now</a>
+                        }
+                        else if (item.Category == "Sides" && _sidesImageMap.TryGetValue(item.Id, out var sidesImg))
+                        {
+                            <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                                <img src="@sidesImg" alt="@item.Name" class="sides-icon" />
+                            </div>
+                        }
+                        else if (item.Category == "Burgers" && _burgerImageMap.TryGetValue(item.Id, out var burgerImg))
+                        {
+                            <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                                <img src="@burgerImg" alt="@item.Name" class="burger-icon" />
+                            </div>
+                        }
+                        else
+                        {
+                            <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:3rem;">
+                                &#x1F354;
+                            </div>
+                        }
+                        </div>
+                        <div class="menu-card-body">
+                            <h5 class="menu-card-name">@item.Name</h5>
+                            <p class="menu-card-desc">@Truncate(item.Description, 60)</p>
+                            <div class="menu-card-footer">
+                                <span class="menu-card-price">&pound;@item.Price.ToString("F2")</span>
+                                <a href="/menu" class="btn btn-primary btn-sm">Order Now</a>
+                            </div>
                         </div>
                     </div>
                 </div>
             }
         </div>
-    }
 
-    <div class="row mt-4 mb-5">
-        <div class="col-md-4 mb-3">
-            <div class="card text-center h-100">
-                <div class="card-body">
-                    <h5 class="card-title">&#127828; Quality Food</h5>
-                    <p class="card-text text-muted">Fresh ingredients, prepared with care.</p>
+        <div class="row mt-5 mb-5">
+            <div class="col-md-4 mb-3 animate-on-scroll animate-left">
+                <div class="stat-card">
+                    <div class="stat-icon">&#x1F354;</div>
+                    <h5 class="stat-title">Quality Food</h5>
+                    <p class="stat-desc">Fresh ingredients, prepared with care.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3 animate-on-scroll">
+                <div class="stat-card">
+                    <div class="stat-icon">&#x1F69A;</div>
+                    <h5 class="stat-title">Fast Delivery</h5>
+                    <p class="stat-desc">Track your order in real-time.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3 animate-on-scroll animate-right">
+                <div class="stat-card">
+                    <div class="stat-icon">&#x1F4B3;</div>
+                    <h5 class="stat-title">Easy Payment</h5>
+                    <p class="stat-desc">Secure checkout with multiple options.</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-4 mb-3">
-            <div class="card text-center h-100">
-                <div class="card-body">
-                    <h5 class="card-title">&#128666; Fast Delivery</h5>
-                    <p class="card-text text-muted">Track your order in real-time.</p>
-                </div>
+    }
+</div>
+
+@if (_showReviewsPanel && _reviews.Count > 0)
+{
+    <div class="reviews-overlay" @onclick="CloseReviewsPanel">
+        <div class="reviews-panel" @onclick:stopPropagation>
+            <h3 class="fw-bold" style="margin:0;">Customer Reviews</h3>
+            <div style="color:var(--text-secondary);font-size:1.1rem;margin:6px 0 0;display:flex;align-items:center;gap:8px;">
+                <span style="font-size:1.4rem;display:inline-flex;gap:3px;">
+                    @foreach (var star in RenderStars(averageRating?.AverageRating ?? 0))
+                    {
+                        <span class="star-fill">
+                            <span class="star-empty">&#x2605;</span>
+                            <span class="star-filled" style="width:@(star.FillPct)%">&#x2605;</span>
+                        </span>
+                    }
+                </span>
+                @averageRating?.AverageRating.ToString("F1") &mdash; @_reviews.Count reviews
             </div>
-        </div>
-        <div class="col-md-4 mb-3">
-            <div class="card text-center h-100">
-                <div class="card-body">
-                    <h5 class="card-title">&#128179; Easy Payment</h5>
-                    <p class="card-text text-muted">Secure checkout with multiple options.</p>
+            <div class="reviews-carousel">
+                <div class="reviews-track" id="reviewsTrack" data-offset="0">
+                    @foreach (var review in _reviews)
+                    {
+                        <div class="review-card">
+                            <div class="review-card-stars">
+                                @for (int s = 1; s <= 5; s++)
+                                {
+                                    @if (s <= review.Rating)
+                                    {
+                                        <span>&#x2605;</span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:rgba(255,255,255,0.15);">&#x2605;</span>
+                                    }
+                                }
+                            </div>
+                            @if (!string.IsNullOrEmpty(review.Comment))
+                            {
+                                <p class="review-card-comment">@review.Comment</p>
+                            }
+                            else
+                            {
+                                <p class="review-card-empty">No comment</p>
+                            }
+                            <div class="review-card-date">@FormatDate(review.CreatedAt)</div>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
     </div>
-</div>
+}
 
 @code {
     [Inject] private Services.ApiService Api { get; set; } = null!;
@@ -96,12 +211,100 @@
     private List<Models.MenuItemResponse> popularItems = [];
     private Models.AverageRatingResponse? averageRating;
     private bool isLoading = true;
+    private readonly Dictionary<string, string> _drinkImageMap = [];
+    private static readonly string[] _drinkImages = ["/images/drink1.png", "/images/drink2.png"];
+    private readonly Dictionary<string, string> _sidesImageMap = [];
+    private static readonly string[] _sidesImages = ["/images/sides.png", "/images/sides1.png", "/images/sides3.png"];
+    private readonly Dictionary<string, string> _burgerImageMap = [];
+    private static readonly string[] _burgerImages = ["/images/burgerImage1.png", "/images/burgerImage2.png"];
+    private List<Models.FeedbackDetail> _reviews = [];
+    private bool _showReviewsPanel;
 
     protected override async Task OnInitializedAsync()
     {
-        var menu = await Api.GetMenuAsync();
+        var menuTask = Api.GetMenuAsync();
+        var ratingTask = Api.GetAverageRatingAsync();
+        await Task.WhenAll(menuTask, ratingTask);
+        var menu = menuTask.Result;
         popularItems = menu.Where(i => i.IsAvailable).Take(6).ToList();
-        averageRating = await Api.GetAverageRatingAsync();
+        averageRating = ratingTask.Result;
+        var drinks = menu.Where(i => i.Category == "Drinks").ToList();
+        for (int i = 0; i < drinks.Count; i++)
+        {
+            _drinkImageMap[drinks[i].Id] = _drinkImages[i % _drinkImages.Length];
+        }
+        var sides = menu.Where(i => i.Category == "Sides").ToList();
+        for (int i = 0; i < sides.Count; i++)
+        {
+            _sidesImageMap[sides[i].Id] = _sidesImages[i % _sidesImages.Length];
+        }
+        var burgers = menu.Where(i => i.Category == "Burgers").ToList();
+        for (int i = 0; i < burgers.Count; i++)
+        {
+            _burgerImageMap[burgers[i].Id] = _burgerImages[i % _burgerImages.Length];
+        }
         isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("window.BurgerIAM.observeNewElements");
+        if (_showReviewsPanel)
+        {
+            await JS.InvokeVoidAsync("window.BurgerIAM.initReviewsCarousel", _reviews.Count);
+        }
+    }
+
+    private async Task OpenReviewsPanel()
+    {
+        if (_reviews.Count == 0)
+        {
+            _reviews = await Api.GetAllFeedbackAsync(50);
+        }
+        _showReviewsPanel = true;
+        StateHasChanged();
+    }
+
+    private async Task CloseReviewsPanel()
+    {
+        _showReviewsPanel = false;
+        await JS.InvokeVoidAsync("window.BurgerIAM.destroyReviewsCarousel");
+    }
+
+    private static IEnumerable<StarFill> RenderStars(double rating)
+    {
+        for (int s = 1; s <= 5; s++)
+        {
+            if (s <= Math.Floor(rating))
+            {
+                yield return new StarFill(100);
+            }
+            else if (s > Math.Ceiling(rating))
+            {
+                yield return new StarFill(0);
+            }
+            else
+            {
+                var fraction = rating - Math.Floor(rating);
+                var rounded = Math.Ceiling(fraction * 4) / 4.0;
+                yield return new StarFill((int)(rounded * 100));
+            }
+        }
+    }
+
+    private record StarFill(int FillPct);
+
+    private static string Truncate(string? value, int max) =>
+        !string.IsNullOrEmpty(value) && value.Length > max ? value[..max] + "..." : value ?? "";
+
+    private static string FormatDate(string iso) =>
+        DateTime.TryParse(iso, out var dt) ? dt.ToString("MMM dd, yyyy") : iso;
+
+    [Inject] private IJSRuntime JS { get; set; } = null!;
+
+    public async ValueTask DisposeAsync()
+    {
+        try { await JS.InvokeVoidAsync("window.BurgerIAM.closeMobileNav"); } catch { }
+        try { await JS.InvokeVoidAsync("window.BurgerIAM.destroyReviewsCarousel"); } catch { }
     }
 }

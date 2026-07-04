@@ -1,47 +1,105 @@
 @page "/menu"
 @attribute [AllowAnonymous]
+@implements IDisposable
 
 <PageTitle>Menu - BurgerIAM</PageTitle>
 
 <div class="container mt-4">
-    <h2 class="mb-4">Our Menu</h2>
+    <h2 class="section-title animate-on-scroll">Our Menu</h2>
+    <p class="section-subtitle animate-on-scroll">Freshly prepared, delivered fast</p>
 
     @if (isLoading)
     {
-        <div class="text-center"><div class="spinner-border" role="status"></div></div>
+        <div class="row">
+            @for (int i = 0; i < 6; i++)
+            {
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="skeleton skeleton-image"></div>
+                            <div class="skeleton skeleton-title mt-2"></div>
+                            <div class="skeleton skeleton-text"></div>
+                            <div class="skeleton skeleton-text short"></div>
+                            <div class="skeleton skeleton-button mt-2"></div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
     }
     else
     {
+        <div class="category-pills mb-4 animate-on-scroll">
+            <button class="category-pill @(selectedCategory == null ? "active" : "")" @onclick="() => SelectCategory(null)">All</button>
+            @foreach (var cat in categories)
+            {
+                <button class="category-pill @(selectedCategory == cat ? "active" : "")" @onclick="() => SelectCategory(cat)">@cat</button>
+            }
+        </div>
+
         @foreach (var category in groupedItems)
         {
-            <h4 class="mt-4 mb-3 text-danger">@category.Key</h4>
+            <h4 class="mt-4 mb-3 animate-on-scroll" style="color:var(--primary);font-weight:700;">
+                @category.Key
+            </h4>
             <div class="row">
                 @foreach (var item in category)
                 {
-                    <div class="col-md-6 col-lg-4 mb-3">
-                        <div class="card menu-card h-100 @(item.IsAvailable ? "" : "opacity-50")">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <h5 class="card-title mb-1">@item.Name</h5>
-                                        <p class="card-text text-muted small">@item.Description</p>
-                                    </div>
-                                    <span class="price-tag">&pound;@item.Price.ToString("F2")</span>
-                                </div>
-                                @if (item.IsAvailable)
+                    <div class="col-md-6 col-lg-4 mb-3 animate-on-scroll">
+                        <div class="menu-card h-100 @(item.IsAvailable ? "" : "opacity-50")">
+                            <div class="menu-card-img">
+                                @if (item.Category == "Drinks" && _drinkImageMap.TryGetValue(item.Id, out var drinkImg))
                                 {
-                                    <button @onclick="() => AddToCart(item)" class="btn btn-sm btn-outline-primary mt-2">
-                                        Add to Cart
-                                    </button>
+                                    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                                        <img src="@drinkImg" alt="@item.Name" class="drink-icon" />
+                                    </div>
+                                }
+                                else if (item.Category == "Sides" && _sidesImageMap.TryGetValue(item.Id, out var sidesImg))
+                                {
+                                    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                                        <img src="@sidesImg" alt="@item.Name" class="sides-icon" />
+                                    </div>
+                                }
+                                else if (item.Category == "Burgers" && _burgerImageMap.TryGetValue(item.Id, out var burgerImg))
+                                {
+                                    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                                        <img src="@burgerImg" alt="@item.Name" class="burger-icon" />
+                                    </div>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-secondary mt-2">Unavailable</span>
+                                    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:3rem;">
+                                        &#x1F354;
+                                    </div>
                                 }
+                            </div>
+                            <div class="menu-card-body">
+                                <h5 class="menu-card-name">@item.Name</h5>
+                                <p class="menu-card-desc">@item.Description</p>
+                                <div class="menu-card-footer">
+                                    <span class="menu-card-price">&pound;@item.Price.ToString("F2")</span>
+                                    @if (item.IsAvailable)
+                                    {
+                                        <button @onclick="() => AddToCart(item)" class="btn btn-primary btn-sm">
+                                            Add to Cart
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-secondary">Unavailable</span>
+                                    }
+                                </div>
                             </div>
                         </div>
                     </div>
                 }
+            </div>
+        }
+
+        @if (!groupedItems.Any())
+        {
+            <div class="text-center py-5">
+                <h4 style="color:var(--text-muted);">No menu items available</h4>
             </div>
         }
     }
@@ -50,20 +108,79 @@
 @code {
     [Inject] private Services.ApiService Api { get; set; } = null!;
     [Inject] private Services.CartService Cart { get; set; } = null!;
+    [Inject] private Services.AuthService Auth { get; set; } = null!;
+    [Inject] private NavigationManager Nav { get; set; } = null!;
+    [Inject] private IJSRuntime JS { get; set; } = null!;
 
     private List<Models.MenuItemResponse> items = [];
     private bool isLoading = true;
+    private string? selectedCategory;
+    private readonly Dictionary<string, string> _drinkImageMap = [];
+    private static readonly string[] _drinkImages = ["/images/drink1.png", "/images/drink2.png"];
+    private readonly Dictionary<string, string> _sidesImageMap = [];
+    private static readonly string[] _sidesImages = ["/images/sides.png", "/images/sides1.png", "/images/sides3.png"];
+    private readonly Dictionary<string, string> _burgerImageMap = [];
+    private static readonly string[] _burgerImages = ["/images/burgerImage1.png", "/images/burgerImage2.png"];
 
-    private ILookup<string, Models.MenuItemResponse> groupedItems => items.Where(i => i.IsAvailable || !string.IsNullOrEmpty(i.Category)).ToLookup(i => i.Category);
+    private List<string> categories => items
+        .Where(i => !string.IsNullOrEmpty(i.Category))
+        .Select(i => i.Category!)
+        .Distinct()
+        .ToList();
+
+    private ILookup<string, Models.MenuItemResponse> groupedItems =>
+        items
+            .Where(i => !string.IsNullOrEmpty(i.Category))
+            .Where(i => selectedCategory == null || i.Category == selectedCategory)
+            .ToLookup(i => i.Category!);
 
     protected override async Task OnInitializedAsync()
     {
         items = await Api.GetMenuAsync();
+        var drinks = items.Where(i => i.Category == "Drinks").ToList();
+        for (int i = 0; i < drinks.Count; i++)
+        {
+            _drinkImageMap[drinks[i].Id] = _drinkImages[i % _drinkImages.Length];
+        }
+        var sides = items.Where(i => i.Category == "Sides").ToList();
+        for (int i = 0; i < sides.Count; i++)
+        {
+            _sidesImageMap[sides[i].Id] = _sidesImages[i % _sidesImages.Length];
+        }
+        var burgers = items.Where(i => i.Category == "Burgers").ToList();
+        for (int i = 0; i < burgers.Count; i++)
+        {
+            _burgerImageMap[burgers[i].Id] = _burgerImages[i % _burgerImages.Length];
+        }
         isLoading = false;
     }
 
-    private void AddToCart(Models.MenuItemResponse item)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        await JS.InvokeVoidAsync("window.BurgerIAM.observeNewElements");
+    }
+
+    private void SelectCategory(string? cat)
+    {
+        selectedCategory = cat;
+        StateHasChanged();
+    }
+
+    private async void AddToCart(Models.MenuItemResponse item)
+    {
+        if (!Auth.IsLoggedIn)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
         Cart.AddItem(new Models.CartItem(item.Id, item.Name, item.Price, 1));
+        await JS.InvokeVoidAsync("window.BurgerIAM.animateCartBadge", Cart.TotalItems);
+        await JS.InvokeVoidAsync("window.BurgerIAM.showToast", $"{item.Name} added to cart!", "success");
+    }
+
+    public void Dispose()
+    {
+        try { _ = JS.InvokeVoidAsync("window.BurgerIAM.closeMobileNav"); } catch { }
     }
 }

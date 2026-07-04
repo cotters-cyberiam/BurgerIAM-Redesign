@@ -3,31 +3,48 @@
 
 <PageTitle>Login - BurgerIAM</PageTitle>
 
-<div class="row justify-content-center mt-5">
-    <div class="col-md-6 col-lg-4">
-        <div class="card shadow">
-            <div class="card-body p-4">
-                <h3 class="text-center mb-4">Sign In</h3>
+<div class="container">
+    <div class="row justify-content-center" style="padding-top:80px;">
+        <div class="col-md-6 col-lg-4">
+            <div class="card animate-on-scroll">
+                <div class="card-body" style="padding:32px;">
+                    <div class="text-center mb-4">
+                        <div style="font-size:2.5rem;margin-bottom:8px;">&#x1F354;</div>
+                        <h3 class="fw-bold">Welcome Back</h3>
+                        <p style="color:var(--text-muted);">Sign in to your account</p>
+                    </div>
 
-                @if (!string.IsNullOrEmpty(error))
-                {
-                    <div class="alert alert-danger">@error</div>
-                }
+                    @if (!string.IsNullOrEmpty(error))
+                    {
+                        <div class="toast error" style="margin-bottom:16px;animation:none;border-left-color:var(--primary);">
+                            <span>&#x274C;</span>
+                            <span>@error</span>
+                        </div>
+                    }
 
-                <div class="mb-3">
-                    <label class="form-label">Email</label>
-                    <InputText @bind-Value="email" class="form-control" placeholder="your@email.com" />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Password</label>
-                    <InputText @bind-Value="password" type="password" class="form-control" placeholder="Password" />
-                </div>
-                <button @onclick="HandleLogin" class="btn btn-primary w-100" disabled="@isLoading">
-                    @(isLoading ? "Signing in..." : "Sign In")
-                </button>
+                    <div class="form-float">
+                        <InputText @bind-Value="email" placeholder=" " id="loginEmail" />
+                        <label for="loginEmail">Email</label>
+                    </div>
+                    <div class="form-float">
+                        <InputText @bind-Value="password" type="password" placeholder=" " id="loginPassword" />
+                        <label for="loginPassword">Password</label>
+                    </div>
+                    <button @onclick="HandleLogin" class="btn btn-primary btn-block btn-lg" disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            <span>Signing in...</span>
+                        }
+                        else
+                        {
+                            <span>Sign In</span>
+                        }
+                    </button>
 
-                <div class="text-center mt-3">
-                    <p class="mb-0">Don't have an account? <a href="/register">Register</a></p>
+                    <div class="text-center mt-4">
+                        <p class="mb-0" style="color:var(--text-muted);">Don't have an account? <a href="/register" class="fw-bold" style="color:var(--primary);">Register</a></p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -36,7 +53,9 @@
 
 @code {
     [Inject] private Services.AuthService Auth { get; set; } = null!;
+    [Inject] private Services.CartService Cart { get; set; } = null!;
     [Inject] private NavigationManager Nav { get; set; } = null!;
+    [Inject] private IJSRuntime JS { get; set; } = null!;
 
     private string email = "";
     private string password = "";
@@ -49,16 +68,24 @@
             Nav.NavigateTo("/");
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("window.BurgerIAM.observeNewElements");
+    }
+
     private async Task HandleLogin()
     {
         isLoading = true;
         error = null;
 
-        var result = await Auth.Login(email, password);
+        var (result, loginError) = await Auth.Login(email, password);
         if (result is not null)
+        {
+            Cart.Clear();
             Nav.NavigateTo("/menu");
+        }
         else
-            error = "Invalid email or password";
+            error = loginError ?? "Invalid email or password";
 
         isLoading = false;
     }

@@ -136,20 +136,36 @@ if (Directory.Exists(wasmFrontendPath))
 
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "ApiGateway" }));
 
-app.MapPost("/api/auth/login", async (ProtoIdentity.LoginRequest request, ProtoIdentity.IdentityService.IdentityServiceClient client) =>
+app.MapPost("/api/auth/login", async (LoginRequestDto dto, ProtoIdentity.IdentityService.IdentityServiceClient client) =>
 {
-    var response = await client.LoginAsync(request);
-    if (!string.IsNullOrEmpty(response.Error))
-        return Results.BadRequest(new { error = response.Error });
-    return Results.Ok(new { token = response.Token, userId = response.UserId, email = response.Email, name = response.Name, role = response.Role });
+    try
+    {
+        var protoReq = new ProtoIdentity.LoginRequest { Email = dto.Email, Password = dto.Password };
+        var response = await client.LoginAsync(protoReq);
+        if (!string.IsNullOrEmpty(response.Error))
+            return Results.BadRequest(new { error = response.Error });
+        return Results.Ok(new { token = response.Token, userId = response.UserId, email = response.Email, name = response.Name, role = response.Role });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { error = $"Login failed: {ex.Message}" });
+    }
 });
 
-app.MapPost("/api/auth/register", async (ProtoIdentity.RegisterRequest request, ProtoIdentity.IdentityService.IdentityServiceClient client) =>
+app.MapPost("/api/auth/register", async (RegisterRequestDto dto, ProtoIdentity.IdentityService.IdentityServiceClient client) =>
 {
-    var response = await client.RegisterAsync(request);
-    if (!string.IsNullOrEmpty(response.Error))
-        return Results.BadRequest(new { error = response.Error });
-    return Results.Ok(new { userId = response.UserId });
+    try
+    {
+        var protoReq = new ProtoIdentity.RegisterRequest { Email = dto.Email, Password = dto.Password, Name = dto.Name };
+        var response = await client.RegisterAsync(protoReq);
+        if (!string.IsNullOrEmpty(response.Error))
+            return Results.BadRequest(new { error = response.Error });
+        return Results.Ok(new { userId = response.UserId });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { error = $"Registration failed: {ex.Message}" });
+    }
 });
 
 app.MapGet("/api/menu", async (ProtoMenu.MenuService.MenuServiceClient client) =>
@@ -214,8 +230,19 @@ app.MapPost("/api/orders", async (CreateOrderDto dto,
 
         await kitchenClient.SeedKitchenOrderAsync(new ProtoKitchen.SeedKitchenOrderRequest { OrderId = order.Id });
 
-        var receiptHttp = httpFactory.CreateClient();
-        await receiptHttp.PostAsync($"{GetServiceUrl("Receipt")}/receipts?orderId={order.Id}&customerId={order.CustomerId}&amount={order.TotalAmount}", null);
+        try
+        {
+            var receiptHttp = httpFactory.CreateClient();
+            var itemsPayload = order.Items.Select(i => new { menuItemId = i.MenuItemId, itemName = i.ItemName, quantity = i.Quantity, unitPrice = i.UnitPrice }).ToList();
+            var receiptBody = new { orderId = order.Id, customerId = order.CustomerId, customerEmail = order.CustomerEmail, totalAmount = order.TotalAmount, itemsJson = JsonSerializer.Serialize(itemsPayload) };
+            var receiptResponse = await receiptHttp.PostAsJsonAsync($"{GetServiceUrl("Receipt")}/receipts", receiptBody);
+            if (!receiptResponse.IsSuccessStatusCode)
+                Console.WriteLine($"[WARN] Receipt creation failed: {await receiptResponse.Content.ReadAsStringAsync()}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[WARN] Receipt creation error: {ex.Message}");
+        }
 
         await progress.EnqueueOrderAsync(order.Id);
 
@@ -382,6 +409,12 @@ app.MapGet("/api/feedback/rating/average", async (ProtoFeedback.FeedbackService.
     return Results.Ok(rating);
 });
 
+app.MapGet("/api/feedback/all", async (int? limit, ProtoFeedback.FeedbackService.FeedbackServiceClient client) =>
+{
+    var response = await client.GetAllFeedbackAsync(new ProtoFeedback.GetAllFeedbackRequest { Limit = limit ?? 50 });
+    return Results.Ok(response.Feedbacks);
+});
+
 app.MapGet("/api/receipts/{orderId}", async (string orderId, IHttpClientFactory httpFactory) =>
 {
     var httpClient = httpFactory.CreateClient("Receipt");
@@ -390,8 +423,8 @@ app.MapGet("/api/receipts/{orderId}", async (string orderId, IHttpClientFactory 
         var response = await httpClient.GetAsync($"/receipts/{orderId}");
         if (!response.IsSuccessStatusCode)
             return Results.NotFound(new { error = $"Receipt for order {orderId} not found" });
-        var html = await response.Content.ReadAsStringAsync();
-        return Results.Content(html, "text/html");
+        var json = await response.Content.ReadAsStringAsync();
+        return Results.Content(json, "application/json", Encoding.UTF8);
     }
     catch
     {
@@ -437,5 +470,7 @@ if (Directory.Exists(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot")))
 
 app.Run();
 
+public record LoginRequestDto(string Email, string Password);
+public record RegisterRequestDto(string Email, string Password, string Name);
 public record CreateOrderItemDto(string MenuItemId, string ItemName, int Quantity, double UnitPrice);
 public record CreateOrderDto(string CustomerId, string CustomerEmail, List<CreateOrderItemDto> Items, string DeliveryAddress);

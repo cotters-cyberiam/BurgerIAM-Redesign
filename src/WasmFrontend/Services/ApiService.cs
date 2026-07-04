@@ -138,11 +138,23 @@ public sealed class ApiService
         }
     }
 
-    public async Task<string?> GetReceiptHtmlAsync(string orderId)
+    public async Task<List<FeedbackDetail>> GetAllFeedbackAsync(int limit = 50)
     {
         try
         {
-            return await _http.GetStringAsync($"/api/receipts/{orderId}");
+            return await _http.GetFromJsonAsync<List<FeedbackDetail>>($"/api/feedback/all?limit={limit}") ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    public async Task<ReceiptDetail?> GetReceiptAsync(string orderId)
+    {
+        try
+        {
+            return await _http.GetFromJsonAsync<ReceiptDetail>($"/api/receipts/{orderId}");
         }
         catch
         {

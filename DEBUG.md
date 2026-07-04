@@ -24,6 +24,20 @@ This file documents issues encountered during development and their resolutions.
 
 ---
 
+## 2026-06-29 — Menu and order tracking pages don't display (content invisible)
+
+**Problem**: The Menu page and Order Tracking page appeared blank — content was rendered in the DOM but remained invisible. All CSS styles and HTML structure were correct.
+
+**Root cause**: Blazor's `IJSRuntime.InvokeVoidAsync("window.BurgerIAM.xxx")` calls JS methods without object context, so `this` resolves to `window`, not `window.BurgerIAM`. All methods using `this` (e.g., `this.observer`, `this.initScrollAnimations()`) failed silently. Since all page content is wrapped in `.animate-on-scroll` (which starts at `opacity: 0`), the IntersectionObserver never triggered, leaving everything at `opacity: 0`.
+
+**Fix**: Two changes:
+1. Rewrote every `window.BurgerIAM` method to capture `var self = window.BurgerIAM` at the top and use `self` instead of `this`.
+2. Made scroll animations fail-safe: `.animate-on-scroll` only applies `opacity: 0` when parent has `.js-ready` class (added by JS on load). If JS fails or the IntersectionObserver doesn't fire, content remains visible by default.
+
+**Files**: `src/WasmFrontend/wwwroot/js/app.js`, `src/WasmFrontend/Pages/Menu.razor`, `src/WasmFrontend/wwwroot/css/app.css`
+
+---
+
 ## 2026-06-25 — Delivery tracking page shows HTML entity codes instead of emoji
 
 **Problem**: The delivery tracking page displayed literal text `&#127881;` instead of the party popper emoji.
@@ -34,6 +48,45 @@ This file documents issues encountered during development and their resolutions.
 
 **Files**: `src/WasmFrontend/Pages/DeliveryTracking.razor`
 # Debug Log
+
+## Running Services for Testing
+
+Start all required services (run from repo root):
+
+```powershell
+# Kill anything on used ports first
+foreach ($port in @(5000,5041,5051,5061,5071)) {
+    Get-Process -Id (Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue).OwningProcess -ErrorAction SilentlyContinue |
+        Stop-Process -Force -ErrorAction SilentlyContinue
+}
+Start-Sleep 2
+
+# Start each service in a new window
+$services = @(
+    @{Name="ApiGateway";     Port=5000; Dir="src/ApiGateway"}
+    @{Name="IdentityService";Port=5041; Dir="src/IdentityService"}
+    @{Name="MenuService";    Port=5051; Dir="src/MenuService"}
+    @{Name="OrderService";   Port=5061; Dir="src/OrderService"}
+    @{Name="PaymentService"; Port=5071; Dir="src/PaymentService"}
+)
+
+foreach ($svc in $services) {
+    $log = "$($svc.Name).log"
+    Start-Process -WindowStyle Normal -FilePath "dotnet" `
+        -ArgumentList "run","--no-build","--urls","http://localhost:$($svc.Port)" `
+        -WorkingDirectory (Join-Path $PWD.Path $svc.Dir) `
+        -RedirectStandardOutput $log -RedirectStandardError $log
+    Start-Sleep 1
+}
+```
+
+Then browse to `http://localhost:5000`. Use **Ctrl+Shift+R** (hard refresh) to bypass Blazor WASM cache and pick up new frontend files.
+
+To run a single service: `dotnet run --project src/<ServiceName> --urls http://localhost:<port>`
+
+---
+
+
 
 This file documents issues encountered during development and their resolutions. Refer here when troubleshooting similar problems.
 
@@ -262,3 +315,148 @@ orderReq.Items.AddRange(dto.Items.Select(i => new ProtoOrder.OrderItem { ... }))
 - Wrapped `ApiService.CreateOrderAsync()`, `ProcessPaymentAsync()`, `SubmitFeedbackAsync()`, and `GetMenuAsync()` in `try/catch` returning `null`/empty on failure (matching the pattern of all other methods).
 - Wrapped `Checkout.razor.PlaceOrder()` body in `try/catch` with user-friendly error display.
 - Added `try/catch` to ApiGateway `POST /api/orders` endpoint returning `BadRequest` on failure (matching all other endpoints).
+
+---
+
+## 2026-06-30 — Menu page blank (no items visible) after UX redesign
+
+**Problem**: After the UX redesign, the Menu page appeared blank — the page loaded but no menu items were visible. The data was being fetched correctly from the API but content was not displayed.
+
+**Root cause**: The scroll-animation system uses `IntersectionObserver` to add `.animate-visible` class to `.animate-on-scroll` elements (which start at `opacity: 0`). The `OnAfterRenderAsync` in each page called `window.BurgerIAM.observeNewElements()` only on first render (`if (firstRender)`). However, on first render, skeleton loaders are shown (no `.animate-on-scroll`). When the API data loads and actual items re-render, `firstRender` is `false`, so `observeNewElements` is never called. The items stay at `opacity: 0` permanently.
+
+**Fix**: Removed the `if (firstRender)` guard from `OnAfterRenderAsync` in all pages so `observeNewElements()` runs on every render. The JS method already deduplicates by using the `:not(.animate-visible)` selector.
+
+**Files**: `src/WasmFrontend/Pages/Menu.razor`, `Home.razor`, `Checkout.razor`, `OrderStatus.razor`, `MyOrders.razor`, `Cart.razor`, `DeliveryTracking.razor`, `Feedback.razor`, `Login.razor`, `Receipt.razor`, `Register.razor`
+
+---
+
+## 2026-06-30 — Delivery tracking text unreadable (dark theme contrast)
+
+**Problem**: Several readability issues across the delivery tracking, order status, checkout, cart, and feedback pages:
+- Card backgrounds at 4% white were nearly invisible against the dark page background
+- Timeline titles for completed steps and all timeline descriptions used `text-muted` (40% white)
+- Section headings were plain white with no visual hierarchy
+- Detail labels and values had no consistent styling pattern
+- Estimated delivery times displayed as raw ISO datetime strings (`2026-06-29T13:05:41.1753143`)
+- Empty state text and auto-refresh indicators used dim 40% white text
+
+**Fix** (multi-commit):
+1. Card background 4% → 7%, borders 8% → 12% for visible containers
+2. Added `.card-section-title` class: amber accent (`var(--accent)`), weight 700, bottom border — applied to all card section headings across DeliveryTracking, OrderStatus, Checkout, Cart, Feedback
+3. Added `.detail-label` (70% white, weight 600, min-width 90px) and `.detail-value` (white, weight 500) for consistent label/value pairs
+4. Formatted `EstimatedDeliveryTime` using `DeliveryDate()`/`OrderDate()` — converts ISO string to `"MMM dd, yyyy HH:mm"` format
+5. Bumped all `var(--text-muted)` content references to `var(--text-secondary)` (45% → 70% white): auto-refresh text, empty states, order metadata, quantity labels
+6. Changed timeline completed step titles from `text-muted` to green `#2ecc71`
+7. Added `?v=2` cache-buster to CSS link to bypass aggressive Blazor WASM caching
+8. Removed stale `.br`/`.gz` compressed CSS files (also deleted stale copies that reappear)
+
+**Files**:
+- `src/WasmFrontend/wwwroot/css/app.css` — card colors, `.card-section-title`, `.detail-label`, `.detail-value`, timeline colors
+- `src/WasmFrontend/wwwroot/index.html` — cache-busting CSS version
+- `src/WasmFrontend/Pages/DeliveryTracking.razor` — card-section-title, detail-label/value, DeliveryDate formatting
+- `src/WasmFrontend/Pages/OrderStatus.razor` — card-section-title, detail-label/value, OrderDate formatting
+- `src/WasmFrontend/Pages/Checkout.razor` — card-section-title, bumped text colors
+- `src/WasmFrontend/Pages/Cart.razor` — card-section-title, bumped text colors
+- `src/WasmFrontend/Pages/Feedback.razor` — card-section-title
+
+---
+
+## 2026-06-30 — Receipt page white background clashes with dark theme
+
+**Problem**: The receipt page displayed a stark white iframe on the dark-themed site. The `BuildReceiptHtml` method in ReceiptService generated light-themed HTML (white background, `#333` text, `#eee` borders, `#666` muted text), and the `receipt-frame` CSS explicitly set `background: white`.
+
+**Fix** (commit `ea60ebd`):
+- Rewrote `BuildReceiptHtml` with full dark theme matching the BurgerIAM design system:
+  - Page background `#0d0d1a` with `Plus Jakarta Sans` font
+  - Gradient header (`#e63946` → `#f4a261`) matching the brand logo style
+  - Card container using the same pattern as site cards: `rgba(255,255,255,0.04)` background, `rgba(255,255,255,0.08)` border, `16px` border-radius
+  - Muted labels at 50% white (`rgba(255,255,255,0.5)`), values in full white with weight 600
+  - Total amount in large red (`#e63946`) 32px bold
+  - Footer gradient brand name with muted thank-you text
+  - Date format changed from `"yyyy-MM-dd HH:mm"` to `"MMM dd, yyyy HH:mm"` for readability
+- Updated `.receipt-frame` CSS: removed `background: white`, set to `transparent`
+- Bumped empty state heading/text on Receipt.razor from `text-muted` to `text-secondary`
+
+**Files**:
+- `src/ReceiptService/Program.cs` — `BuildReceiptHtml` dark theme redesign
+- `src/WasmFrontend/wwwroot/css/app.css` — `.receipt-frame` background fix
+- `src/WasmFrontend/Pages/Receipt.razor` — empty state text color
+
+---
+
+## 2026-06-30 — Sign-in fails silently with generic "Invalid email or password"
+
+**Problem**: Two compounding issues prevented sign-in from working or giving useful feedback:
+1. `ApiGateway` login/register endpoints used protobuf generated types (`ProtoIdentity.LoginRequest`, `ProtoIdentity.RegisterRequest`) as Minimal API body parameters. The same pattern broke `CreateOrderRequest` before (the `RepeatedField<T>` collection was getter-only). For simple string fields the risk is lower but still fragile.
+2. No exception handling around the gRPC call in `/api/auth/login`. If `IdentityService` was down, the Gateway returned a raw 500. The frontend then discarded the error body and showed "Invalid email or password" for every failure — network errors, wrong credentials, service down, all looked the same.
+
+**Root cause**:  
+- Protobuf message types have non-standard property setters (`pb::ProtoPreconditions.CheckNotNull`) and the `IMessage` interface adds overhead that `System.Text.Json` wasn't designed to handle. The earlier `CreateOrderRequest` workaround (2026-06-24) proved that plain DTOs are safer for REST binding.
+- The login endpoint was the only high-traffic endpoint with zero exception handling — every other `RequireAuthorization()` gRPC endpoint had try-catch, but `/api/auth/login` and `/api/auth/register` did not.
+- `AuthService.Login()` didn't read the response body on error — it just returned `null`.
+
+**Fix**:
+- Created `LoginRequestDto` and `RegisterRequestDto` plain records in `ApiGateway/Program.cs`.
+- Replaced protobuf parameter binding with DTOs, then manually mapped to protobuf types before the gRPC call (same pattern as `CreateOrderDto`).
+- Wrapped the gRPC calls in `try-catch` so connectivity errors return `400 BadRequest { error: "..." }` instead of a raw 500.
+- `AuthService.Login()` now reads the response body's `error` field on non-2xx and returns it to the UI. The `Login` method signature changed from `Task<AuthResponse?>` to `Task<(AuthResponse? Result, string? Error)>`.
+- `Login.razor` displays the actual server error message instead of the hardcoded string.
+
+**Files**: `src/ApiGateway/Program.cs`, `src/WasmFrontend/Services/AuthService.cs`, `src/WasmFrontend/Pages/Login.razor`
+
+---
+
+## 2026-07-03 — Unauthenticated users can add items to cart (ghost cart)
+
+**Problem**: The Menu page (`[AllowAnonymous]`) allowed any unauthenticated user to click "Add to Cart". The `CartService` accepted items regardless of auth state. Since `Cart.razor` and `Checkout.razor` require `[Authorize]`, the items accumulated invisibly. When the user finally logged in, the cart was full of stale items from before authentication — or items added during a previous anonymous session were still there.
+
+**Root cause**: Two compounding issues:
+1. `Menu.razor.AddToCart()` had no auth check — it called `Cart.AddItem()` unconditionally
+2. `Login.razor` never cleared the cart on successful login — old items persisted across sessions
+
+**Fix**:
+1. `Menu.razor.AddToCart()` now checks `Auth.IsLoggedIn` first. If not logged in, it redirects to `/login` without adding the item.
+2. `Login.razor.HandleLogin()` calls `Cart.Clear()` immediately after successful authentication, ensuring every new session starts with an empty cart.
+
+**Files**: `src/WasmFrontend/Pages/Menu.razor`, `src/WasmFrontend/Pages/Login.razor`
+
+---
+
+## 2026-07-03 — Receipt shows no items and no prices (race with event-driven creation)
+
+**Problem**: After placing an order, the receipt page displayed an empty items list and zero/empty prices even though the order had items with correct prices.
+
+**Root cause**: Dual receipt creation paths (issue #6 in issues.md). The `PaymentConfirmedEvent` published during `ProcessPaymentAsync` triggered `ReceiptService.EventBusHostedService`, which created a receipt with `ItemsJson = "[]"` and no customer info. Since the in-memory event bus ran handlers synchronously during the publish call, this happened **before** the ApiGateway's HTTP `POST /receipts` call (which had full item data). The HTTP call found an existing receipt and skipped.
+
+**Fix**: Removed the event-driven receipt creation path entirely:
+- Deleted `ReceiptService/EventBusHostedService.cs`
+- Removed `IEventBus` registration and `EventBusHostedService` from `ReceiptService/Program.cs`
+- Removed unused `IEventBus` dependency and `HandlePaymentConfirmed` from `ReceiptServiceHandler`
+- Removed the two `HandlePaymentConfirmed` tests (they tested removed functionality)
+- Receipt creation now happens exclusively via the ApiGateway's HTTP `POST /receipts` call, which passes order items, customer info, and total amount correctly
+
+**Files**: `src/ReceiptService/EventBusHostedService.cs` (deleted), `src/ReceiptService/Program.cs`, `src/ReceiptService/Services/ReceiptServiceHandler.cs`, `tests/ReceiptService.Tests/ReceiptServiceHandlerTests.cs`
+
+---
+
+## 2026-07-03 — Receipt items show as "0"/£0.00 due to JSON case sensitivity
+
+**Problem**: The receipt items table displayed default values (item name "0", quantity 0, price £0.00) even though the total amount was correct. The `ItemsJson` field in the receipt had correct data, but the frontend couldn't parse it.
+
+**Root cause**: The ApiGateway serializes receipt items into JSON using camelCase property names (`menuItemId`, `itemName`, `quantity`, `unitPrice`). The `Receipt.razor` page uses `JsonSerializer.Deserialize<List<ReceiptItem>>()` to parse this JSON back. However, the default `JsonSerializerOptions` uses **case-sensitive** property matching, while the `ReceiptItem` positional record has PascalCase constructor parameters (`MenuItemId`, `ItemName`). The case mismatch caused all properties to default to `null`/`0`.
+
+**Fix**: Added `PropertyNameCaseInsensitive = true` to the `JsonSerializerOptions` used in `Receipt.razor`'s item deserialization. This correctly maps camelCase JSON properties to the PascalCase record parameters.
+
+**Files**: `src/WasmFrontend/Pages/Receipt.razor`
+
+---
+
+## 2026-07-04 — Star rating always selects all 5 stars in Feedback.razor
+
+**Problem**: Clicking any star (1-5) in the feedback form always lit up all 5 stars. Users couldn't change their selection — clicking star 3 after star 4 had no effect.
+
+**Root cause**: Classic C# closure bug with `for` loop variables. The `@for (int i = 1; i <= 5; i++)` loop declared `i` once, and all `@onclick="() => rating = i"` lambdas captured the same `i` reference. By the time any button was clicked, the loop had finished and `i` was 6, so `rating = 6` was set. The active-star CSS condition `i <= rating` then evaluated `1-5 <= 6` as true for all stars.
+
+**Fix**: Captured a local `var star = i;` inside the loop body, and used `@onclick="() => rating = star"`, so each lambda captures its own per-iteration value.
+
+**Files**: `src/WasmFrontend/Pages/Feedback.razor`

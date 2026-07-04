@@ -4,68 +4,113 @@
 <PageTitle>Feedback - BurgerIAM</PageTitle>
 
 <div class="container mt-4">
-    <h2 class="mb-4">Leave Feedback</h2>
 
     @if (!string.IsNullOrEmpty(error))
     {
-        <div class="alert alert-danger">@error</div>
-    }
-    @if (submitted)
-    {
-        <div class="text-center py-5">
-            <div class="mb-4">&#10003;</div>
-            <h3>Thank You!</h3>
-            <p class="text-muted">Your feedback has been submitted.</p>
-            <a href="/my-orders" class="btn btn-primary">Back to Orders</a>
+        <div class="toast error" style="margin-bottom:16px;animation:none;">
+            <span>&#x274C;</span>
+            <span>@error</span>
         </div>
-        return;
     }
 
-    @if (existingFeedback is not null)
+    @if (submitted)
     {
-        <div class="alert alert-info">
-            You have already submitted feedback for this order.
+        <div class="text-center py-5 animate-on-scroll">
+            <div style="font-size:4rem;margin-bottom:16px;">&#x1F389;</div>
+            <h3 class="fw-bold">Thank You!</h3>
+            <p style="color:var(--text-secondary);">Your feedback has been submitted.</p>
+            <a href="/my-orders" class="btn btn-primary btn-lg">Back to Orders</a>
         </div>
-        <div class="card mb-3">
+    }
+    else if (existingFeedback is not null)
+    {
+        <h2 class="section-title animate-on-scroll">Your Feedback</h2>
+        <div class="toast info" style="margin-bottom:16px;animation:none;">
+            <span>&#x2139;&#xFE0F;</span>
+            <span>You have already submitted feedback for this order.</span>
+        </div>
+        <div class="card animate-on-scroll">
             <div class="card-body">
-                <h5>Your Rating: @(new string('★', existingFeedback.Rating) + new string('☆', 5 - existingFeedback.Rating))</h5>
+                <h5 class="card-section-title">Your Rating</h5>
+                <div class="star-rating mb-2">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        <span style="font-size:2rem;color:@(i <= existingFeedback.Rating ? "#f1c40f" : "rgba(255,255,255,0.15)");">&#x2605;</span>
+                    }
+                </div>
                 @if (!string.IsNullOrEmpty(existingFeedback.Comment))
                 {
-                    <p>@existingFeedback.Comment</p>
+                    <p class="mb-0">@existingFeedback.Comment</p>
                 }
             </div>
         </div>
-        <a href="/my-orders" class="btn btn-primary">Back to Orders</a>
-        return;
+        <div class="mt-3">
+            <a href="/my-orders" class="btn btn-primary">Back to Orders</a>
+        </div>
     }
+    else
+    {
+        <h2 class="section-title animate-on-scroll">Leave Feedback</h2>
+        <p class="section-subtitle animate-on-scroll">How was your order?</p>
 
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">How was your order?</h5>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card animate-on-scroll">
+                    <div class="card-body">
+                        <h5 class="card-section-title">Rate your experience</h5>
 
-                    <div class="text-center mb-4">
-                        @for (int i = 1; i <= 5; i++)
+                        <div class="text-center mb-4">
+                            <div class="star-rating" style="justify-content:center;">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    var star = i;
+                                    <button @onclick="() => rating = star"
+                                            class="star-btn @(i <= rating ? "active" : "")"
+                                            type="button">
+                                        &#x2605;
+                                    </button>
+                                }
+                            </div>
+                        </div>
+
+                        @if (rating > 0)
                         {
-                            <button @onkeydown="() => { }" @onclick="() => rating = i" class="btn btn-lg @(i <= rating ? "btn-warning" : "btn-outline-secondary") me-1" style="font-size: 2rem;">
-                                @(i <= rating ? "★" : "☆")
-                            </button>
+                            <div class="text-center mb-3">
+                                <span class="badge badge-primary" style="font-size:0.9rem;padding:6px 18px;">
+                                    @(rating switch
+                                    {
+                                        1 => "Poor",
+                                        2 => "Fair",
+                                        3 => "Good",
+                                        4 => "Very Good",
+                                        5 => "Excellent",
+                                        _ => ""
+                                    })
+                                </span>
+                            </div>
                         }
-                    </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Comment (optional)</label>
-                        <InputTextArea @bind-Value="comment" class="form-control" rows="3" placeholder="Tell us about your experience..." />
-                    </div>
+                        <div class="form-float">
+                            <InputTextArea @bind-Value="comment" placeholder=" " id="comment" style="min-height:120px;" />
+                            <label for="comment">Comment (optional)</label>
+                        </div>
 
-                    <button @onclick="Submit" class="btn btn-primary w-100" disabled="@(rating == 0 || isSubmitting)">
-                        @(isSubmitting ? "Submitting..." : "Submit Feedback")
-                    </button>
+                        <button @onclick="Submit" class="btn btn-primary btn-block btn-lg" disabled="@(rating == 0 || isSubmitting)">
+                            @if (isSubmitting)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                <span>Submitting...</span>
+                            }
+                            else
+                            {
+                                <span>Submit Feedback</span>
+                            }
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    }
 </div>
 
 @code {
@@ -73,6 +118,7 @@
 
     [Inject] private Services.ApiService Api { get; set; } = null!;
     [Inject] private Services.AuthService Auth { get; set; } = null!;
+    [Inject] private IJSRuntime JS { get; set; } = null!;
 
     private int rating;
     private string comment = "";
@@ -86,10 +132,14 @@
         existingFeedback = await Api.GetFeedbackAsync(OrderId);
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("window.BurgerIAM.observeNewElements");
+    }
+
     private async Task Submit()
     {
         if (rating == 0) return;
-
         isSubmitting = true;
         error = await Api.SubmitFeedbackAsync(OrderId, Auth.UserId!, rating, comment);
         submitted = error is null;

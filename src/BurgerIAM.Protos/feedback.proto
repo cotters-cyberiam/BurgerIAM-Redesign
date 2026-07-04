@@ -4,12 +4,19 @@ package burgeriam.feedback;
 
 option csharp_namespace = "BurgerIAM.Protos.Feedback";
 
-import "common.proto";
-
 service FeedbackService {
   rpc SubmitFeedback(SubmitFeedbackRequest) returns (SubmitFeedbackResponse);
   rpc GetOrderFeedback(GetOrderFeedbackRequest) returns (Feedback);
   rpc GetAverageRating(GetAverageRatingRequest) returns (AverageRatingResponse);
+  rpc GetAllFeedback(GetAllFeedbackRequest) returns (GetAllFeedbackResponse);
+}
+
+message GetAllFeedbackRequest {
+  int32 limit = 1;
+}
+
+message GetAllFeedbackResponse {
+  repeated Feedback feedbacks = 1;
 }
 
 message Feedback {
