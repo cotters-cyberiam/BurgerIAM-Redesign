@@ -60,6 +60,12 @@
                                         <img src="@sidesImg" alt="@item.Name" class="sides-icon" />
                                     </div>
                                 }
+                                else if (item.Category == "Burgers" && _burgerImageMap.TryGetValue(item.Id, out var burgerImg))
+                                {
+                                    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                                        <img src="@burgerImg" alt="@item.Name" class="burger-icon" />
+                                    </div>
+                                }
                                 else
                                 {
                                     <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:3rem;">
@@ -113,6 +119,8 @@
     private static readonly string[] _drinkImages = ["/images/drink1.png", "/images/drink2.png"];
     private readonly Dictionary<string, string> _sidesImageMap = [];
     private static readonly string[] _sidesImages = ["/images/sides.png", "/images/sides1.png", "/images/sides3.png"];
+    private readonly Dictionary<string, string> _burgerImageMap = [];
+    private static readonly string[] _burgerImages = ["/images/burgerImage1.png", "/images/burgerImage2.png"];
 
     private List<string> categories => items
         .Where(i => !string.IsNullOrEmpty(i.Category))
@@ -138,6 +146,11 @@
         for (int i = 0; i < sides.Count; i++)
         {
             _sidesImageMap[sides[i].Id] = _sidesImages[i % _sidesImages.Length];
+        }
+        var burgers = items.Where(i => i.Category == "Burgers").ToList();
+        for (int i = 0; i < burgers.Count; i++)
+        {
+            _burgerImageMap[burgers[i].Id] = _burgerImages[i % _burgerImages.Length];
         }
         isLoading = false;
     }
