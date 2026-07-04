@@ -40,7 +40,20 @@ public sealed class AuthService
         UserRole = await _js.InvokeAsync<string>("localStorage.getItem", UserRoleKey);
 
         if (!string.IsNullOrEmpty(Token))
+        {
             _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+
+            try
+            {
+                var validateResponse = await _http.GetAsync("/api/auth/validate");
+                if (!validateResponse.IsSuccessStatusCode)
+                    await LogoutAsync();
+            }
+            catch
+            {
+                await LogoutAsync();
+            }
+        }
     }
 
     public async Task<(AuthResponse? Result, string? Error)> Login(string email, string password)

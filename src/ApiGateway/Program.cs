@@ -34,6 +34,32 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = false,
             ClockSkew = TimeSpan.Zero
         };
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                try
+                {
+                    var client = context.HttpContext.RequestServices
+                        .GetRequiredService<ProtoIdentity.IdentityService.IdentityServiceClient>();
+                    var authHeader = context.Request.Headers["Authorization"].FirstOrDefault();
+                    var token = authHeader?.Replace("Bearer ", "");
+                    if (string.IsNullOrEmpty(token))
+                    {
+                        context.Fail("Missing token");
+                        return;
+                    }
+                    var response = await client.ValidateTokenAsync(
+                        new ProtoIdentity.ValidateTokenRequest { Token = token });
+                    if (!response.IsValid)
+                        context.Fail("Token has been invalidated by server restart");
+                }
+                catch
+                {
+                    context.Fail("Token validation service unavailable");
+                }
+            }
+        };
     });
 
 builder.Services.AddAuthorization();
@@ -135,6 +161,8 @@ if (Directory.Exists(wasmFrontendPath))
 }
 
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "ApiGateway" }));
+
+app.MapGet("/api/auth/validate", () => Results.Ok(new { valid = true })).RequireAuthorization();
 
 app.MapPost("/api/auth/login", async (LoginRequestDto dto, ProtoIdentity.IdentityService.IdentityServiceClient client) =>
 {
