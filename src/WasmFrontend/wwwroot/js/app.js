@@ -123,11 +123,11 @@ window.BurgerIAM = {
         var cardWidth = track.querySelector('.review-card')?.offsetWidth || 270;
         var gap = 24;
         var step = cardWidth + gap;
+        var lastOffset = totalCards - 1;
         self._reviewTimer = setInterval(function () {
             var offset = parseInt(track.getAttribute('data-offset') || '0', 10);
             var visible = window.innerWidth <= 480 ? 1 : window.innerWidth <= 768 ? 2 : 3;
-            var maxOffset = Math.max(0, totalCards - visible);
-            if (offset + visible > maxOffset) {
+            if (offset >= lastOffset) {
                 carousel.classList.add('fading');
                 setTimeout(function () {
                     track.style.transition = 'none';
@@ -138,7 +138,7 @@ window.BurgerIAM = {
                     carousel.classList.remove('fading');
                 }, 3000);
             } else {
-                offset = offset + visible;
+                offset = Math.min(offset + visible, lastOffset);
                 track.setAttribute('data-offset', offset);
                 track.style.transform = 'translateX(-' + (offset * step) + 'px)';
             }
