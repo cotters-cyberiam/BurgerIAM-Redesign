@@ -48,9 +48,18 @@
                     <div class="col-md-6 col-lg-4 mb-3 animate-on-scroll">
                         <div class="menu-card h-100 @(item.IsAvailable ? "" : "opacity-50")">
                             <div class="menu-card-img">
-                                <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:3rem;">
-                                    &#x1F354;
-                                </div>
+                                @if (item.Category == "Drinks" && _drinkImageMap.TryGetValue(item.Id, out var drinkImg))
+                                {
+                                    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                                        <img src="@drinkImg" alt="@item.Name" class="drink-icon" />
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:3rem;">
+                                        &#x1F354;
+                                    </div>
+                                }
                             </div>
                             <div class="menu-card-body">
                                 <h5 class="menu-card-name">@item.Name</h5>
@@ -94,6 +103,8 @@
     private List<Models.MenuItemResponse> items = [];
     private bool isLoading = true;
     private string? selectedCategory;
+    private readonly Dictionary<string, string> _drinkImageMap = [];
+    private static readonly string[] _drinkImages = ["/images/drink1.png", "/images/drink2.png"];
 
     private List<string> categories => items
         .Where(i => !string.IsNullOrEmpty(i.Category))
@@ -110,6 +121,11 @@
     protected override async Task OnInitializedAsync()
     {
         items = await Api.GetMenuAsync();
+        var rng = Random.Shared;
+        foreach (var item in items.Where(i => i.Category == "Drinks"))
+        {
+            _drinkImageMap[item.Id] = _drinkImages[rng.Next(_drinkImages.Length)];
+        }
         isLoading = false;
     }
 

@@ -85,9 +85,18 @@
                 <div class="col-md-6 col-lg-4 mb-4 animate-on-scroll">
                     <div class="menu-card h-100">
                         <div class="menu-card-img">
+                        @if (item.Category == "Drinks" && _drinkImageMap.TryGetValue(item.Id, out var drinkImg))
+                        {
+                            <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                                <img src="@drinkImg" alt="@item.Name" class="drink-icon" />
+                            </div>
+                        }
+                        else
+                        {
                             <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:3rem;">
                                 &#x1F354;
                             </div>
+                        }
                         </div>
                         <div class="menu-card-body">
                             <h5 class="menu-card-name">@item.Name</h5>
@@ -135,6 +144,8 @@
     private List<Models.MenuItemResponse> popularItems = [];
     private Models.AverageRatingResponse? averageRating;
     private bool isLoading = true;
+    private readonly Dictionary<string, string> _drinkImageMap = [];
+    private static readonly string[] _drinkImages = ["/images/drink1.png", "/images/drink2.png"];
 
     protected override async Task OnInitializedAsync()
     {
@@ -144,6 +155,11 @@
         var menu = menuTask.Result;
         popularItems = menu.Where(i => i.IsAvailable).Take(6).ToList();
         averageRating = ratingTask.Result;
+        var rng = Random.Shared;
+        foreach (var item in menu.Where(i => i.Category == "Drinks"))
+        {
+            _drinkImageMap[item.Id] = _drinkImages[rng.Next(_drinkImages.Length)];
+        }
         isLoading = false;
     }
 
