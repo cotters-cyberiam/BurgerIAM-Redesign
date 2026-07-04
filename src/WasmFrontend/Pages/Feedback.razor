@@ -63,7 +63,8 @@
                             <div class="star-rating" style="justify-content:center;">
                                 @for (int i = 1; i <= 5; i++)
                                 {
-                                    <button @onclick="() => rating = i"
+                                    var star = i;
+                                    <button @onclick="() => rating = star"
                                             class="star-btn @(i <= rating ? "active" : "")"
                                             type="button">
                                         &#x2605;
