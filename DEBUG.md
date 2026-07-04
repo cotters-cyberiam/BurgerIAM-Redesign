@@ -448,3 +448,15 @@ orderReq.Items.AddRange(dto.Items.Select(i => new ProtoOrder.OrderItem { ... }))
 **Fix**: Added `PropertyNameCaseInsensitive = true` to the `JsonSerializerOptions` used in `Receipt.razor`'s item deserialization. This correctly maps camelCase JSON properties to the PascalCase record parameters.
 
 **Files**: `src/WasmFrontend/Pages/Receipt.razor`
+
+---
+
+## 2026-07-04 — Star rating always selects all 5 stars in Feedback.razor
+
+**Problem**: Clicking any star (1-5) in the feedback form always lit up all 5 stars. Users couldn't change their selection — clicking star 3 after star 4 had no effect.
+
+**Root cause**: Classic C# closure bug with `for` loop variables. The `@for (int i = 1; i <= 5; i++)` loop declared `i` once, and all `@onclick="() => rating = i"` lambdas captured the same `i` reference. By the time any button was clicked, the loop had finished and `i` was 6, so `rating = 6` was set. The active-star CSS condition `i <= rating` then evaluated `1-5 <= 6` as true for all stars.
+
+**Fix**: Captured a local `var star = i;` inside the loop body, and used `@onclick="() => rating = star"`, so each lambda captures its own per-iteration value.
+
+**Files**: `src/WasmFrontend/Pages/Feedback.razor`
