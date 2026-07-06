@@ -155,10 +155,10 @@
 - **Problem**: PLAN.md states each service exposes both `/health` (liveness) and `/health/ready` (readiness) with health checks for SQLite and RabbitMQ. Only `/health` existed on all services.
 - **Fix**: Added `/health/ready` to all 10 services (Identity, Menu, Order, Payment, Kitchen, Delivery, Feedback, Notification, Receipt, ApiGateway) with SQLite `CanConnectAsync` checks.
 
-### 12. ApiGateway Dockerfile copies entire repo
-- **File**: `src/ApiGateway/Dockerfile:3` (same pattern in all Dockerfiles)
-- **Problem**: `COPY . .` copies all source code into every Docker image. Each image ends up containing all 10+ services' code, the tests directory, etc., making images unnecessarily large.
-- **Required**: Use `.dockerignore` to exclude unnecessary directories (`tests/`, `*.db`, `bin/`, `obj/`) or restructure the build context.
+### 12. ApiGateway Dockerfile copies entire repo ✅ FIXED
+- **Status**: ✅ Fixed
+- **Problem**: `COPY . .` copied all source code into every Docker image. Each image ended up containing all 10+ services' code, the tests directory, etc., making images unnecessarily large.
+- **Fix**: Created `.dockerignore` that excludes `.git/`, `tests/`, `bin/`, `obj/`, `*.db`, `*.md`, `*.ps1`, NuGet packages, IDE files, and frontend build output from the Docker build context.
 
 ---
 
