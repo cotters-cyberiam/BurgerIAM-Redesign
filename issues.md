@@ -175,10 +175,10 @@
 
 ## Minor
 
-### 13. DEBUG.md has duplicate content
-- **File**: `DEBUG.md`
-- **Problem**: Multiple `# Debug Log` headings. Content at lines 50-91 is duplicate/out-of-place (a copy of the file header and "Running Services for Testing" section appears in the middle of the file).
-- **Required**: Clean up the duplicate content and ensure each entry has a single date-stamped heading.
+### 13. DEBUG.md has duplicate content ✅ FIXED
+- **Status**: ✅ Fixed
+- **Problem**: Multiple `# Debug Log` headings. Content at lines 50-91 was duplicate/out-of-place (a copy of the file header and "Running Services for Testing" section appeared in the middle of the file).
+- **Fix**: Removed the duplicate section (repeated header, "Running Services for Testing" recipe, and repeated file description).
 
 ### 14. SQLite .db files appear in service directories
 - **Files**: `src/IdentityService/identity.db`, `src/OrderService/order.db`, `src/PaymentService/payment.db`, `src/KitchenService/kitchen.db`, `src/DeliveryService/delivery.db`, `src/FeedbackService/feedback.db`, `src/NotificationService/notifications.db`, `src/ReceiptService/receipts.db`
