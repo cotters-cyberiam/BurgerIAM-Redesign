@@ -416,3 +416,17 @@ orderReq.Items.AddRange(dto.Items.Select(i => new ProtoOrder.OrderItem { ... }))
 **Fix**: Captured a local `var star = i;` inside the loop body, and used `@onclick="() => rating = star"`, so each lambda captures its own per-iteration value.
 
 **Files**: `src/WasmFrontend/Pages/Feedback.razor`
+
+---
+
+## 2026-07-06 — RabbitMQ container fails with ".erlang.cookie: eacces"
+
+**Problem**: `Start-Containers.ps1` failed to start RabbitMQ with `"Error when reading /var/lib/rabbitmq/.erlang.cookie: eacces"`. RabbitMQ could not read its Erlang cluster cookie file due to filesystem permission issues on Docker Desktop for Windows.
+
+**Root cause**: The `rabbitmq:3-management` image expects `/var/lib/rabbitmq/.erlang.cookie` to have restricted permissions (owned by `rabbitmq` user). Docker Desktop for Windows overlay filesystem can misapply POSIX permissions on this file, especially on container restart.
+
+**Fix**:
+- Added `RABBITMQ_ERLANG_COOKIE=burgeriam-cluster-cookie` environment variable to the RabbitMQ container, telling it to use a known cookie value instead of reading from the filesystem
+- Added a named volume `rabbitmq_data` mounted at `/var/lib/rabbitmq` to persist RabbitMQ data properly
+
+**Files**: `Start-Containers.ps1`, `Stop-Containers.ps1`

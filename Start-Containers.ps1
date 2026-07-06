@@ -32,7 +32,7 @@ $imagePrefix  = "burgeriam"
 $rabbitImage  = "rabbitmq:3-management"
 
 $services = @(
-    @{ Name = "rabbitmq";         HostPort = @(5672, 15672);  ContPort = @(5672, 15672);  Image = $rabbitImage;  Volumes = @();          Env = @();                                               Depends = $null }
+    @{ Name = "rabbitmq";         HostPort = @(5672, 15672);  ContPort = @(5672, 15672);  Image = $rabbitImage;  Volumes = @("rabbitmq_data:/var/lib/rabbitmq"); Env = @("RABBITMQ_ERLANG_COOKIE=burgeriam-cluster-cookie"); Depends = $null }
     @{ Name = "identity-service";  HostPort = @(5041);         ContPort = @(5041);         Image = "$imagePrefix/identity-service:$ImageTag";  Volumes = @("identity_data:/app/data");                    Env = @("ConnectionStrings__DefaultConnection=Data Source=/app/data/identity.db");                                    Depends = "rabbitmq" }
     @{ Name = "menu-service";      HostPort = @(5052);         ContPort = @(5052);         Image = "$imagePrefix/menu-service:$ImageTag";      Volumes = @("menu_data:/app/data");                        Env = @("ConnectionStrings__DefaultConnection=Data Source=/app/data/menu.db");                                        Depends = "rabbitmq" }
     @{ Name = "order-service";     HostPort = @(5063);         ContPort = @(5063);         Image = "$imagePrefix/order-service:$ImageTag";     Volumes = @("order_data:/app/data");                       Env = @("ConnectionStrings__DefaultConnection=Data Source=/app/data/order.db","EventBus__ConnectionString=amqp://guest:guest@rabbitmq:5672","EventBus__ExchangeName=burgeriam.exchange");  Depends = "rabbitmq" }

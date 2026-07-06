@@ -42,6 +42,7 @@ $containerNames = @(
 )
 
 $volumeNames = @(
+    "rabbitmq_data",
     "identity_data",
     "menu_data",
     "order_data",
