@@ -7,6 +7,6 @@ RUN dotnet publish src/DeliveryService/DeliveryService.csproj -c Release -o /app
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 COPY --from=build /app .
-EXPOSE 5006
-ENV ASPNETCORE_URLS=http://+:5006
+EXPOSE 5096
+ENV ASPNETCORE_URLS=http://+:5096
 ENTRYPOINT ["dotnet", "DeliveryService.dll"]

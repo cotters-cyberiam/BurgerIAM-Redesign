@@ -7,6 +7,6 @@ RUN dotnet publish src/PaymentService/PaymentService.csproj -c Release -o /app
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 COPY --from=build /app .
-EXPOSE 5004
-ENV ASPNETCORE_URLS=http://+:5004
+EXPOSE 5074
+ENV ASPNETCORE_URLS=http://+:5074
 ENTRYPOINT ["dotnet", "PaymentService.dll"]
