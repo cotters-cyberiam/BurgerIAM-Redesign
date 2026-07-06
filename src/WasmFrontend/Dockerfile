@@ -6,6 +6,6 @@ RUN dotnet publish src/WasmFrontend/WasmFrontend.csproj -c Release -o /app/wwwro
 
 FROM nginx:alpine AS runtime
 WORKDIR /usr/share/nginx/html
-COPY --from=build /app/wwwroot .
+COPY --from=build /app/wwwroot/wwwroot .
 COPY src/WasmFrontend/nginx.conf /etc/nginx/nginx.conf
 EXPOSE 80

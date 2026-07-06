@@ -434,3 +434,58 @@ orderReq.Items.AddRange(dto.Items.Select(i => new ProtoOrder.OrderItem { ... }))
 - Added `--user root` to RabbitMQ's `docker run` — Docker Desktop on Windows creates `/var/lib/rabbitmq` with root ownership that the `rabbitmq` user can't read. Running as root bypasses the permission issue entirely for local testing.
 
 **Files**: `Start-Containers.ps1`
+
+---
+
+## 2026-07-06 — Docker DNS resolves container names, not short names
+
+**Problem**: API Gateway gRPC calls to backend services failed with `Grpc.Core.RpcException: Name or service not known`. The API gateway resolved `menu-service` as `NXDOMAIN` even though both containers were on the same Docker `burgeriam` network.
+
+**Root cause**: Docker DNS on user-defined bridges resolves **container names** (`burgeriam-menu-service`), not the short names used in environment variables (`menu-service`). The `Start-Containers.ps1` set `Services__Menu=http://menu-service:5052` but the container's actual DNS name was `burgeriam-menu-service`.
+
+**Fix**: Updated all `Services__*` env vars in `Start-Containers.ps1` (and nginx `proxy_pass` in `nginx.conf`) to use the full container names (`burgeriam-<name>`) instead of short names.
+
+**Files**: `Start-Containers.ps1`, `src/WasmFrontend/nginx.conf`
+
+---
+
+## 2026-07-06 — nginx fails at startup with "host not found in upstream"
+
+**Problem**: nginx container exited immediately with `[emerg] host not found in upstream "api-gateway"`. The variable `proxy_pass http://api-gateway:5000` requires DNS resolution at configuration load time, but the `api-gateway` container hadn't started yet or wasn't on the same network.
+
+**Root cause**: When nginx's `proxy_pass` uses a literal hostname (not a variable), it resolves the DNS name **at startup** during config parsing. If the upstream container isn't running or DNS is unavailable, nginx fails to start.
+
+**Fix**: Used nginx variables for the proxy target:
+```
+set $gateway_api "http://burgeriam-api-gateway:5000";
+proxy_pass $gateway_api;
+```
+With a variable, nginx defers DNS resolution to **runtime** using the `resolver 127.0.0.11 ipv6=off valid=10s;` directive (Docker DNS). Also fixed the hostname to `burgeriam-api-gateway`.
+
+**Files**: `src/WasmFrontend/nginx.conf`
+
+---
+
+## 2026-07-06 — WasmFrontend Dockerfile copies wrong directory
+
+**Problem**: The Blazor WASM frontend served nginx's default welcome page (896 bytes) instead of the Blazor app. The `index.html` in the nginx html root was the nginx default, while the actual Blazor app was nested at `/usr/share/nginx/html/wwwroot/index.html`.
+
+**Root cause**: `dotnet publish -o /app/wwwroot` places the Blazor WASM output at `/app/wwwroot/wwwroot/` (nested). The Dockerfile had `COPY --from=build /app/wwwroot .` which copied the parent directory, placing the Blazor output into a nested `wwwroot/` subdirectory.
+
+**Fix**: Changed to `COPY --from=build /app/wwwroot/wwwroot .` so the Blazor WASM static files land directly in nginx's root.
+
+**Files**: `src/WasmFrontend/Dockerfile`
+
+---
+
+## 2026-07-06 — RabbitMQ made optional; InMemoryEventBus as default
+
+**Problem**: RabbitMQ container would not start on Docker Desktop for Windows due to `.erlang.cookie` POSIX permission issues. The entire `Start-Containers.ps1` failed because RabbitMQ was a hard dependency.
+
+**Resolution**: Refactored `Start-Containers.ps1`:
+- Removed RabbitMQ from the `$services` array (no longer a required service)
+- Added `-UseRabbitMQ` switch to optionally start RabbitMQ (attempt, skip on failure)
+- Backend services no longer have `EventBus__ConnectionString` env vars by default — they fall back to `InMemoryEventBus` when the connection string is empty
+- Added `$backendEventBusEnv` helper to conditionally inject RabbitMQ connection string only when `-UseRabbitMQ` is specified
+
+**Files**: `Start-Containers.ps1`
