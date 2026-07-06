@@ -172,7 +172,7 @@ if ($existingStatus -eq "running") {
     $detachFlag = if ($Detach) { "-d" } else { "--rm" }
     Write-Host "  Removing any stale RabbitMQ volumes for clean start..." -ForegroundColor Gray
     docker volume rm -f rabbitmq_data 2>$null | Out-Null
-    & docker run $detachFlag --name $rname --network $networkName $portArgs $volArgs $envArgs $rabbitImage 2>&1 | Out-Null
+    & docker run $detachFlag --name $rname --network $networkName $portArgs $volArgs $envArgs --user root $rabbitImage 2>&1 | Out-Null
     Write-Host "  Waiting for RabbitMQ to become healthy..." -ForegroundColor Gray
     $timeout = [datetime]::Now.AddSeconds(60)
     $ready = $false

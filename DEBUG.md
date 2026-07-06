@@ -431,5 +431,6 @@ orderReq.Items.AddRange(dto.Items.Select(i => new ProtoOrder.OrderItem { ... }))
 - Look up the RabbitMQ service definition from `$services` and pass `$envArgs` and `$volArgs` to `docker run` (same as all other services)
 - Added `docker volume rm -f rabbitmq_data` before starting RabbitMQ to purge any stale volume data with wrong permissions
 - Set `RABBITMQ_ERLANG_COOKIE=burgeriam-cluster-cookie` environment variable
+- Added `--user root` to RabbitMQ's `docker run` — Docker Desktop on Windows creates `/var/lib/rabbitmq` with root ownership that the `rabbitmq` user can't read. Running as root bypasses the permission issue entirely for local testing.
 
 **Files**: `Start-Containers.ps1`
