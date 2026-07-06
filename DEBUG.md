@@ -423,10 +423,13 @@ orderReq.Items.AddRange(dto.Items.Select(i => new ProtoOrder.OrderItem { ... }))
 
 **Problem**: `Start-Containers.ps1` failed to start RabbitMQ with `"Error when reading /var/lib/rabbitmq/.erlang.cookie: eacces"`. RabbitMQ could not read its Erlang cluster cookie file due to filesystem permission issues on Docker Desktop for Windows.
 
-**Root cause**: The `rabbitmq:3-management` image expects `/var/lib/rabbitmq/.erlang.cookie` to have restricted permissions (owned by `rabbitmq` user). Docker Desktop for Windows overlay filesystem can misapply POSIX permissions on this file, especially on container restart.
+**Root cause**: Two compounding issues:
+1. The RabbitMQ startup code in `Start-Containers.ps1` defined env vars and volumes in the `$services` hash but **never passed them to `docker run`** — only `$portArgs` was used. The `RABBITMQ_ERLANG_COOKIE` env var was configured but not applied.
+2. The `rabbitmq:3-management` image expects `/var/lib/rabbitmq/.erlang.cookie` to have restricted permissions (owned by `rabbitmq` user). Docker Desktop for Windows overlay filesystem misapplies POSIX permissions on this file. Even without a named volume, Docker creates an anonymous volume from the image's `VOLUME /var/lib/rabbitmq` directive, which can carry stale permission errors.
 
 **Fix**:
-- Added `RABBITMQ_ERLANG_COOKIE=burgeriam-cluster-cookie` environment variable to the RabbitMQ container, telling it to use a known cookie value instead of reading from the filesystem
-- Added a named volume `rabbitmq_data` mounted at `/var/lib/rabbitmq` to persist RabbitMQ data properly
+- Look up the RabbitMQ service definition from `$services` and pass `$envArgs` and `$volArgs` to `docker run` (same as all other services)
+- Added `docker volume rm -f rabbitmq_data` before starting RabbitMQ to purge any stale volume data with wrong permissions
+- Set `RABBITMQ_ERLANG_COOKIE=burgeriam-cluster-cookie` environment variable
 
-**Files**: `Start-Containers.ps1`, `Stop-Containers.ps1`
+**Files**: `Start-Containers.ps1`

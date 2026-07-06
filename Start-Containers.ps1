@@ -32,7 +32,7 @@ $imagePrefix  = "burgeriam"
 $rabbitImage  = "rabbitmq:3-management"
 
 $services = @(
-    @{ Name = "rabbitmq";         HostPort = @(5672, 15672);  ContPort = @(5672, 15672);  Image = $rabbitImage;  Volumes = @("rabbitmq_data:/var/lib/rabbitmq"); Env = @("RABBITMQ_ERLANG_COOKIE=burgeriam-cluster-cookie"); Depends = $null }
+    @{ Name = "rabbitmq";         HostPort = @(5672, 15672);  ContPort = @(5672, 15672);  Image = $rabbitImage;  Volumes = @(); Env = @("RABBITMQ_ERLANG_COOKIE=burgeriam-cluster-cookie"); Depends = $null }
     @{ Name = "identity-service";  HostPort = @(5041);         ContPort = @(5041);         Image = "$imagePrefix/identity-service:$ImageTag";  Volumes = @("identity_data:/app/data");                    Env = @("ConnectionStrings__DefaultConnection=Data Source=/app/data/identity.db");                                    Depends = "rabbitmq" }
     @{ Name = "menu-service";      HostPort = @(5052);         ContPort = @(5052);         Image = "$imagePrefix/menu-service:$ImageTag";      Volumes = @("menu_data:/app/data");                        Env = @("ConnectionStrings__DefaultConnection=Data Source=/app/data/menu.db");                                        Depends = "rabbitmq" }
     @{ Name = "order-service";     HostPort = @(5063);         ContPort = @(5063);         Image = "$imagePrefix/order-service:$ImageTag";     Volumes = @("order_data:/app/data");                       Env = @("ConnectionStrings__DefaultConnection=Data Source=/app/data/order.db","EventBus__ConnectionString=amqp://guest:guest@rabbitmq:5672","EventBus__ExchangeName=burgeriam.exchange");  Depends = "rabbitmq" }
@@ -165,9 +165,14 @@ if ($existingStatus -eq "running") {
     Write-Host "  RabbitMQ already running." -ForegroundColor Green
 } else {
     if ($existingStatus) { Remove-ExistingContainer "rabbitmq" }
-    $portArgs = Get-PortArgs @(5672,15672) @(5672,15672)
+    $rmq = $services | Where-Object { $_.Name -eq "rabbitmq" }
+    $portArgs = Get-PortArgs $rmq.HostPort $rmq.ContPort
+    $volArgs  = Get-VolumeArgs $rmq.Volumes
+    $envArgs  = Get-EnvArgs $rmq.Env
     $detachFlag = if ($Detach) { "-d" } else { "--rm" }
-    & docker run $detachFlag --name $rname --network $networkName $portArgs $rabbitImage 2>&1 | Out-Null
+    Write-Host "  Removing any stale RabbitMQ volumes for clean start..." -ForegroundColor Gray
+    docker volume rm -f rabbitmq_data 2>$null | Out-Null
+    & docker run $detachFlag --name $rname --network $networkName $portArgs $volArgs $envArgs $rabbitImage 2>&1 | Out-Null
     Write-Host "  Waiting for RabbitMQ to become healthy..." -ForegroundColor Gray
     $timeout = [datetime]::Now.AddSeconds(60)
     $ready = $false
