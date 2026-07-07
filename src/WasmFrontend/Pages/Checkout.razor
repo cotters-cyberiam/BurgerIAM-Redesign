@@ -155,13 +155,19 @@ else
     {
         if (string.IsNullOrWhiteSpace(deliveryAddress))
         {
-            error = "Please enter a delivery address";
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(cardNumber) || string.IsNullOrWhiteSpace(expiry) || string.IsNullOrWhiteSpace(cvv))
-        {
-            error = "Please fill in all payment details";
+            await JS.InvokeVoidAsync("eval", @"
+                var oldEl = document.getElementById('checkout-address-error');
+                if (oldEl) oldEl.remove();
+                var el = document.createElement('div');
+                el.id = 'checkout-address-error';
+                el.style.cssText = 'padding:14px 20px;background:#151528;border:1px solid rgba(255,255,255,0.12);color:#fff;border-left:3px solid #e63946;margin-bottom:16px;border-radius:8px;display:flex;align-items:center;gap:10px;font-weight:500;font-size:0.9rem;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+                el.innerHTML = '<span style=""font-size:1.1rem;"">\u274C</span><span>Please enter a delivery address</span>';
+                var form = document.querySelector('.container.mt-4 .row');
+                if (form) form.parentNode.insertBefore(el, form);
+                var input = document.getElementById('address');
+                function removeErr(){ var e = document.getElementById('checkout-address-error'); if(e) e.remove(); }
+                if (input) { input.addEventListener('input', removeErr, { once: true }); }
+            ");
             return;
         }
 
