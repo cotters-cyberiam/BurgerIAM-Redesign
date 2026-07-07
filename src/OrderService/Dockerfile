@@ -7,6 +7,6 @@ RUN dotnet publish src/OrderService/OrderService.csproj -c Release -o /app
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 COPY --from=build /app .
-EXPOSE 5003
-ENV ASPNETCORE_URLS=http://+:5003
+EXPOSE 5063
+ENV ASPNETCORE_URLS=http://+:5063
 ENTRYPOINT ["dotnet", "OrderService.dll"]

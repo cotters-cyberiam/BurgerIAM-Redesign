@@ -1,0 +1,63 @@
+# Git
+.git/
+.gitattributes
+.gitignore
+.github/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build artifacts at any depth
+**/bin/
+**/obj/
+**/[Dd]ebug/
+**/[Rr]elease/
+**/x64/
+**/x86/
+**/[Aa]rm/
+**/[Aa]rm64/
+
+# NuGet
+.nuget/
+**/packages/
+*.nupkg
+*.nuget.props
+*.nuget.targets
+
+# Tests — not needed in production images
+tests/
+**/tests/
+
+# Local SQLite databases
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation, scripts, solution — not needed for Docker build
+*.md
+*.ps1
+BurgerIAM.sln
+PLAN.md
+DEBUG.md
+issues.md
+TESTHARNESS.md
+AGENTS.md
+
+# Frontend build output (regenerated during ApiGateway Docker build)
+src/ApiGateway/wwwroot/
+src/WasmFrontend/wwwroot/lib/
+src/WasmFrontend/wwwroot/sample-data/

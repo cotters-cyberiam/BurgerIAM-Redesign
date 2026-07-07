@@ -60,7 +60,12 @@ public sealed class AuthService
     {
         try
         {
-            var response = await _http.PostAsJsonAsync("/api/auth/login", new LoginRequest(email, password));
+            var payload = new Dictionary<string, string>
+            {
+                ["email"] = email,
+                ["password"] = password
+            };
+            var response = await _http.PostAsJsonAsync("/api/auth/login", payload);
             if (!response.IsSuccessStatusCode)
             {
                 var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
@@ -82,13 +87,26 @@ public sealed class AuthService
 
     public async Task<string?> Register(string email, string password, string name)
     {
-        var response = await _http.PostAsJsonAsync("/api/auth/register", new RegisterRequest(email, password, name));
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            var error = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
-            return error?.GetValueOrDefault("error", "Registration failed");
+            var payload = new Dictionary<string, string>
+            {
+                ["email"] = email,
+                ["password"] = password,
+                ["name"] = name
+            };
+            var response = await _http.PostAsJsonAsync("/api/auth/register", payload);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                return body?.GetValueOrDefault("error", "Registration failed");
+            }
+            return null;
         }
-        return null;
+        catch (Exception ex)
+        {
+            return $"Registration error: {ex.Message}";
+        }
     }
 
     public async Task LogoutAsync()

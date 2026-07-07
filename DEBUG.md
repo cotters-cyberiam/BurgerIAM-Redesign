@@ -47,50 +47,6 @@ This file documents issues encountered during development and their resolutions.
 **Fix**: Replaced `@("&#127881;")` with `@((MarkupString)"🎉")`. Using `MarkupString` bypasses Blazor's HTML encoding and renders the emoji character directly. Also replaced the other HTML entities with actual emoji characters for consistency.
 
 **Files**: `src/WasmFrontend/Pages/DeliveryTracking.razor`
-# Debug Log
-
-## Running Services for Testing
-
-Start all required services (run from repo root):
-
-```powershell
-# Kill anything on used ports first
-foreach ($port in @(5000,5041,5051,5061,5071)) {
-    Get-Process -Id (Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue).OwningProcess -ErrorAction SilentlyContinue |
-        Stop-Process -Force -ErrorAction SilentlyContinue
-}
-Start-Sleep 2
-
-# Start each service in a new window
-$services = @(
-    @{Name="ApiGateway";     Port=5000; Dir="src/ApiGateway"}
-    @{Name="IdentityService";Port=5041; Dir="src/IdentityService"}
-    @{Name="MenuService";    Port=5051; Dir="src/MenuService"}
-    @{Name="OrderService";   Port=5061; Dir="src/OrderService"}
-    @{Name="PaymentService"; Port=5071; Dir="src/PaymentService"}
-)
-
-foreach ($svc in $services) {
-    $log = "$($svc.Name).log"
-    Start-Process -WindowStyle Normal -FilePath "dotnet" `
-        -ArgumentList "run","--no-build","--urls","http://localhost:$($svc.Port)" `
-        -WorkingDirectory (Join-Path $PWD.Path $svc.Dir) `
-        -RedirectStandardOutput $log -RedirectStandardError $log
-    Start-Sleep 1
-}
-```
-
-Then browse to `http://localhost:5000`. Use **Ctrl+Shift+R** (hard refresh) to bypass Blazor WASM cache and pick up new frontend files.
-
-To run a single service: `dotnet run --project src/<ServiceName> --urls http://localhost:<port>`
-
----
-
-
-
-This file documents issues encountered during development and their resolutions. Refer here when troubleshooting similar problems.
-
----
 
 ## 2026-06-24 — Order stuck at "Order Placed" (status 0) after payment
 
@@ -460,3 +416,154 @@ orderReq.Items.AddRange(dto.Items.Select(i => new ProtoOrder.OrderItem { ... }))
 **Fix**: Captured a local `var star = i;` inside the loop body, and used `@onclick="() => rating = star"`, so each lambda captures its own per-iteration value.
 
 **Files**: `src/WasmFrontend/Pages/Feedback.razor`
+
+---
+
+## 2026-07-06 — RabbitMQ container fails with ".erlang.cookie: eacces"
+
+**Problem**: `Start-Containers.ps1` failed to start RabbitMQ with `"Error when reading /var/lib/rabbitmq/.erlang.cookie: eacces"`. RabbitMQ could not read its Erlang cluster cookie file due to filesystem permission issues on Docker Desktop for Windows.
+
+**Root cause**: Two compounding issues:
+1. The RabbitMQ startup code in `Start-Containers.ps1` defined env vars and volumes in the `$services` hash but **never passed them to `docker run`** — only `$portArgs` was used. The `RABBITMQ_ERLANG_COOKIE` env var was configured but not applied.
+2. The `rabbitmq:3-management` image expects `/var/lib/rabbitmq/.erlang.cookie` to have restricted permissions (owned by `rabbitmq` user). Docker Desktop for Windows overlay filesystem misapplies POSIX permissions on this file. Even without a named volume, Docker creates an anonymous volume from the image's `VOLUME /var/lib/rabbitmq` directive, which can carry stale permission errors.
+
+**Fix**:
+- Look up the RabbitMQ service definition from `$services` and pass `$envArgs` and `$volArgs` to `docker run` (same as all other services)
+- Added `docker volume rm -f rabbitmq_data` before starting RabbitMQ to purge any stale volume data with wrong permissions
+- Set `RABBITMQ_ERLANG_COOKIE=burgeriam-cluster-cookie` environment variable
+- Added `--user root` to RabbitMQ's `docker run` — Docker Desktop on Windows creates `/var/lib/rabbitmq` with root ownership that the `rabbitmq` user can't read. Running as root bypasses the permission issue entirely for local testing.
+
+**Files**: `Start-Containers.ps1`
+
+---
+
+## 2026-07-07 — Registration page shows no feedback after successful account creation
+
+**Problem**: After clicking "Create Account", the page stayed the same with no visible feedback — no success message, no error message, and no navigation. The account was created (user could log in successfully), but the UI gave no indication of success.
+
+**Root cause**: Two compounding issues:
+1. The success toast was rendered inside the form card above the input fields, but with `animation:none` and no visual prominence, users didn't notice it among the form layout.
+2. There was no automatic redirect after successful registration — users had to notice a small "Sign in now" link and click it manually.
+
+**Fix**: Added automatic redirect to `/login` after a 1.5-second delay on successful registration. Wrapped the `Auth.Register` call in `try-catch` so any network or serialization errors are caught and displayed as error messages instead of being silently swallowed.
+
+**Files**: `src/WasmFrontend/Pages/Register.razor`, `src/WasmFrontend/Services/AuthService.cs`
+
+---
+
+## 2026-07-07 — Blazor WASM 400 Bad Request on registration (trimmed record types)
+
+**Problem**: Registration from the browser (Blazor WASM app) returned a 400 Bad Request, while the same request via curl succeeded. The error message was "Registration failed: Value cannot be null" or simply "Registration failed".
+
+**Root cause**: The Blazor WASM linker/trimmer (enabled by `Microsoft.NET.Sdk.BlazorWebAssembly` during publish) removes properties from `RegisterRequest` and `LoginRequest` positional records because they're only accessed via reflection by `System.Net.Http.Json.PostAsJsonAsync<T>()`. The linker cannot determine that `JsonSerializer.Serialize<T>` needs the record's properties at runtime. This caused `PostAsJsonAsync` to send `{}` instead of `{"email":"...","password":"...","name":"..."}`, and the ApiGateway received null values for all fields.
+
+**Fix**: Replaced `RegisterRequest` and `LoginRequest` positional records with `Dictionary<string, string>` when calling `PostAsJsonAsync`:
+```csharp
+// Before:
+var response = await _http.PostAsJsonAsync("/api/auth/register", new RegisterRequest(email, password, name));
+
+// After:
+var payload = new Dictionary<string, string>
+{
+    ["email"] = email,
+    ["password"] = password,
+    ["name"] = name
+};
+var response = await _http.PostAsJsonAsync("/api/auth/register", payload);
+```
+`Dictionary<K,V>` is a framework type that is always preserved by the linker, so its contents are never trimmed. Also added request body debug logging to the ApiGateway (`[DEBUG] /api/auth/register: {...}`) to simplify diagnosing similar serialization issues in the future.
+
+**Files**: `src/WasmFrontend/Services/AuthService.cs`, `src/ApiGateway/Program.cs`
+
+---
+
+## 2026-07-07 — Start-Containers.ps1 default tag mismatch with Build-Images.ps1
+
+**Problem**: `Start-Containers.ps1` failed to find Docker images because `Build-Images.ps1` defaulted to tag `latest` while `Start-Containers.ps1` defaulted to tag `v1.0`. This caused either "Missing images" errors or running stale containers from a previous deployment.
+
+**Root cause**: The two scripts used incompatible default tags:
+- `Build-Images.ps1`: `[string]$Tag = "latest"`
+- `Start-Containers.ps1`: `[string]$ImageTag = "v1.0"`
+
+**Fix**: Changed `Start-Containers.ps1` default `$ImageTag` from `"v1.0"` to `"latest"`.
+
+**Files**: `Start-Containers.ps1` line 24
+
+---
+
+## 2026-07-06 — Docker DNS resolves container names, not short names
+
+**Problem**: API Gateway gRPC calls to backend services failed with `Grpc.Core.RpcException: Name or service not known`. The API gateway resolved `menu-service` as `NXDOMAIN` even though both containers were on the same Docker `burgeriam` network.
+
+**Root cause**: Docker DNS on user-defined bridges resolves **container names** (`burgeriam-menu-service`), not the short names used in environment variables (`menu-service`). The `Start-Containers.ps1` set `Services__Menu=http://menu-service:5052` but the container's actual DNS name was `burgeriam-menu-service`.
+
+**Fix**: Updated all `Services__*` env vars in `Start-Containers.ps1` (and nginx `proxy_pass` in `nginx.conf`) to use the full container names (`burgeriam-<name>`) instead of short names.
+
+**Files**: `Start-Containers.ps1`, `src/WasmFrontend/nginx.conf`
+
+---
+
+## 2026-07-06 — nginx fails at startup with "host not found in upstream"
+
+**Problem**: nginx container exited immediately with `[emerg] host not found in upstream "api-gateway"`. The variable `proxy_pass http://api-gateway:5000` requires DNS resolution at configuration load time, but the `api-gateway` container hadn't started yet or wasn't on the same network.
+
+**Root cause**: When nginx's `proxy_pass` uses a literal hostname (not a variable), it resolves the DNS name **at startup** during config parsing. If the upstream container isn't running or DNS is unavailable, nginx fails to start.
+
+**Fix**: Used nginx variables for the proxy target:
+```
+set $gateway_api "http://burgeriam-api-gateway:5000";
+proxy_pass $gateway_api;
+```
+With a variable, nginx defers DNS resolution to **runtime** using the `resolver 127.0.0.11 ipv6=off valid=10s;` directive (Docker DNS). Also fixed the hostname to `burgeriam-api-gateway`.
+
+**Files**: `src/WasmFrontend/nginx.conf`
+
+---
+
+## 2026-07-06 — WasmFrontend Dockerfile copies wrong directory
+
+**Problem**: The Blazor WASM frontend served nginx's default welcome page (896 bytes) instead of the Blazor app. The `index.html` in the nginx html root was the nginx default, while the actual Blazor app was nested at `/usr/share/nginx/html/wwwroot/index.html`.
+
+**Root cause**: `dotnet publish -o /app/wwwroot` places the Blazor WASM output at `/app/wwwroot/wwwroot/` (nested). The Dockerfile had `COPY --from=build /app/wwwroot .` which copied the parent directory, placing the Blazor output into a nested `wwwroot/` subdirectory.
+
+**Fix**: Changed to `COPY --from=build /app/wwwroot/wwwroot .` so the Blazor WASM static files land directly in nginx's root.
+
+**Files**: `src/WasmFrontend/Dockerfile`
+
+---
+
+## 2026-07-06 — RabbitMQ made optional; InMemoryEventBus as default
+
+**Problem**: RabbitMQ container would not start on Docker Desktop for Windows due to `.erlang.cookie` POSIX permission issues. The entire `Start-Containers.ps1` failed because RabbitMQ was a hard dependency.
+
+**Resolution**: Refactored `Start-Containers.ps1`:
+- Removed RabbitMQ from the `$services` array (no longer a required service)
+- Added `-UseRabbitMQ` switch to optionally start RabbitMQ (attempt, skip on failure)
+- Backend services no longer have `EventBus__ConnectionString` env vars by default — they fall back to `InMemoryEventBus` when the connection string is empty
+- Added `$backendEventBusEnv` helper to conditionally inject RabbitMQ connection string only when `-UseRabbitMQ` is specified
+
+**Files**: `Start-Containers.ps1`
+
+---
+
+## 2026-07-07 — Inline razor toast divs don't render in Blazor WASM Release builds
+
+**Problem**: Error toasts rendered via `@if (!string.IsNullOrEmpty(error)) { <div class="toast error">@error</div> }` in Razor pages (Checkout.razor, Login.razor) did not appear in the browser. The C# code set the `error` field correctly (confirmed via `alert()`), and `StateHasChanged()` was called, but the toast div was never added to the DOM. This affected both address validation on checkout and login error messages.
+
+**Root cause**: Unknown — likely the Blazor WASM IL linker/trimmer (which runs in Release mode even without `wasm-tools`) removes or inlines the conditional rendering logic for the toast div. The fact that JS `window.BurgerIAM.showToast()` also failed (silently — `toastContainer` existed but the created element never rendered) suggests a deeper rendering pipeline issue specific to Release-optimized Blazor assemblies. Pure C# field mutations and `StateHasChanged()` calls that work in Debug mode may be optimized away in Release builds for code paths the linker considers "uncalled".
+
+**Workaround**: Bypass Blazor's rendering entirely by using JS DOM manipulation via `eval`:
+```csharp
+await JS.InvokeVoidAsync("eval", @"
+    var el = document.createElement('div');
+    el.style.cssText = '...inline styles matching site theme...';
+    el.innerHTML = '<span>\u274C</span><span>Message</span>';
+    var form = document.querySelector('.container.mt-4 .row');
+    if (form) form.parentNode.insertBefore(el, form);
+");
+```
+- Uses inline styles (not CSS classes) to avoid any CSS variable resolution issues
+- The error element is removed on input via `addEventListener('input', removeFn, { once: true })`
+- Same pattern works for both Checkout.razor and Login.razor
+
+**Files**: `src/WasmFrontend/Pages/Checkout.razor`, `src/WasmFrontend/Pages/Login.razor`

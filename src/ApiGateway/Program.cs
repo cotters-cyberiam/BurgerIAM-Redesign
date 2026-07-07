@@ -64,7 +64,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-string GetServiceUrl(string name) => servicesConfig[name] ?? $"http://localhost:5{name}";
+string GetServiceUrl(string name) => servicesConfig[name] ?? throw new InvalidOperationException($"Missing service URL configuration for '{name}'. Set Services:{name} in appsettings.json.");
 
 builder.Services.AddSingleton(_ =>
 {
@@ -153,6 +153,19 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.Use(async (context, next) =>
+{
+    if (context.Request.Method == "POST" && context.Request.Path.StartsWithSegments("/api/auth"))
+    {
+        context.Request.EnableBuffering();
+        using var reader = new StreamReader(context.Request.Body, leaveOpen: true);
+        var body = await reader.ReadToEndAsync();
+        context.Request.Body.Position = 0;
+        Console.WriteLine($"[DEBUG] {context.Request.Path}: {body}");
+    }
+    await next();
+});
+
 if (Directory.Exists(wasmFrontendPath))
 {
     app.UseDefaultFiles();
@@ -161,6 +174,7 @@ if (Directory.Exists(wasmFrontendPath))
 }
 
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "ApiGateway" }));
+app.MapGet("/health/ready", () => Results.Ok(new { status = "ready", service = "ApiGateway" }));
 
 app.MapGet("/api/auth/validate", () => Results.Ok(new { valid = true })).RequireAuthorization();
 

@@ -35,5 +35,10 @@ using (var scope = app.Services.CreateScope())
 app.MapGrpcService<KitchenGrpcService>();
 app.MapGrpcReflectionService();
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
+app.MapGet("/health/ready", async (AppDbContext db) =>
+{
+    try { await db.Database.CanConnectAsync(); return Results.Ok(new { status = "ready" }); }
+    catch { return Results.StatusCode(503); }
+});
 
 app.Run();

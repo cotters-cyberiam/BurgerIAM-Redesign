@@ -4,10 +4,8 @@ COPY . .
 RUN dotnet restore src/WasmFrontend/WasmFrontend.csproj
 RUN dotnet publish src/WasmFrontend/WasmFrontend.csproj -c Release -o /app/wwwroot
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
-WORKDIR /app
-COPY --from=build /app/wwwroot ./wwwroot
+FROM nginx:alpine AS runtime
+WORKDIR /usr/share/nginx/html
+COPY --from=build /app/wwwroot/wwwroot .
+COPY src/WasmFrontend/nginx.conf /etc/nginx/nginx.conf
 EXPOSE 80
-# Use dotnet serve or nginx to serve static files
-# For nginx, swap this base image
-ENTRYPOINT ["dotnet", "WasmFrontend.dll"]

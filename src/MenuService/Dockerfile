@@ -7,6 +7,6 @@ RUN dotnet publish src/MenuService/MenuService.csproj -c Release -o /app
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 COPY --from=build /app .
-EXPOSE 5002
-ENV ASPNETCORE_URLS=http://+:5002
+EXPOSE 5052
+ENV ASPNETCORE_URLS=http://+:5052
 ENTRYPOINT ["dotnet", "MenuService.dll"]

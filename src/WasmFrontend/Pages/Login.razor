@@ -77,6 +77,7 @@
     {
         isLoading = true;
         error = null;
+        StateHasChanged();
 
         var (result, loginError) = await Auth.Login(email, password);
         if (result is not null)
@@ -85,8 +86,24 @@
             Nav.NavigateTo("/menu");
         }
         else
+        {
             error = loginError ?? "Invalid email or password";
+            var msg = error.Replace("\\", "\\\\").Replace("'", "\\'");
+            await JS.InvokeVoidAsync("eval", $@"
+                var oldEl = document.getElementById('login-error');
+                if (oldEl) oldEl.remove();
+                var el = document.createElement('div');
+                el.id = 'login-error';
+                el.style.cssText = 'padding:14px 20px;background:#151528;border:1px solid rgba(255,255,255,0.12);color:#fff;border-left:3px solid #e63946;margin-bottom:16px;border-radius:8px;display:flex;align-items:center;gap:10px;font-weight:500;font-size:0.9rem;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+                el.innerHTML = '<span style=""font-size:1.1rem;"">\u274C</span><span>{msg}</span>';
+                var card = document.querySelector('.card-body');
+                if (card) card.insertBefore(el, card.firstChild);
+                document.getElementById('loginEmail').addEventListener('input', function(){{ var e = document.getElementById('login-error'); if(e) e.remove(); }}, {{ once: true }});
+                document.getElementById('loginPassword').addEventListener('input', function(){{ var e = document.getElementById('login-error'); if(e) e.remove(); }}, {{ once: true }});
+            ");
+        }
 
         isLoading = false;
+        StateHasChanged();
     }
 }

@@ -16,31 +16,20 @@
 - **Problem**: PLAN.md Phase 7 requires a root `docker-compose.yml` for local development with all services + RabbitMQ + SQLite volumes.
 - **Required**: Create `docker-compose.yml` with all 10 services and RabbitMQ.
 
-### 3. WasmFrontend Dockerfile is broken
-- **File**: `src/WasmFrontend/Dockerfile:13`
+### 3. WasmFrontend Dockerfile is broken ✅ FIXED
+- **Status**: ✅ Fixed
 - **Problem**: `ENTRYPOINT ["dotnet", "WasmFrontend.dll"]` — Blazor WASM produces static web assets, not a runnable assembly. The file even has a comment acknowledging this (`# Use dotnet serve or nginx`).
-- **Required**: Replace with nginx-based serving or use `dotnet serve` tool. Alternatively, remove the standalone Dockerfile since WasmFrontend is published into ApiGateway's `wwwroot/`.
+- **Fix**: Removed the standalone Dockerfile since WasmFrontend is published into ApiGateway's `wwwroot/` during the ApiGateway multi-stage build.
 
-### 4. Port mismatch: Dockerfiles vs appsettings.json
-- **Files**: All `src/*/Dockerfile` EXPOSE lines vs `src/ApiGateway/appsettings.json:15-23`
-- **Problem**: Every service Dockerfile exposes a different port than what ApiGateway's appsettings.json configures for the service URL:
-  | Service | Dockerfile EXPOSE | appsettings URL |
-  |---------|------------------|-----------------|
-  | Identity | 5001 | 5041 |
-  | Menu | 5002 | 5052 |
-  | Order | 5003 | 5063 |
-  | Payment | 5004 | 5074 |
-  | Kitchen | 5005 | 5085 |
-  | Delivery | 5006 | 5096 |
-  | Notification | 5018 | 5018 |
-  | Feedback | 5007 | 5007 |
-  | Receipt | 5029 | 5029 |
-- **Required**: Align Dockerfile ports with appsettings.json URLs (or vice versa). The appsettings values match test harness ports and should be canonical.
+### 4. Port mismatch: Dockerfiles vs appsettings.json ✅ FIXED
+- **Status**: ✅ Fixed
+- **Problem**: Every service Dockerfile exposed a different port than what ApiGateway's appsettings.json configured for the service URL.
+- **Fix**: Updated Dockerfile EXPOSE and ASPNETCORE_URLS to match appsettings.json: Identity 5001→5041, Menu 5002→5052, Order 5003→5063, Payment 5004→5074, Kitchen 5005→5085, Delivery 5006→5096.
 
-### 5. `GetServiceUrl` fallback generates invalid URLs
-- **File**: `src/ApiGateway/Program.cs:41`
-- **Problem**: `string GetServiceUrl(string name) => servicesConfig[name] ?? $"http://localhost:5{name}";` — when a config key is missing, this produces garbage like `http://localhost:5Identity`.
-- **Required**: Remove the fallback or make it return a sensible default.
+### 5. `GetServiceUrl` fallback generates invalid URLs ✅ FIXED
+- **Status**: ✅ Fixed
+- **Problem**: `string GetServiceUrl(string name) => servicesConfig[name] ?? $"http://localhost:5{name}";` — when a config key is missing, this produced garbage like `http://localhost:5Identity`.
+- **Fix**: Replaced with a throw of `InvalidOperationException` with a clear message naming the missing config key.
 
 ### 6. Receipt generated twice (dual invocation) ✅ FIXED
 - **Status**: ✅ Fixed
@@ -161,24 +150,24 @@
 - **Problem**: `HandleOrderDelivered` sets `CustomerId = string.Empty`. The notification is stored but cannot be retrieved by any customer since all queries filter by `CustomerId`.
 - **Required**: The `OrderDeliveredEvent` does not carry `CustomerId`. Either add `CustomerId` to the event, or look it up from another source.
 
-### 11. No `/health/ready` readiness endpoints
-- **Files**: All `src/*/Program.cs`
-- **Problem**: PLAN.md states each service exposes both `/health` (liveness) and `/health/ready` (readiness) with health checks for SQLite and RabbitMQ. Only `/health` exists on all services.
-- **Required**: Add `/health/ready` endpoints with proper health checks (SQLite connectivity, RabbitMQ connection where applicable).
+### 11. No `/health/ready` readiness endpoints ✅ FIXED
+- **Status**: ✅ Fixed
+- **Problem**: PLAN.md states each service exposes both `/health` (liveness) and `/health/ready` (readiness) with health checks for SQLite and RabbitMQ. Only `/health` existed on all services.
+- **Fix**: Added `/health/ready` to all 10 services (Identity, Menu, Order, Payment, Kitchen, Delivery, Feedback, Notification, Receipt, ApiGateway) with SQLite `CanConnectAsync` checks.
 
-### 12. ApiGateway Dockerfile copies entire repo
-- **File**: `src/ApiGateway/Dockerfile:3` (same pattern in all Dockerfiles)
-- **Problem**: `COPY . .` copies all source code into every Docker image. Each image ends up containing all 10+ services' code, the tests directory, etc., making images unnecessarily large.
-- **Required**: Use `.dockerignore` to exclude unnecessary directories (`tests/`, `*.db`, `bin/`, `obj/`) or restructure the build context.
+### 12. ApiGateway Dockerfile copies entire repo ✅ FIXED
+- **Status**: ✅ Fixed
+- **Problem**: `COPY . .` copied all source code into every Docker image. Each image ended up containing all 10+ services' code, the tests directory, etc., making images unnecessarily large.
+- **Fix**: Created `.dockerignore` that excludes `.git/`, `tests/`, `bin/`, `obj/`, `*.db`, `*.md`, `*.ps1`, NuGet packages, IDE files, and frontend build output from the Docker build context.
 
 ---
 
 ## Minor
 
-### 13. DEBUG.md has duplicate content
-- **File**: `DEBUG.md`
-- **Problem**: Multiple `# Debug Log` headings. Content at lines 50-91 is duplicate/out-of-place (a copy of the file header and "Running Services for Testing" section appears in the middle of the file).
-- **Required**: Clean up the duplicate content and ensure each entry has a single date-stamped heading.
+### 13. DEBUG.md has duplicate content ✅ FIXED
+- **Status**: ✅ Fixed
+- **Problem**: Multiple `# Debug Log` headings. Content at lines 50-91 was duplicate/out-of-place (a copy of the file header and "Running Services for Testing" section appeared in the middle of the file).
+- **Fix**: Removed the duplicate section (repeated header, "Running Services for Testing" recipe, and repeated file description).
 
 ### 14. SQLite .db files appear in service directories
 - **Files**: `src/IdentityService/identity.db`, `src/OrderService/order.db`, `src/PaymentService/payment.db`, `src/KitchenService/kitchen.db`, `src/DeliveryService/delivery.db`, `src/FeedbackService/feedback.db`, `src/NotificationService/notifications.db`, `src/ReceiptService/receipts.db`
