@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: burgeriam-receipt-service
+  namespace: burgeriam
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: burgeriam-receipt-service
+  template:
+    metadata:
+      labels:
+        app: burgeriam-receipt-service
+    spec:
+      containers:
+        - name: receipt-service
+          image: burgeriam/receipt-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5029
+              name: http
+          env:
+            - name: ASPNETCORE_URLS
+              value: "http://+:5029"
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Production"
+            - name: ConnectionStrings__DefaultConnection
+              value: "Data Source=/app/data/receipt.db"
+            - name: EventBus__ConnectionString
+              value: "amqp://guest:guest@burgeriam-rabbitmq:5672"
+            - name: EventBus__ExchangeName
+              value: "burgeriam.exchange"
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5029
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 5029
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: receipt-service-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: burgeriam-receipt-service
+  namespace: burgeriam
+spec:
+  selector:
+    app: burgeriam-receipt-service
+  ports:
+    - name: http
+      port: 5029
+      targetPort: 5029
+  type: ClusterIP

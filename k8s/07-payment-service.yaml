@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: burgeriam-payment-service
+  namespace: burgeriam
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: burgeriam-payment-service
+  template:
+    metadata:
+      labels:
+        app: burgeriam-payment-service
+    spec:
+      containers:
+        - name: payment-service
+          image: burgeriam/payment-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5074
+              name: grpc
+          env:
+            - name: ASPNETCORE_URLS
+              value: "http://+:5074"
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Production"
+            - name: ConnectionStrings__DefaultConnection
+              value: "Data Source=/app/data/payment.db"
+            - name: EventBus__ConnectionString
+              value: "amqp://guest:guest@burgeriam-rabbitmq:5672"
+            - name: EventBus__ExchangeName
+              value: "burgeriam.exchange"
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5074
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 5074
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: payment-service-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: burgeriam-payment-service
+  namespace: burgeriam
+spec:
+  selector:
+    app: burgeriam-payment-service
+  ports:
+    - name: grpc
+      port: 5074
+      targetPort: 5074
+  type: ClusterIP

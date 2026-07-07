@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: burgeriam-identity-service
+  namespace: burgeriam
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: burgeriam-identity-service
+  template:
+    metadata:
+      labels:
+        app: burgeriam-identity-service
+    spec:
+      containers:
+        - name: identity-service
+          image: burgeriam/identity-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5041
+              name: grpc
+          env:
+            - name: ASPNETCORE_URLS
+              value: "http://+:5041"
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Production"
+            - name: ConnectionStrings__DefaultConnection
+              value: "Data Source=/app/data/identity.db"
+            - name: Jwt__Key
+              valueFrom:
+                secretKeyRef:
+                  name: burgeriam-secrets
+                  key: jwt-key
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5041
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 5041
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: identity-service-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: burgeriam-identity-service
+  namespace: burgeriam
+spec:
+  selector:
+    app: burgeriam-identity-service
+  ports:
+    - name: grpc
+      port: 5041
+      targetPort: 5041
+    - name: health
+      port: 5041
+      targetPort: 5041
+  type: ClusterIP

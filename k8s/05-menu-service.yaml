@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: burgeriam-menu-service
+  namespace: burgeriam
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: burgeriam-menu-service
+  template:
+    metadata:
+      labels:
+        app: burgeriam-menu-service
+    spec:
+      containers:
+        - name: menu-service
+          image: burgeriam/menu-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5052
+              name: grpc
+          env:
+            - name: ASPNETCORE_URLS
+              value: "http://+:5052"
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Production"
+            - name: ConnectionStrings__DefaultConnection
+              value: "Data Source=/app/data/menu.db"
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5052
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 5052
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: menu-service-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: burgeriam-menu-service
+  namespace: burgeriam
+spec:
+  selector:
+    app: burgeriam-menu-service
+  ports:
+    - name: grpc
+      port: 5052
+      targetPort: 5052
+  type: ClusterIP

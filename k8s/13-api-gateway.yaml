@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: burgeriam-api-gateway
+  namespace: burgeriam
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: burgeriam-api-gateway
+  template:
+    metadata:
+      labels:
+        app: burgeriam-api-gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: burgeriam/api-gateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+              name: http
+          env:
+            - name: ASPNETCORE_URLS
+              value: "http://+:5000"
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Production"
+            - name: Services__Identity
+              value: "http://burgeriam-identity-service:5041"
+            - name: Services__Menu
+              value: "http://burgeriam-menu-service:5052"
+            - name: Services__Order
+              value: "http://burgeriam-order-service:5063"
+            - name: Services__Payment
+              value: "http://burgeriam-payment-service:5074"
+            - name: Services__Kitchen
+              value: "http://burgeriam-kitchen-service:5085"
+            - name: Services__Delivery
+              value: "http://burgeriam-delivery-service:5096"
+            - name: Services__Feedback
+              value: "http://burgeriam-feedback-service:5007"
+            - name: Services__Notification
+              value: "http://burgeriam-notification-service:5018"
+            - name: Services__Receipt
+              value: "http://burgeriam-receipt-service:5029"
+            - name: Jwt__Key
+              valueFrom:
+                secretKeyRef:
+                  name: burgeriam-secrets
+                  key: jwt-key
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: burgeriam-api-gateway
+  namespace: burgeriam
+spec:
+  selector:
+    app: burgeriam-api-gateway
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000
+  type: ClusterIP

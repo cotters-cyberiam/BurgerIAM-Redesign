@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: burgeriam-order-service
+  namespace: burgeriam
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: burgeriam-order-service
+  template:
+    metadata:
+      labels:
+        app: burgeriam-order-service
+    spec:
+      containers:
+        - name: order-service
+          image: burgeriam/order-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5063
+              name: grpc
+          env:
+            - name: ASPNETCORE_URLS
+              value: "http://+:5063"
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Production"
+            - name: ConnectionStrings__DefaultConnection
+              value: "Data Source=/app/data/order.db"
+            - name: EventBus__ConnectionString
+              value: "amqp://guest:guest@burgeriam-rabbitmq:5672"
+            - name: EventBus__ExchangeName
+              value: "burgeriam.exchange"
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5063
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 5063
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: order-service-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: burgeriam-order-service
+  namespace: burgeriam
+spec:
+  selector:
+    app: burgeriam-order-service
+  ports:
+    - name: grpc
+      port: 5063
+      targetPort: 5063
+  type: ClusterIP
