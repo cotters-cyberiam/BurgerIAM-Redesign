@@ -166,7 +166,7 @@ Standard event message classes in `BurgerIAM.Shared.Events`:
 5. Verify solution builds and all tests pass
 6. Commit: `git add . && git commit -m "Phase 1: Foundation & shared infrastructure"`
 
-### Phase 2: Identity & Menu Services
+### Phase 2: Identity & Menu Services ✅
 1. Implement **Identity Service** (gRPC + SQLite)
    - User registration, login, JWT generation
    - Unit tests
@@ -190,7 +190,7 @@ Standard event message classes in `BurgerIAM.Shared.Events`:
 5. ✅ Dockerfiles for both services
 6. ✅ Commit
 
-### Phase 4: Kitchen & Delivery
+### Phase 4: Kitchen & Delivery ✅
 1. Implement **Kitchen Service** (gRPC + SQLite + EventBus pub/sub)
    - Order preparation workflow
    - Consumes `PaymentConfirmedEvent`, publishes `OrderReadyEvent`
@@ -202,7 +202,7 @@ Standard event message classes in `BurgerIAM.Shared.Events`:
 3. Dockerfiles
 4. Commit
 
-### Phase 5: Notification, Receipt & Feedback
+### Phase 5: Notification, Receipt & Feedback ✅
 1. Implement **Notification Service** (background worker + EventBus consumer)
    - Consumes all order lifecycle events, logs/simulates notifications
    - Unit tests
@@ -239,29 +239,38 @@ Standard event message classes in `BurgerIAM.Shared.Events`:
 4. ✅ Dockerfile for API Gateway (multi-stage build, port 5000)
 5. ✅ Commit
 
-### Phase 7: Docker & Docker Compose
-1. Create `.dockerignore` for each service
-2. Create `Dockerfile` for each service (multi-stage build)
-3. Create root `docker-compose.yml` for local development
-   - All services + RabbitMQ + volumes for SQLite
-4. Test full application with `docker-compose up`
-5. Commit
+### Phase 7: Docker & Container Orchestration ✅
+1. ✅ `.dockerignore` created for each service
+2. ✅ `Dockerfile` created for each service (multi-stage build)
+3. ✅ PowerShell scripts for local container management (used instead of docker-compose):
+   - `Build-Images.ps1` — builds all 11 service images
+   - `Start-Containers.ps1` — starts all containers with optional RabbitMQ support
+   - `Stop-Containers.ps1` — stops all containers
+   - `Start-FullTest.ps1` — runs all services locally for development
+   - `Stop-FullTest.ps1` — stops local development services
+4. ✅ Full end-to-end testing verified with both InMemoryEventBus and RabbitMQ
+5. ✅ All images pushed to Docker Hub as `cotters07/burgeriam-*:latest`
+6. ✅ Commit
 
-### Phase 8: Kubernetes Manifests
-1. Create `k8s/` directory structure
-2. **Namespaces**: `burgeriam`
-3. **Gateway API Resources**:
-   - `GatewayClass`, `Gateway`, `HTTPRoute` resources
-   - Traffic routing to API Gateway service
-4. **Deployments** + **Services** for each microservice
-   - Resource requests/limits
-   - Health check probes (liveness + readiness)
-   - ConfigMaps for appsettings
-   - PersistentVolumeClaims for SQLite databases
-5. **RabbitMQ** deployment (or use managed service)
-6. **ConfigMaps** + **Secrets** (connection strings, JWT keys)
-7. Verify with `kubectl apply -f k8s/`
-8. Commit
+### Phase 8: Kubernetes Manifests ✅
+1. ✅ Created `k8s/` directory with all manifests (17 files)
+2. ✅ **Namespace**: `burgeriam` (`00-namespace.yaml`)
+3. ✅ **Secrets**: JWT key + RabbitMQ credentials (`01-secrets.yaml`)
+4. ✅ **PersistentVolumeClaims**: 9 PVCs (1Gi each) for SQLite databases (`02-persistent-volumes.yaml`)
+5. ✅ **RabbitMQ**: Deployment + ClusterIP service with health probes (`03-rabbitmq.yaml`)
+6. ✅ **All 9 backend services**: Deployment + ClusterIP Service per service:
+   - Identity, Menu, Order, Payment, Kitchen, Delivery, Feedback, Notification, Receipt
+   - Resource requests/limits, liveness + readiness probes
+   - PVC mounts for SQLite persistence
+   - RabbitMQ event bus enabled via env vars (`EventBus__ConnectionString`)
+7. ✅ **API Gateway**: Deployment + ClusterIP service with all backend URLs configured
+8. ✅ **Wasm Frontend**: Deployment + **LoadBalancer** Service (HTTP port 80)
+   - Kubernetes-compatible nginx ConfigMap (kube-dns resolver instead of Docker DNS)
+9. ✅ **Deploy script** (`deploy.ps1`): applies manifests in dependency order, optional `-WaitForReady`
+10. ✅ **Remove script** (`remove.ps1`): namespace deletion with confirmation prompt, optional `-DeletePVCs`
+11. ✅ All images pushed to Docker Hub (`cotters07/burgeriam-*:latest`) and referenced in manifests
+12. ✅ Branch `Kubernetes` created locally and remotely on GitHub
+13. ✅ Committed
 
 ### Phase 10: .NET MAUI Android App *(deferred — on request)*
 > **Note**: This phase will only be started when explicitly instructed. All design decisions in earlier phases (API surface, auth flow, response shapes) must keep mobile consumption in mind.
@@ -356,35 +365,23 @@ E:\Repos\BurgerIAM\
 │   └── Integration.Tests/
 │
 └── k8s/
-    ├── namespace.yaml
-    ├── rabbitmq.yaml
-    ├── gateway-api/
-    │   ├── gateway-class.yaml
-    │   ├── gateway.yaml
-    │   └── http-routes.yaml
-    ├── identity-service/
-    │   ├── deployment.yaml
-    │   ├── service.yaml
-    │   ├── configmap.yaml
-    │   └── pvc.yaml
-    ├── menu-service/
-    │   └── ...
-    ├── order-service/
-    │   └── ...
-    ├── payment-service/
-    │   └── ...
-    ├── kitchen-service/
-    │   └── ...
-    ├── delivery-service/
-    │   └── ...
-    ├── notification-service/
-    │   └── ...
-    ├── receipt-service/
-    │   └── ...
-    ├── feedback-service/
-    │   └── ...
-    └── web-frontend/
-        └── ...
+    ├── 00-namespace.yaml            # burgeriam namespace
+    ├── 01-secrets.yaml              # JWT key + RabbitMQ credentials
+    ├── 02-persistent-volumes.yaml   # 9 PVCs (1Gi each)
+    ├── 03-rabbitmq.yaml            # RabbitMQ + ClusterIP service
+    ├── 04-identity-service.yaml     # Deployment + ClusterIP
+    ├── 05-menu-service.yaml         # Deployment + ClusterIP
+    ├── 06-order-service.yaml        # Deployment + ClusterIP
+    ├── 07-payment-service.yaml      # Deployment + ClusterIP
+    ├── 08-kitchen-service.yaml      # Deployment + ClusterIP
+    ├── 09-delivery-service.yaml     # Deployment + ClusterIP
+    ├── 10-feedback-service.yaml     # Deployment + ClusterIP
+    ├── 11-notification-service.yaml # Deployment + ClusterIP
+    ├── 12-receipt-service.yaml      # Deployment + ClusterIP
+    ├── 13-api-gateway.yaml          # Deployment + ClusterIP
+    ├── 14-wasm-frontend.yaml        # Deployment + LoadBalancer + nginx ConfigMap
+    ├── deploy.ps1                   # Deploy all manifests
+    └── remove.ps1                   # Teardown all resources
 ```
 
 ---
@@ -400,7 +397,7 @@ E:\Repos\BurgerIAM\
 | Async Communication | RabbitMQ |
 | Frontend (Web) | Blazor WebAssembly |
 | Frontend (Mobile) | .NET MAUI (Android) — developed last, on request |
-| API Gateway | ASP.NET Core + YARP |
+| API Gateway | ASP.NET Core Minimal API + gRPC client stubs |
 | Auth | JWT (Identity Service) |
 | Containerization | Docker (multi-stage builds) |
 | Orchestration | Kubernetes (Gateway API) |
@@ -437,12 +434,14 @@ All → (EventBus) → Notification | RabbitMQ | Status updates → notify user
 2. **gRPC for sync** — strongly-typed contracts, high performance, native .NET support
 3. **RabbitMQ for async** — reliable, durable, supports pub/sub and competing consumers
 4. **BI-directional event flow** — services react to events without direct coupling
-5. **YARP Gateway** — .NET-native reverse proxy, easy routing, middleware pipeline
+5. **Minimal API Gateway** — ASP.NET Core Minimal API with direct gRPC client stubs, no reverse proxy needed
 6. **JWT auth at Gateway** — centralized authentication, downstream services trust Gateway-issued tokens
 7. **Blazor WASM** — .NET-based frontend, shared models with backend, single language stack
 8. **Multi-stage Docker builds** — smaller images, faster deployments
 9. **Gateway API** — modern Kubernetes ingress, richer routing than Ingress v1
-10. **Integration tests via docker-compose** — full system testable locally before K8s deployment
+10. **PowerShell orchestration** — custom PowerShell scripts replace docker-compose for local container management
+11. **Docker Hub registry** — all images published to `cotters07/burgeriam-*` for K8s pull access
+12. **Kubernetes-first event bus** — manifests configured for RabbitMQ by default (not InMemoryEventBus)
 
 ---
 
