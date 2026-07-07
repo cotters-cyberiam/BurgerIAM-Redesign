@@ -159,6 +159,12 @@ else
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(cardNumber) || string.IsNullOrWhiteSpace(expiry) || string.IsNullOrWhiteSpace(cvv))
+        {
+            error = "Please fill in all payment details";
+            return;
+        }
+
         isProcessing = true;
         error = null;
 
