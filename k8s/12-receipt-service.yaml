@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: receipt-service
-          image: burgeriam/receipt-service:latest
+          image: cotters07/burgeriam-receipt-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5029

@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: kitchen-service
-          image: burgeriam/kitchen-service:latest
+          image: cotters07/burgeriam-kitchen-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5085

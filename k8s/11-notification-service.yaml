@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: notification-service
-          image: burgeriam/notification-service:latest
+          image: cotters07/burgeriam-notification-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5018

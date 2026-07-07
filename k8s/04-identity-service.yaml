@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: identity-service
-          image: burgeriam/identity-service:latest
+          image: cotters07/burgeriam-identity-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5041

@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: delivery-service
-          image: burgeriam/delivery-service:latest
+          image: cotters07/burgeriam-delivery-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5096

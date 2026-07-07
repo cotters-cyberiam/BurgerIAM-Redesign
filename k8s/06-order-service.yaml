@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: order-service
-          image: burgeriam/order-service:latest
+          image: cotters07/burgeriam-order-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5063

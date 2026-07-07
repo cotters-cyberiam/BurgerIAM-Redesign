@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: payment-service
-          image: burgeriam/payment-service:latest
+          image: cotters07/burgeriam-payment-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5074

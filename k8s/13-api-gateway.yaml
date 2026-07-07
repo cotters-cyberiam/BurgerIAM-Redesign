@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: api-gateway
-          image: burgeriam/api-gateway:latest
+          image: cotters07/burgeriam-api-gateway:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
