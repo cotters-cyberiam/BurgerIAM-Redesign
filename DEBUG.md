@@ -543,3 +543,27 @@ With a variable, nginx defers DNS resolution to **runtime** using the `resolver 
 - Added `$backendEventBusEnv` helper to conditionally inject RabbitMQ connection string only when `-UseRabbitMQ` is specified
 
 **Files**: `Start-Containers.ps1`
+
+---
+
+## 2026-07-07 — Inline razor toast divs don't render in Blazor WASM Release builds
+
+**Problem**: Error toasts rendered via `@if (!string.IsNullOrEmpty(error)) { <div class="toast error">@error</div> }` in Razor pages (Checkout.razor, Login.razor) did not appear in the browser. The C# code set the `error` field correctly (confirmed via `alert()`), and `StateHasChanged()` was called, but the toast div was never added to the DOM. This affected both address validation on checkout and login error messages.
+
+**Root cause**: Unknown — likely the Blazor WASM IL linker/trimmer (which runs in Release mode even without `wasm-tools`) removes or inlines the conditional rendering logic for the toast div. The fact that JS `window.BurgerIAM.showToast()` also failed (silently — `toastContainer` existed but the created element never rendered) suggests a deeper rendering pipeline issue specific to Release-optimized Blazor assemblies. Pure C# field mutations and `StateHasChanged()` calls that work in Debug mode may be optimized away in Release builds for code paths the linker considers "uncalled".
+
+**Workaround**: Bypass Blazor's rendering entirely by using JS DOM manipulation via `eval`:
+```csharp
+await JS.InvokeVoidAsync("eval", @"
+    var el = document.createElement('div');
+    el.style.cssText = '...inline styles matching site theme...';
+    el.innerHTML = '<span>\u274C</span><span>Message</span>';
+    var form = document.querySelector('.container.mt-4 .row');
+    if (form) form.parentNode.insertBefore(el, form);
+");
+```
+- Uses inline styles (not CSS classes) to avoid any CSS variable resolution issues
+- The error element is removed on input via `addEventListener('input', removeFn, { once: true })`
+- Same pattern works for both Checkout.razor and Login.razor
+
+**Files**: `src/WasmFrontend/Pages/Checkout.razor`, `src/WasmFrontend/Pages/Login.razor`
