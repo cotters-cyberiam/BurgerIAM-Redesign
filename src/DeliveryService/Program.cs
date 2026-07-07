@@ -32,7 +32,13 @@ using (var scope = app.Services.CreateScope())
     db.Database.EnsureCreated();
     if (!db.Drivers.Any())
     {
-        db.Drivers.Add(new DriverEntity { Name = "Default Driver", IsAvailable = true });
+        db.Drivers.AddRange(
+            new DriverEntity { Name = "Alice Johnson", IsAvailable = true },
+            new DriverEntity { Name = "Bob Smith", IsAvailable = true },
+            new DriverEntity { Name = "Carlos Garcia", IsAvailable = true },
+            new DriverEntity { Name = "Diana Chen", IsAvailable = true },
+            new DriverEntity { Name = "Elena Rodriguez", IsAvailable = true }
+        );
         db.SaveChanges();
     }
 }
