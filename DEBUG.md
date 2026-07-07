@@ -437,6 +437,20 @@ orderReq.Items.AddRange(dto.Items.Select(i => new ProtoOrder.OrderItem { ... }))
 
 ---
 
+## 2026-07-07 — Registration page shows no feedback after successful account creation
+
+**Problem**: After clicking "Create Account", the page stayed the same with no visible feedback — no success message, no error message, and no navigation. The account was created (user could log in successfully), but the UI gave no indication of success.
+
+**Root cause**: Two compounding issues:
+1. The success toast was rendered inside the form card above the input fields, but with `animation:none` and no visual prominence, users didn't notice it among the form layout.
+2. There was no automatic redirect after successful registration — users had to notice a small "Sign in now" link and click it manually.
+
+**Fix**: Added automatic redirect to `/login` after a 1.5-second delay on successful registration. Wrapped the `Auth.Register` call in `try-catch` so any network or serialization errors are caught and displayed as error messages instead of being silently swallowed.
+
+**Files**: `src/WasmFrontend/Pages/Register.razor`, `src/WasmFrontend/Services/AuthService.cs`
+
+---
+
 ## 2026-07-07 — Blazor WASM 400 Bad Request on registration (trimmed record types)
 
 **Problem**: Registration from the browser (Blazor WASM app) returned a 400 Bad Request, while the same request via curl succeeded. The error message was "Registration failed: Value cannot be null" or simply "Registration failed".
@@ -464,30 +478,6 @@ var response = await _http.PostAsJsonAsync("/api/auth/register", payload);
 ---
 
 ## 2026-07-07 — Start-Containers.ps1 default tag mismatch with Build-Images.ps1
-
-**Problem**: Registration from the browser (Blazor WASM app) returned a 400 Bad Request, while the same request via curl succeeded. The error message was "Registration failed: Value cannot be null" or simply "Registration failed".
-
-**Root cause**: The Blazor WASM linker/trimmer (enabled by `Microsoft.NET.Sdk.BlazorWebAssembly` during publish) removes properties from `RegisterRequest` and `LoginRequest` positional records because they're only accessed via reflection by `System.Net.Http.Json.PostAsJsonAsync<T>()`. The linker cannot determine that `JsonSerializer.Serialize<T>` needs the record's properties at runtime. This caused `PostAsJsonAsync` to send `{}` instead of `{"email":"...","password":"...","name":"..."}`, and the ApiGateway received null values for all fields.
-
-**Fix**: Replaced `RegisterRequest` and `LoginRequest` positional records with `Dictionary<string, string>` when calling `PostAsJsonAsync`:
-```csharp
-// Before:
-var response = await _http.PostAsJsonAsync("/api/auth/register", new RegisterRequest(email, password, name));
-
-// After:
-var payload = new Dictionary<string, string>
-{
-    ["email"] = email,
-    ["password"] = password,
-    ["name"] = name
-};
-var response = await _http.PostAsJsonAsync("/api/auth/register", payload);
-```
-`Dictionary<K,V>` is a framework type that is always preserved by the linker, so its contents are never trimmed.
-
-**Files**: `src/WasmFrontend/Services/AuthService.cs`
-
----
 
 **Problem**: `Start-Containers.ps1` failed to find Docker images because `Build-Images.ps1` defaulted to tag `latest` while `Start-Containers.ps1` defaulted to tag `v1.0`. This caused either "Missing images" errors or running stale containers from a previous deployment.
 

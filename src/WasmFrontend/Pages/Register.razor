@@ -97,8 +97,25 @@
             return;
         }
 
-        error = await Auth.Register(email, password, name);
-        success = error is null;
-        isLoading = false;
+        try
+        {
+            error = await Auth.Register(email, password, name);
+        }
+        catch (Exception ex)
+        {
+            error = $"Connection error: {ex.Message}";
+        }
+
+        if (error is null)
+        {
+            success = true;
+            isLoading = false;
+            await Task.Delay(1500);
+            Nav.NavigateTo("/login");
+        }
+        else
+        {
+            isLoading = false;
+        }
     }
 }
