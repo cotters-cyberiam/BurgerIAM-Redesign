@@ -153,6 +153,19 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.Use(async (context, next) =>
+{
+    if (context.Request.Method == "POST" && context.Request.Path.StartsWithSegments("/api/auth"))
+    {
+        context.Request.EnableBuffering();
+        using var reader = new StreamReader(context.Request.Body, leaveOpen: true);
+        var body = await reader.ReadToEndAsync();
+        context.Request.Body.Position = 0;
+        Console.WriteLine($"[DEBUG] {context.Request.Path}: {body}");
+    }
+    await next();
+});
+
 if (Directory.Exists(wasmFrontendPath))
 {
     app.UseDefaultFiles();
