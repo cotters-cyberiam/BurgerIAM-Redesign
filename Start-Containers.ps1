@@ -21,7 +21,7 @@
 #>
 
 param(
-    [string]$ImageTag = "v1.0",
+    [string]$ImageTag = "latest",
     [switch]$UseRabbitMQ,
     [switch]$Detach = $true,
     [switch]$Force

@@ -437,6 +437,20 @@ orderReq.Items.AddRange(dto.Items.Select(i => new ProtoOrder.OrderItem { ... }))
 
 ---
 
+## 2026-07-07 — Start-Containers.ps1 default tag mismatch with Build-Images.ps1
+
+**Problem**: `Start-Containers.ps1` failed to find Docker images because `Build-Images.ps1` defaulted to tag `latest` while `Start-Containers.ps1` defaulted to tag `v1.0`. This caused either "Missing images" errors or running stale containers from a previous deployment.
+
+**Root cause**: The two scripts used incompatible default tags:
+- `Build-Images.ps1`: `[string]$Tag = "latest"`
+- `Start-Containers.ps1`: `[string]$ImageTag = "v1.0"`
+
+**Fix**: Changed `Start-Containers.ps1` default `$ImageTag` from `"v1.0"` to `"latest"`.
+
+**Files**: `Start-Containers.ps1` line 24
+
+---
+
 ## 2026-07-06 — Docker DNS resolves container names, not short names
 
 **Problem**: API Gateway gRPC calls to backend services failed with `Grpc.Core.RpcException: Name or service not known`. The API gateway resolved `menu-service` as `NXDOMAIN` even though both containers were on the same Docker `burgeriam` network.
